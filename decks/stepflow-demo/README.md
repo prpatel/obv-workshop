@@ -40,12 +40,14 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slide 1: title · slide 2: StepFlow demo (six v-clicks)
+├─ slides.md                      # slide 1: title · slide 2: StepFlow demo · slide 3: StairChain demo (7 v-clicks)
 ├─ components/
 │  ├─ StepFlow.vue                # the diagram component (auto-imported by Slidev)
+│  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
 │  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance
 │  └─ stepflow/
 │     ├─ geometry.ts              # pure serpentine layout math (viewBox-relative)
+│     ├─ stair.ts                 # pure staircase layout math (uniform ramp + per-block lift overrides)
 │     ├─ palettes.ts              # StepFlowPalette presets + resolvePalette merge
 │     ├─ icons.ts                 # named Lucide path registry + visible fallback
 │     ├─ steps.ts                 # StepFlowStep contract + the measured six-step seed data
@@ -135,6 +137,23 @@ header renders `title` in white with the `titleAccent` tail in chrome-green
 convention, never a palette field. There is deliberately **no shared chrome
 component** — each family component renders its own two-tone title (word order
 varies per recording; arbitrary word-level coloring is out of scope).
+
+### Family components
+
+Each family built-in is a component + pure geometry module + one demo slide,
+appended after the StepFlow demo slide (order = merge order). The component owns
+its v-click choreography — a slide consumes the listed click count, nothing more.
+
+| Component    | Data contract (`components/stepflow/`)                | Clicks             | Palette preset | Demo slide |
+| ------------ | ------------------------------------------------------ | ------------------ | -------------- | ---------- |
+| `StairChain` | `stair.ts` — `StairStep[]` + optional `StairCallout`   | 1 + one per block  | `chainBlue`    | 3          |
+
+StairChain authoring notes: each step carries `title` (uppercase white, rendered
+inside the block), `caption` (one accent line below), and an optional `lift` —
+the block's total rise above the base block as a fraction of canvas height;
+omitted lifts follow the uniform 6.8%h-per-step ramp. The demo seed reproduces
+the v1 recording's RETRY dip through measured `lift` overrides, and the optional
+`callout` renders the amber floating annotation that reveals first.
 
 ## Hands-free playback (auto-advance)
 
