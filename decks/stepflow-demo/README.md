@@ -40,7 +40,7 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (8) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (2)
+├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (8) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (2) · SegmentTimeline (3)
 ├─ components/
 │  ├─ StepFlow.vue                # the serpentine flow diagram (auto-imported by Slidev)
 │  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
@@ -52,12 +52,14 @@ decks/stepflow-demo/
 │  ├─ ColumnRow.vue               # family built-in: tone-coded column row (rising columns + label rows)
 │  ├─ TileGrid.vue                # family built-in: tone-coded icon-tile grid (row-major build)
 │  ├─ RatioStrip.vue              # family built-in: proportional band with a live re-proportion (wave 2)
+│  ├─ SegmentTimeline.vue         # family built-in: proportional sweep bar with milestone ticks
 │  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance
 │  └─ stepflow/
 │     ├─ geometry.ts              # pure serpentine layout math (viewBox-relative)
 │     ├─ stair.ts                 # pure staircase layout math (uniform ramp + per-block lift overrides)
 │     ├─ nodeEdge.ts              # NodeEdge contract + pure layout math
 │     ├─ compare.ts               # TwoBarCompare contract + pure left-anchored pair layout
+│     ├─ timeline.ts              # pure proportional-timeline layout math (bar, segments, ticks, chip)
 │     ├─ paths.ts                 # shared polylinePath/polylineLength (StepFlow track, NodeEdge edges, rows schematic)
 │     ├─ rows.ts                  # SchematicRows contract + pure token-row/schematic layout math
 │     ├─ spine.ts                 # pure spine + hero-tile layout math + family contracts
@@ -109,7 +111,7 @@ an unknown key renders a visible fallback and warns in dev.
 ## Shared contract: palettes, icons, title chrome
 
 Foundation conventions for the diagram-family components (StairChain, NodeEdge,
-StackPanels, HexCluster, SchematicRows, VerticalSpine, HeroTile). StepFlow ships
+StackPanels, HexCluster, SchematicRows, VerticalSpine, HeroTile, SegmentTimeline). StepFlow ships
 today; each family component adopts these in its own PR — with zero visual
 change to existing slides.
 
@@ -173,6 +175,7 @@ inline on the demo slides; data order is the click order for every family.
 | `ColumnRow`     | `columns.ts` — `ColumnRowData` (columns + `yFrac`/`hFrac` + optional `labelRows`) | 5 columns left→right, then the label rows | `cyanOnBlack` base + token mix (`orangeSpine`/`statusAmber` accents, `accentTertiary` teal) | 9          | —           |
 | `TileGrid`      | `tiles.ts` — `TileGridData` (tiles/cols + tile & pitch fracs; per-tile `tone`/`wFrac`/`hFrac` overrides) | 6 — one per tile, row-major | `cyanOnBlack` (matrix/row tones via `accentAlt`/`accentTertiary` + status/plain constants) | 10         | `cpu` · `boxes` · `layers` (candidates; fallback covers a wrong guess) |
 | `RatioStrip`    | `strip.ts` — `RatioStripData` (segments + `yFrac`/`hFrac` + optional caption) | 2 — build at initial proportions, then re-proportion + captions | `statusAmber` + `accentTertiary` recording base — hue decision in the notes below | 11         | —           |
+| `SegmentTimeline` | `timeline.ts` — `TimelineSegment[]` (`tone` is `'accent'` or `'alt'`, optional proportional `wFrac`) + `TimelineTick[]` (`xFrac`, `label`) | 3 — one sweep per segment, then the labels layer | `chainBlue` + `orangeSpine` composed (no preset added) | 12         | —           |
 
 StairChain authoring notes: each step carries `title` (uppercase white, rendered
 inside the block), `caption` (one accent line below), and an optional `lift` —
@@ -253,6 +256,14 @@ One click per tile in data order. The measured matrix (research src 57–60s:
 tone-coded 3×3 incl. amber/red/plain) and flat-row (107–110s: eight tiles in
 two tone groups of four) are seed-data arrangements, not extra components;
 unknown icon keys render the visible fallback icon and warn in dev.
+
+SegmentTimeline authoring notes: `segments` are proportional shares of the measured bar —
+authored `wFrac` values (fractions of the source canvas width) are normalized to fill the span
+exactly, and omitted shares default to equal widths. `tone: 'accent'` renders chainBlue and
+`'alt'` renders orangeSpine (composed presets — this wave adds no palette preset). Ticks are
+`xFrac` + `label`; tick lines, tick labels, and the optional right-side `chip` box are measured
+constants derived from the bar. The sweep is a revealed-state width transition (the
+`.sf-track-fill` pattern): no path-length math, instant snap on backward nav.
 
 ## Family component: NodeEdge (`components/NodeEdge.vue`)
 

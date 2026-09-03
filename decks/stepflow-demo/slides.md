@@ -494,3 +494,52 @@ canvasWidth: 1920
   inset: 0;
 }
 </style>
+
+---
+
+<!--
+  Demo slide: SegmentTimeline — one proportional bar sweeping left→right in
+  two contiguous tone-coded segments (clicks 1-2), then all lettering —
+  segment labels, milestone ticks with their labels, and the right-side chip —
+  fades in together (click 3). Segment shares are the source recording's
+  measured canvas-width fractions (research art_2kSBGNmJ §3.1, src 211–222s);
+  the layout normalizes them to fill the measured bar span exactly. Tick x
+  positions are authored data; tick lines, labels, and the chip position are
+  derived from the bar. AutoAdvance is renderless deck-level wiring: the `a`
+  key toggles a hands-free run and `?autoplay=N` in the URL starts one on
+  slide enter.
+-->
+
+<div class="sf-demo-stage">
+
+<SegmentTimeline
+  title="MIGRATION"
+  title-accent="TIMELINE"
+  :segments="[
+    { id: 'batch', tone: 'accent', label: 'BATCH', wFrac: 0.3640625 },
+    { id: 'stream', tone: 'alt', label: 'STREAMING', wFrac: 0.23125 },
+  ]"
+  :ticks="[
+    { xFrac: 0.265625, label: 'KICKOFF' },
+    { xFrac: 0.49921875, label: 'CUTOVER' },
+    { xFrac: 0.7328125, label: 'DONE' },
+  ]"
+  chip="FY25"
+  :y-frac="0.4125"
+  :h-frac="0.09444444444444444"
+  :x0-frac="0.1625"
+  :x1-frac="0.759375"
+/>
+
+<AutoAdvance />
+
+</div>
+
+<style>
+/* Stage fills the 1920×1080 canvas; the black canvas lives in styles/index.css. */
+.sf-demo-stage {
+  position: absolute;
+  inset: 0;
+}
+</style>
+
