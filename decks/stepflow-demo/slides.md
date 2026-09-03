@@ -261,3 +261,57 @@ canvasWidth: 1920
   inset: 0;
 }
 </style>
+---
+
+<!--
+  Demo slide: SchematicRows — terminal-style token listing. Each click fades
+  one row up into place (8 clicks, owned by the component); the brace-shaped
+  schematic strokes draw via the StepFlow dashoffset draw within their
+  attached row's click (clicks 5-7). Measured deviation (locked): the v6
+  recording's continuous auto-run (a typewriter effect) is re-paced to one
+  click per row — no typewriter is built. Seed strings are transcribed from
+  the settled v6 frame (research art_0AzKGXnD §F5 crops); the palette override
+  carries the recording's measured cool #2f95b9 and amber #f2ba1f. AutoAdvance
+  is renderless deck-level wiring: the `a` key toggles a hands-free run and
+  ?autoplay=N in the URL starts one on slide enter.
+-->
+
+<div class="sf-demo-stage">
+
+<SchematicRows
+  title="HARDER TO"
+  title-accent="MAINTAIN"
+  :palette="{ accent: '#2f95b9', accentAlt: '#f2ba1f' }"
+  :rows="[
+    { id: 'file', indent: 1, tokens: [{ text: 'answer_service.py', tone: 'plain' }] },
+    { id: 'imports', tokens: [{ text: 'from ', tone: 'accent' }, { text: 'mrk ', tone: 'plain' }, { text: 'import ', tone: 'accent' }, { text: 'service, depends', tone: 'plain' }] },
+    { id: 'signature', tokens: [{ text: 'def ', tone: 'accent' }, { text: 'answer(question: ', tone: 'plain' }, { text: 'str', tone: 'chrome' }, { text: ') → ', tone: 'plain' }, { text: 'str:', tone: 'chrome' }] },
+    { id: 'comment', tokens: [{ text: '# the AI application', tone: 'plain' }] },
+    { id: 'api', indent: 1, tokens: [{ text: 'api = ', tone: 'plain' }, { text: 'service(', tone: 'accent' }, { text: '&quot;answer-api&quot;)', tone: 'alt' }] },
+    { id: 'ctx', indent: 1, tokens: [{ text: 'ctx = ', tone: 'plain' }, { text: 'depends(', tone: 'accent' }, { text: '&quot;mart.orders&quot;)', tone: 'alt' }] },
+    { id: 'model', indent: 1, tokens: [{ text: 'model = ', tone: 'plain' }, { text: 'depends(', tone: 'accent' }, { text: '&quot;ai.answer_v2&quot;)', tone: 'alt' }] },
+    { id: 'return', indent: 1, tokens: [{ text: 'return ', tone: 'accent' }, { text: 'model.ask(question, ctx)', tone: 'plain' }] },
+  ]"
+  :schematic="[
+    { attach: 'api', tone: 'accent',
+      points: [[0.0287, 0.5699], [0.024, 0.5778], [0.0226, 0.5865], [0.0226, 0.611], [0.024, 0.6171], [0.028, 0.6224]] },
+    { attach: 'ctx', tone: 'accent',
+      points: [[0.0287, 0.6276], [0.024, 0.6355], [0.0226, 0.6442], [0.0226, 0.6687], [0.024, 0.6748], [0.028, 0.6801]] },
+    { attach: 'model', tone: 'accent',
+      points: [[0.0287, 0.6844], [0.024, 0.6923], [0.0226, 0.701], [0.0226, 0.7255], [0.024, 0.7316], [0.028, 0.7369]] },
+  ]"
+/>
+
+<AutoAdvance />
+
+</div>
+
+<style>
+/* Stage fills the 1920×1080 canvas; the black canvas lives in styles/index.css.
+   Re-declared here because a slide's styles are global only once that slide's
+   chunk has loaded (the sibling demo slides do the same). */
+.sf-demo-stage {
+  position: absolute;
+  inset: 0;
+}
+</style>
