@@ -74,7 +74,7 @@ function px(n: number): string {
       v-if="title"
       class="sf-rows-header"
       :style="{ left: px(header.left), top: px(header.top), fontSize: px(type.titleSize) }"
-    >{{ title }}<span v-if="titleAccent" class="sf-rows-header-accent"> {{ titleAccent }}</span></div>
+    >{{ title }}<span v-if="titleAccent" class="sf-rows-header-accent" :style="{ color: CHROME_GREEN }"> {{ titleAccent }}</span></div>
 
     <!--
       Embedded schematic: the dim base strokes are always visible; one stacked
@@ -146,10 +146,6 @@ function px(n: number): string {
   position: absolute;
   color: #ffffff;
   letter-spacing: 0.06em;
-}
-
-.sf-rows-header-accent {
-  color: #66fb00;
 }
 
 .sf-rows-schematic {
