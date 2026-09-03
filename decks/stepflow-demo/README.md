@@ -40,16 +40,19 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slide 1: title · slide 2: StepFlow demo · slide 3: StairChain demo · slide 4: NodeEdge demo
+├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1)
 ├─ components/
-│  ├─ StepFlow.vue                # the serpentine diagram component (auto-imported by Slidev)
+│  ├─ StepFlow.vue                # the serpentine flow diagram (auto-imported by Slidev)
 │  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
 │  ├─ NodeEdge.vue                # free-position network diagram component (diagram-family spec)
+│  ├─ VerticalSpine.vue           # family built-in: center-axis rhythm (marker, label row, side cards)
+│  ├─ HeroTile.vue                # family built-in: single-click section-divider tile
 │  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance
 │  └─ stepflow/
 │     ├─ geometry.ts              # pure serpentine layout math (viewBox-relative)
 │     ├─ stair.ts                 # pure staircase layout math (uniform ramp + per-block lift overrides)
 │     ├─ nodeEdge.ts              # NodeEdge contract + polyline helpers + pure layout math
+│     ├─ spine.ts                 # pure spine + hero-tile layout math + family contracts
 │     ├─ palettes.ts              # StepFlowPalette presets + resolvePalette merge
 │     ├─ icons.ts                 # named Lucide path registry + visible fallback
 │     ├─ steps.ts                 # StepFlowStep contract + the measured six-step seed data
@@ -128,8 +131,8 @@ into the fallback.
 ### Icon registry keys (`components/stepflow/icons.ts`)
 
 `git-branch` · `square-terminal` · `flask-conical` · `braces` · `rotate-cw` ·
-`server` · `database` · `cloud` — unknown keys render the visible fallback and
-warn in dev, so a wrong identification degrades safely.
+`server` · `database` · `cloud` · `user-round` — unknown keys render the visible
+fallback and warn in dev, so a wrong identification degrades safely.
 
 ### Title chrome convention: `titleAccent`
 
@@ -143,13 +146,18 @@ varies per recording; arbitrary word-level coloring is out of scope).
 ### Family components
 
 Each family built-in is a component + pure geometry module + one demo slide,
-appended after the StepFlow demo slide (order = merge order). The component owns
-its v-click choreography — a slide consumes the listed click count, nothing more.
+appended in merge order. The component owns its v-click choreography — a slide
+consumes the listed click count, nothing more. The data contracts live in the
+geometry modules (contract + layout are coupled by design) and seed data stays
+inline on the demo slides; data order is the click order for every family.
 
-| Component    | Data contract (`components/stepflow/`)                | Clicks             | Palette preset | Demo slide |
-| ------------ | ------------------------------------------------------ | ------------------ | -------------- | ---------- |
-| `StairChain` | `stair.ts` — `StairStep[]` + optional `StairCallout`   | 1 + one per block  | `chainBlue`    | 3          |
-| `NodeEdge`   | `nodeEdge.ts` — `NodeEdgeData` (nodes/edges/status)    | per node, then per edge, then per status | `cyanOnBlack` + `statusAmber` recording base | 4 |
+| Component       | Data contract (`components/stepflow/`)                 | Clicks                              | Palette preset                                | Demo slide | Icons added |
+| --------------- | ------------------------------------------------------- | ----------------------------------- | --------------------------------------------- | ---------- | ----------- |
+| `StepFlow`      | `steps.ts` — `StepFlowStep[]`                           | 6 — one per step                    | `cyanOnBlack`                                 | 2          | —           |
+| `StairChain`    | `stair.ts` — `StairStep[]` + optional `StairCallout`    | 1 + one per block                   | `chainBlue`                                   | 3          | —           |
+| `NodeEdge`      | `nodeEdge.ts` — `NodeEdgeData` (nodes/edges/status)     | per node, then per edge, then per status | `cyanOnBlack` + `statusAmber` recording base | 4          | `database` · `cloud` |
+| `VerticalSpine` | `spine.ts` — `SpineNode[]`; an empty-title center node renders the diamond marker, `side` picks the card slots | 4 — marker, label row, 2 side cards | `chainBlue` cards + `orangeSpine` spine/label | 5          | —           |
+| `HeroTile`      | `spine.ts` — `HeroTileData` (tile + icon + optional label on the spine axis) | 1 — tile, icon, label together | `orangeSpine` verbatim (`#f85721`)            | 6          | `user-round` |
 
 StairChain authoring notes: each step carries `title` (uppercase white, rendered
 inside the block), `caption` (one accent line below), and an optional `lift` —
@@ -157,6 +165,16 @@ the block's total rise above the base block as a fraction of canvas height;
 omitted lifts follow the uniform 6.8%h-per-step ramp. The demo seed reproduces
 the v1 recording's RETRY dip through measured `lift` overrides, and the optional
 `callout` renders the amber floating annotation that reveals first.
+
+VerticalSpine authoring notes: `side: 'center'` nodes stack down the spine axis
+in data order — an empty-title node renders the solid orange diamond marker, a
+titled one renders the label row (flanked by small accent diamonds); `side:
+'left' | 'right'` nodes fill the two measured card slots with `title` inside and
+`caption` beneath.
+
+HeroTile authoring notes: single click — `icon` (Lucide key) plus an optional
+`label` beneath the tile; the palette defaults to the measured `orangeSpine`
+preset verbatim, so the tile color needs no override.
 
 ## Family component: NodeEdge (`components/NodeEdge.vue`)
 

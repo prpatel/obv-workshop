@@ -194,3 +194,70 @@ canvasWidth: 1920
   inset: 0;
 }
 </style>
+
+---
+
+<!--
+  VerticalSpine demo (v7 family): the center axis is the rhythm — no drawn
+  spine line. One click per element, top → bottom: the orange diamond marker,
+  then the label row (with flanking diamonds), then the two side cards with
+  captions. Data order IS the click order; an empty title + side 'center'
+  renders the marker. AutoAdvance is renderless deck-level wiring (`a` key,
+  ?autoplay=N on the URL).
+-->
+
+<div class="sf-demo-stage">
+
+<VerticalSpine
+  title="CENTER AXIS"
+  titleAccent="RHYTHM"
+  :nodes="[
+    { id: 'marker', title: '', tone: 'alt', side: 'center' },
+    { id: 'label', title: 'TRANSPARENCY IN ACTION', tone: 'alt', side: 'center' },
+    { id: 'left-stat', title: '4X', caption: 'faster pipelines', tone: 'accent', side: 'left' },
+    { id: 'right-stat', title: '50%', caption: 'less toil', tone: 'accent', side: 'right' },
+  ]"
+/>
+
+<AutoAdvance />
+
+</div>
+
+<style>
+/* Same stage contract as the StairChain demo slide; re-declared here because a
+   slide's styles are global only once that slide's chunk has loaded. */
+.sf-demo-stage {
+  position: absolute;
+  inset: 0;
+}
+</style>
+
+---
+
+<!--
+  HeroTile demo (v7 segment 2): one solid orange tile dead on the spine axis
+  with a dark icon — the section-divider card. Single click; the label is
+  optional and omitted here to match the recording. Palette is the measured
+  orangeSpine preset verbatim (#f85721).
+-->
+
+<div class="sf-demo-stage">
+
+<HeroTile
+  title="SECTION"
+  titleAccent="DIVIDER"
+  icon="user-round"
+/>
+
+<AutoAdvance />
+
+</div>
+
+<style>
+/* Same stage contract as the VerticalSpine demo slide; re-declared here because
+   a slide's styles are global only once that slide's chunk has loaded. */
+.sf-demo-stage {
+  position: absolute;
+  inset: 0;
+}
+</style>
