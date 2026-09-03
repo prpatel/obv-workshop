@@ -40,7 +40,7 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (8) · TwoBarCompare (3)
+├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (8) · TwoBarCompare (3) · ColumnRow (6)
 ├─ components/
 │  ├─ StepFlow.vue                # the serpentine flow diagram (auto-imported by Slidev)
 │  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
@@ -49,6 +49,7 @@ decks/stepflow-demo/
 │  ├─ HeroTile.vue                # family built-in: single-click section-divider tile
 │  ├─ SchematicRows.vue           # terminal-style token listing with an embedded thin-line schematic
 │  ├─ TwoBarCompare.vue           # family built-in: two left-anchored comparison bars (icon chips + annotation click)
+│  ├─ ColumnRow.vue               # family built-in: tone-coded column row (rising columns + label rows)
 │  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance
 │  └─ stepflow/
 │     ├─ geometry.ts              # pure serpentine layout math (viewBox-relative)
@@ -58,6 +59,7 @@ decks/stepflow-demo/
 │     ├─ paths.ts                 # shared polylinePath/polylineLength (StepFlow track, NodeEdge edges, rows schematic)
 │     ├─ rows.ts                  # SchematicRows contract + pure token-row/schematic layout math
 │     ├─ spine.ts                 # pure spine + hero-tile layout math + family contracts
+│     ├─ columns.ts               # ColumnRow contract + pure column-row layout math
 │     ├─ palettes.ts              # StepFlowPalette presets + resolvePalette merge
 │     ├─ icons.ts                 # named Lucide path registry + visible fallback
 │     ├─ steps.ts                 # StepFlowStep contract + the measured six-step seed data
@@ -165,6 +167,7 @@ inline on the demo slides; data order is the click order for every family.
 | `HeroTile`      | `spine.ts` — `HeroTileData` (tile + icon + optional label on the spine axis) | 1 — tile, icon, label together | `orangeSpine` verbatim (`#f85721`)            | 6          | `user-round` |
 | `SchematicRows` | `rows.ts` — `SchematicRowsData` (rows + optional schematic) | one per row; schematic strokes share their attached row's click | override: v6-measured cool `#2f95b9` + amber `#f2ba1f` | 7          | —           |
 | `TwoBarCompare` | `compare.ts` — `CompareBar[]` + `TwoBarCompareData` (bars/xFrac/barHFrac/yFracs) | 3 — bar 1, bar 2, then one shared annotation click for labels/chips | `statusAmber` (the component's family default) | 8          | —           |
+| `ColumnRow`     | `columns.ts` — `ColumnRowData` (columns + `yFrac`/`hFrac` + optional `labelRows`) | 5 columns left→right, then the label rows | `cyanOnBlack` base + token mix (`orangeSpine`/`statusAmber` accents, `accentTertiary` teal) | 9          | —           |
 
 StairChain authoring notes: each step carries `title` (uppercase white, rendered
 inside the block), `caption` (one accent line below), and an optional `lift` —
@@ -182,6 +185,16 @@ titled one renders the label row (flanked by small accent diamonds); `side:
 HeroTile authoring notes: single click — `icon` (Lucide key) plus an optional
 `label` beneath the tile; the palette defaults to the measured `orangeSpine`
 preset verbatim, so the tile color needs no override.
+
+ColumnRow authoring notes: columns are equal-width at the measured 10.3%w ×
+23.3%h, tops at 51.4%h, x-pitch 13.75%w, first column at 17.3%w — the row just
+carries fewer columns for the four-column comparison variant (src 230–237s,
+`underline: true` on each; its white underlines render in the family's amber
+status token). Tones read the existing tokens: `accent` (house cyan via the
+palette prop), `alt` (`accentAlt` override, else the `orangeSpine` accent),
+`tertiary` (`accentTertiary`, else accent), `status` (the `statusAmber`
+accent). The optional `labelRows` carry the measured dot row + label row below
+the columns — one string per column, revealed together on the final click.
 
 ## Family component: NodeEdge (`components/NodeEdge.vue`)
 

@@ -356,3 +356,50 @@ canvasWidth: 1920
   inset: 0;
 }
 </style>
+
+---
+
+<!--
+  ColumnRow demo (src 223–229s): five equal tone-coded columns rising
+  bottom→top, left → right (clicks 1–5), then the dot + label rows below (6).
+  Tones read the existing tokens: house cyan for the accent columns, the
+  orangeSpine/statusAmber accents for the alt/status columns, and the
+  accentTertiary teal (passed here — the field resolves absent by default).
+  The recording's four-column comparison variant (230–237s) is the same
+  component as seed data: fewer columns with `underline: true` on each.
+  AutoAdvance is renderless deck-level wiring (`a` key, ?autoplay=N on the URL).
+-->
+
+<div class="sf-demo-stage">
+
+<ColumnRow
+  title="PIPELINE"
+  title-accent="STAGES"
+  :palette="{ accentTertiary: '#1cd798' }"
+  :columns="[
+    { id: 'extract', tone: 'accent', label: 'EXTRACT' },
+    { id: 'load', tone: 'accent', label: 'LOAD' },
+    { id: 'transform', tone: 'alt', label: 'TRANSFORM', underline: true },
+    { id: 'orchestrate', tone: 'tertiary', label: 'ORCHESTRATE' },
+    { id: 'serve', tone: 'status', label: 'SERVE' },
+  ]"
+  :yFrac="0.514"
+  :hFrac="0.233"
+  :labelRows="[
+    ['· · · ·', '· ·', '· · · · · ·', '· · ·', '· · · · ·'],
+    ['SOURCES', 'TABLES', 'JOBS', 'MODELS', 'DASHBOARDS'],
+  ]"
+/>
+
+<AutoAdvance />
+
+</div>
+
+<style>
+/* Same stage contract as the HeroTile demo slide; re-declared here because a
+   slide's styles are global only once that slide's chunk has loaded. */
+.sf-demo-stage {
+  position: absolute;
+  inset: 0;
+}
+</style>
