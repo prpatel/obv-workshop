@@ -543,3 +543,43 @@ canvasWidth: 1920
 }
 </style>
 
+
+---
+
+<!--
+  StackPanels demo (v4 family): the recording is a continuous auto-run;
+  native v-clicks re-pace it to four clicks — band sweep, amber panel, green
+  panel, stepped labels (accepted deviation per the family spec). Panel
+  geometry is the measured v4 mosaic in stage fractions; the band's recorded
+  two-shade fill (blue #3599fb left, cyan #1fd0ea right) ships as one accent
+  band — the palette contract carries no fourth tone. AutoAdvance is
+  per-slide opt-in: `a` toggles a hands-free run, `?autoplay=N` starts one on
+  slide enter.
+-->
+
+<div class="sf-demo-stage">
+
+<StackPanels
+  title="STACK PANELS"
+  titleAccent="FAMILY 3"
+  caption="band sweep, panel pops, stepped label fade — one click each"
+  :palette="{ accentAlt: '#f7ba20', accentTertiary: '#1cd798' }"
+  :panels="[
+    { id: 'band', xFrac: 0.1178, yFrac: 0.3330, wFrac: 0.7168, hFrac: 0.2850, tone: 'accent', bandReveal: 'sweep', title: 'ONE CANVAS', rows: ['GEOMETRY AS FRACTIONS', 'REVEALS AS NATIVE CLICKS'] },
+    { id: 'amber', xFrac: 0.1178, yFrac: 0.6189, wFrac: 0.2738, hFrac: 0.2858, tone: 'alt', bandReveal: 'pop', rows: ['MEASURED FROM', 'THE RECORDING'] },
+    { id: 'green', xFrac: 0.3916, yFrac: 0.6189, wFrac: 0.4431, hFrac: 0.2858, tone: 'tertiary', bandReveal: 'pop', rows: ['ACCENT_TERTIARY', 'FALLS BACK TO ACCENT'] },
+  ]"
+/>
+
+<AutoAdvance />
+
+</div>
+
+<style>
+/* Same stage contract as the HeroTile demo slide; re-declared here because a
+   slide's styles are global only once that slide's chunk has loaded. */
+.sf-demo-stage {
+  position: absolute;
+  inset: 0;
+}
+</style>
