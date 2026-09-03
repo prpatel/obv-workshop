@@ -176,6 +176,7 @@ inline on the demo slides; data order is the click order for every family.
 | `TileGrid`      | `tiles.ts` — `TileGridData` (tiles/cols + tile & pitch fracs; per-tile `tone`/`wFrac`/`hFrac` overrides) | 6 — one per tile, row-major | `cyanOnBlack` (matrix/row tones via `accentAlt`/`accentTertiary` + status/plain constants) | 10         | `cpu` · `boxes` · `layers` (candidates; fallback covers a wrong guess) |
 | `RatioStrip`    | `strip.ts` — `RatioStripData` (segments + `yFrac`/`hFrac` + optional caption) | 2 — build at initial proportions, then re-proportion + captions | `statusAmber` + `accentTertiary` recording base — hue decision in the notes below | 11         | —           |
 | `SegmentTimeline` | `timeline.ts` — `TimelineSegment[]` (`tone` is `'accent'` or `'alt'`, optional proportional `wFrac`) + `TimelineTick[]` (`xFrac`, `label`) | 3 — one sweep per segment, then the labels layer | `chainBlue` + `orangeSpine` composed (no preset added) | 12         | —           |
+| `StackPanels`   | `panels.ts` — `StackPanel[]` + optional `caption`       | one per panel + one label click     | `cyanOnBlack` + `accentTertiary`              | 13         | —           |
 
 StairChain authoring notes: each step carries `title` (uppercase white, rendered
 inside the block), `caption` (one accent line below), and an optional `lift` —
@@ -264,6 +265,16 @@ exactly, and omitted shares default to equal widths. `tone: 'accent'` renders ch
 `xFrac` + `label`; tick lines, tick labels, and the optional right-side `chip` box are measured
 constants derived from the bar. The sweep is a revealed-state width transition (the
 `.sf-track-fill` pattern): no path-length math, instant snap on backward nav.
+
+StackPanels authoring notes: list panels in reveal order — the sweep band first
+(`bandReveal: 'sweep'`), then the sub-panels (`'pop'`, the default). `tone`
+resolves against the palette (`'tertiary'` falls back to `accent` when the
+palette omits `accentTertiary`). Panel `title`/`rows` render dark, centered in
+their panels; the optional `caption` renders white, centered under the
+composition. The recording's two-shade band fill (blue `#3599fb` left, cyan
+`#1fd0ea` right) ships as one `accent` band — the contract carries no fourth
+tone. Accepted deviation: the recording is a continuous auto-run, re-paced to
+one click per panel plus one shared stepped-label click.
 
 ## Family component: NodeEdge (`components/NodeEdge.vue`)
 
