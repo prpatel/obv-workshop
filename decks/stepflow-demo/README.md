@@ -40,7 +40,7 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (8) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (2) · SegmentTimeline (3)
+├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (8) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (2) · SegmentTimeline (3) · StackPanels (4) · MilestoneLanes (5)
 ├─ components/
 │  ├─ StepFlow.vue                # the serpentine flow diagram (auto-imported by Slidev)
 │  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
@@ -53,6 +53,8 @@ decks/stepflow-demo/
 │  ├─ TileGrid.vue                # family built-in: tone-coded icon-tile grid (row-major build)
 │  ├─ RatioStrip.vue              # family built-in: proportional band with a live re-proportion (wave 2)
 │  ├─ SegmentTimeline.vue         # family built-in: proportional sweep bar with milestone ticks
+│  ├─ StackPanels.vue             # family built-in: measured panel mosaic (sweep band + pop panels)
+│  ├─ MilestoneLanes.vue          # family built-in: four-lane Gantt/milestone chart (offset bars + tick markers)
 │  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance
 │  └─ stepflow/
 │     ├─ geometry.ts              # pure serpentine layout math (viewBox-relative)
@@ -65,6 +67,7 @@ decks/stepflow-demo/
 │     ├─ spine.ts                 # pure spine + hero-tile layout math + family contracts
 │     ├─ columns.ts               # ColumnRow contract + pure column-row layout math
 │     ├─ strip.ts                 # pure ratio-strip layout math (initial + final width states)
+│     ├─ lanes.ts                 # MilestoneLanes contract + pure lane-grid layout math
 │     ├─ palettes.ts              # StepFlowPalette presets + resolvePalette merge
 │     ├─ icons.ts                 # named Lucide path registry + visible fallback
 │     ├─ steps.ts                 # StepFlowStep contract + the measured six-step seed data
@@ -177,6 +180,7 @@ inline on the demo slides; data order is the click order for every family.
 | `RatioStrip`    | `strip.ts` — `RatioStripData` (segments + `yFrac`/`hFrac` + optional caption) | 2 — build at initial proportions, then re-proportion + captions | `statusAmber` + `accentTertiary` recording base — hue decision in the notes below | 11         | —           |
 | `SegmentTimeline` | `timeline.ts` — `TimelineSegment[]` (`tone` is `'accent'` or `'alt'`, optional proportional `wFrac`) + `TimelineTick[]` (`xFrac`, `label`) | 3 — one sweep per segment, then the labels layer | `chainBlue` + `orangeSpine` composed (no preset added) | 12         | —           |
 | `StackPanels`   | `panels.ts` — `StackPanel[]` + optional `caption`       | one per panel + one label click     | `cyanOnBlack` + `accentTertiary`              | 13         | —           |
+| `MilestoneLanes` | `lanes.ts` — `MilestoneLanesData` (lanes + measured y0/pitch/barH grid, per-bar `hFrac` override) | one per bar, then tick markers | `statusAmber` verbatim | 14         | —           |
 
 StairChain authoring notes: each step carries `title` (uppercase white, rendered
 inside the block), `caption` (one accent line below), and an optional `lift` —
@@ -275,6 +279,16 @@ composition. The recording's two-shade band fill (blue `#3599fb` left, cyan
 `#1fd0ea` right) ships as one `accent` band — the contract carries no fourth
 tone. Accepted deviation: the recording is a continuous auto-run, re-paced to
 one click per panel plus one shared stepped-label click.
+
+MilestoneLanes authoring notes: bar offsets and sizes are data — `(xFrac,
+wFrac)` are canvas-width fractions, and the lane grid rides the measured
+`y0Frac` / `lanePitchFrac` / `barHFrac` (a per-bar `hFrac` overrides the
+default height; the seed's short lanes measure 24px at 720 vs 35px tall). One
+click grows each bar from its left edge — the recording's pop-then-re-flow is
+simplified to a single width reveal (accepted re-pace deviation) — then the
+amber tick markers spread across lanes on the final click. The palette
+defaults to the measured `statusAmber` preset verbatim: red bars are
+`tone: 'alt'`.
 
 ## Family component: NodeEdge (`components/NodeEdge.vue`)
 

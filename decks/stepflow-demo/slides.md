@@ -583,3 +583,46 @@ canvasWidth: 1920
   inset: 0;
 }
 </style>
+
+---
+
+<!--
+  Demo slide: MilestoneLanes — a four-lane Gantt/milestone chart (src
+  174–181s, research art_2kSBGNmJ §3.4). Each click grows one lane bar from
+  its left edge (clicks 1-4; the recording's pop-then-re-proportion is
+  simplified to a single width reveal — accepted re-pace deviation), then
+  the amber tick markers spread across lanes (click 5). Bar offsets and
+  sizes are DATA: lanes 1-2 red (alt), 3-4 amber (accent) under the
+  statusAmber preset verbatim. AutoAdvance is renderless deck-level wiring:
+  the `a` key toggles a hands-free run and `?autoplay=N` in the URL starts
+  one on slide enter.
+-->
+
+<div class="sf-demo-stage">
+
+<MilestoneLanes
+  title="DATA"
+  title-accent="ROADMAP"
+  :lanes="[
+    { id: 'streaming', label: 'STREAMING', bars: [{ xFrac: 0.634, wFrac: 0.202, tone: 'alt' }] },
+    { id: 'pipeline', label: 'PIPELINE', bars: [{ xFrac: 0.219, wFrac: 0.18, tone: 'alt', hFrac: 0.0333333 }] },
+    { id: 'quality', label: 'QUALITY', bars: [{ xFrac: 0.68, wFrac: 0.156, tone: 'accent' }] },
+    { id: 'lakehouse', label: 'LAKEHOUSE', bars: [{ xFrac: 0.219, wFrac: 0.522, tone: 'accent', hFrac: 0.0333333 }] },
+  ]"
+  :y0-frac="0.4861111"
+  :lane-pitch-frac="0.0694444"
+  :bar-h-frac="0.0486111"
+/>
+
+<AutoAdvance />
+
+</div>
+
+<style>
+/* Same stage contract as the earlier demo slides; re-declared here because
+   a slide's styles are global only once that slide's chunk has loaded. */
+.sf-demo-stage {
+  position: absolute;
+  inset: 0;
+}
+</style>
