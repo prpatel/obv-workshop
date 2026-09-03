@@ -450,3 +450,47 @@ canvasWidth: 1920
   inset: 0;
 }
 </style>
+---
+
+<!--
+  Demo slide: RatioStrip — one proportional band that builds at initial
+  proportions (click 1, segments growing rightward in parallel), then
+  re-proportions to the settled measured widths while the caption row fades in
+  (click 2). Measured from the source video's 95–101s strip (research
+  art_2kSBGNmJ §3.3): band x 14.4–85.9%w × y 51.4–73.3%h; settled shares red
+  16% / amber 10% / teal 76% (146/92/696 px of a 915px band — the layout
+  normalizes). Hue decision (no new preset — palette-neutral wave): the salmon
+  #f77c7b read maps to statusAmber.accent (compression-muddied amber), the
+  mint chip #9dfbd6 stays a documented local constant, and the darker-teal
+  sub-band is a black overlay on the accentTertiary token. Initial proportions
+  are [I]: the teal region starts at ~1/5 of its settled share (the measured
+  22k→108k px re-flow), red/amber holding the rest. Both v-clicks are pure
+  revealed-state width transitions — backward nav snaps instantly.
+-->
+
+<div class="sf-demo-stage">
+
+<RatioStrip
+  title="RUNTIME"
+  title-accent="SHARE"
+  :palette="{ accent: '#f7ba20', accentAlt: '#e5413f', accentTertiary: '#1cd798' }"
+  :y-frac="0.513889"
+  :h-frac="0.219444"
+  :segments="[
+    { id: 'sources', tone: 'alt', wFrac: 0.52, wFracFinal: 0.159563, label: 'INGEST' },
+    { id: 'model', tone: 'accent', wFrac: 0.33, wFracFinal: 0.100546, label: 'TRANSFORM' },
+    { id: 'platform', tone: 'tertiary', wFrac: 0.15, wFracFinal: 0.760656, label: 'PLATFORM' },
+  ]"
+/>
+
+<AutoAdvance />
+
+</div>
+
+<style>
+/* Stage fills the 1920×1080 canvas; the black canvas lives in styles/index.css. */
+.sf-demo-stage {
+  position: absolute;
+  inset: 0;
+}
+</style>

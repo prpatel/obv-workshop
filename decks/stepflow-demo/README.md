@@ -40,7 +40,7 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (8) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6)
+├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (8) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (2)
 ├─ components/
 │  ├─ StepFlow.vue                # the serpentine flow diagram (auto-imported by Slidev)
 │  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
@@ -51,6 +51,7 @@ decks/stepflow-demo/
 │  ├─ TwoBarCompare.vue           # family built-in: two left-anchored comparison bars (icon chips + annotation click)
 │  ├─ ColumnRow.vue               # family built-in: tone-coded column row (rising columns + label rows)
 │  ├─ TileGrid.vue                # family built-in: tone-coded icon-tile grid (row-major build)
+│  ├─ RatioStrip.vue              # family built-in: proportional band with a live re-proportion (wave 2)
 │  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance
 │  └─ stepflow/
 │     ├─ geometry.ts              # pure serpentine layout math (viewBox-relative)
@@ -61,6 +62,7 @@ decks/stepflow-demo/
 │     ├─ rows.ts                  # SchematicRows contract + pure token-row/schematic layout math
 │     ├─ spine.ts                 # pure spine + hero-tile layout math + family contracts
 │     ├─ columns.ts               # ColumnRow contract + pure column-row layout math
+│     ├─ strip.ts                 # pure ratio-strip layout math (initial + final width states)
 │     ├─ palettes.ts              # StepFlowPalette presets + resolvePalette merge
 │     ├─ icons.ts                 # named Lucide path registry + visible fallback
 │     ├─ steps.ts                 # StepFlowStep contract + the measured six-step seed data
@@ -170,6 +172,7 @@ inline on the demo slides; data order is the click order for every family.
 | `TwoBarCompare` | `compare.ts` — `CompareBar[]` + `TwoBarCompareData` (bars/xFrac/barHFrac/yFracs) | 3 — bar 1, bar 2, then one shared annotation click for labels/chips | `statusAmber` (the component's family default) | 8          | —           |
 | `ColumnRow`     | `columns.ts` — `ColumnRowData` (columns + `yFrac`/`hFrac` + optional `labelRows`) | 5 columns left→right, then the label rows | `cyanOnBlack` base + token mix (`orangeSpine`/`statusAmber` accents, `accentTertiary` teal) | 9          | —           |
 | `TileGrid`      | `tiles.ts` — `TileGridData` (tiles/cols + tile & pitch fracs; per-tile `tone`/`wFrac`/`hFrac` overrides) | 6 — one per tile, row-major | `cyanOnBlack` (matrix/row tones via `accentAlt`/`accentTertiary` + status/plain constants) | 10         | `cpu` · `boxes` · `layers` (candidates; fallback covers a wrong guess) |
+| `RatioStrip`    | `strip.ts` — `RatioStripData` (segments + `yFrac`/`hFrac` + optional caption) | 2 — build at initial proportions, then re-proportion + captions | `statusAmber` + `accentTertiary` recording base — hue decision in the notes below | 11         | —           |
 
 StairChain authoring notes: each step carries `title` (uppercase white, rendered
 inside the block), `caption` (one accent line below), and an optional `lift` —
@@ -197,6 +200,51 @@ palette prop), `alt` (`accentAlt` override, else the `orangeSpine` accent),
 `tertiary` (`accentTertiary`, else accent), `status` (the `statusAmber`
 accent). The optional `labelRows` carry the measured dot row + label row below
 the columns — one string per column, revealed together on the final click.
+RatioStrip authoring notes (wave 2, research art_2kSBGNmJ §3.3 — source video
+95–101s): one proportional band, 71.5%w × 21.9%h at y 51.4%h, that tells a
+share-of-total story in two native clicks. Click 1 builds every segment at its
+initial width (segments grow rightward in parallel); click 2 re-proportions the
+band to the settled shares while the caption row and the teal region's
+internals (a mint label chip at the region's left edge, a darker-teal sub-band
+right-aligned) fade in. Segment widths are proportions — each state normalizes
+over its own sum, so the band always reads as shares of 100%. `wFrac` is the
+click-1 width, optional `wFracFinal` the click-2 destination (omit it and the
+segment holds its width); both clicks are state-driven width transitions on
+revealed-state classes — backward nav snaps, reduced-motion freezes. The final
+state tiles the band exactly, so the settled copy stacks over the initial one
+(the StepFlow dim-base + stacked-copy pattern) with no residue.
+
+Hue decision (the wave-2 palette-neutral rule — no new preset): the settled
+frame reads a large teal region with a salmon segment (`#f77c7b`) and a mint
+chip (`#9dfbd6`). Teal maps to the `accentTertiary` token (the demo passes
+`#1cd798`; blue/teal-family hues normalize to their token per the house
+convention), red to `statusAmber.accentAlt`, and the salmon — the
+compression-muddied-amber hypothesis; evidence crops were not available at
+build time, so the research's guidance decides — maps to `statusAmber.accent`
+(`#f7ba20`) rather than introducing a sixth hue. The mint chip stays a
+documented local constant (`MINT` in `RatioStrip.vue`, chip fill only), and the
+darker-teal sub-band renders as a 35% black overlay on the resolved teal token
+so it stays darker than whatever teal the palette resolves to. Initial
+proportions are [I]: the measured 22k→108k px teal re-flow seeds the teal at
+~1/5 of its settled share with red/amber holding the rest.
+
+Data contract (exported from `components/stepflow/strip.ts`):
+
+```ts
+interface StripSegment {
+  id: string                       // stable key — Vue keys + test selectors
+  tone: 'accent' | 'alt' | 'tertiary' | 'plain'
+  wFrac: number                    // initial width, fraction of the band (click 1)
+  wFracFinal?: number              // settled width after the re-proportion (click 2)
+  label?: string                   // caption-row label under the segment's final left edge
+}
+interface RatioStripData {
+  segments: StripSegment[]
+  yFrac: number                    // band top edge, canvas-height fraction (measured 370/720)
+  hFrac: number                    // band height, canvas-height fraction (measured 158/720)
+  caption?: string                 // single dim caption line — author labels XOR caption
+}
+```
 
 TileGrid authoring notes: tiles lay out row-major from `x0Frac`/`y0Frac` with
 uniform `pitchXFrac`/`pitchYFrac` steps and `tileWFrac`/`tileHFrac` defaults —
