@@ -8,7 +8,8 @@ black canvas.
 
 ```bash
 npm install        # once, from the repo root
-npm run dev        # serves decks/stepflow-demo with hot reload (default port 4321)
+npm run dev                 # serves decks/stepflow-demo with hot reload (Slidev default port: 3030)
+npm run dev -- --port 4321  # same, on port 4321 — the port used in this doc's MCP URLs
 ```
 
 The dev server also exposes Slidev's built-in MCP server — see
@@ -95,7 +96,7 @@ the same tool set:
 | Mode  | Command / endpoint                               | For                                            |
 | ----- | ------------------------------------------------ | ---------------------------------------------- |
 | stdio | `npx slidev mcp decks/stepflow-demo`             | Local agents that spawn a process (Claude Code, Obvious coder, …) |
-| HTTP  | `http://localhost:4321/__mcp` (dev server)       | Agents/tools that speak Streamable HTTP        |
+| HTTP  | `http://localhost:4321/__mcp` (dev server on port 4321) | Agents/tools that speak Streamable HTTP |
 
 Tool inventory (verified on Slidev 52.19.1):
 
