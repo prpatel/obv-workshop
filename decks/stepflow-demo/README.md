@@ -1,8 +1,8 @@
 # StepFlow demo deck
 
 Slidev deck for the StepFlow animated-diagram demo (`decks/stepflow-demo`): a house-style
-title slide and a six-step demo slide that reveals one node per click on the 1920×1080
-black canvas.
+title slide, a six-step demo slide that reveals one node per click, and a NodeEdge
+network demo slide — all on the 1920×1080 black canvas.
 
 ## Run (dev server + hot reload)
 
@@ -40,14 +40,16 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slide 1: title · slide 2: StepFlow demo · slide 3: StairChain demo (7 v-clicks)
+├─ slides.md                      # slide 1: title · slide 2: StepFlow demo · slide 3: StairChain demo · slide 4: NodeEdge demo
 ├─ components/
-│  ├─ StepFlow.vue                # the diagram component (auto-imported by Slidev)
+│  ├─ StepFlow.vue                # the serpentine diagram component (auto-imported by Slidev)
 │  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
+│  ├─ NodeEdge.vue                # free-position network diagram component (diagram-family spec)
 │  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance
 │  └─ stepflow/
 │     ├─ geometry.ts              # pure serpentine layout math (viewBox-relative)
 │     ├─ stair.ts                 # pure staircase layout math (uniform ramp + per-block lift overrides)
+│     ├─ nodeEdge.ts              # NodeEdge contract + polyline helpers + pure layout math
 │     ├─ palettes.ts              # StepFlowPalette presets + resolvePalette merge
 │     ├─ icons.ts                 # named Lucide path registry + visible fallback
 │     ├─ steps.ts                 # StepFlowStep contract + the measured six-step seed data
@@ -147,6 +149,7 @@ its v-click choreography — a slide consumes the listed click count, nothing mo
 | Component    | Data contract (`components/stepflow/`)                | Clicks             | Palette preset | Demo slide |
 | ------------ | ------------------------------------------------------ | ------------------ | -------------- | ---------- |
 | `StairChain` | `stair.ts` — `StairStep[]` + optional `StairCallout`   | 1 + one per block  | `chainBlue`    | 3          |
+| `NodeEdge`   | `nodeEdge.ts` — `NodeEdgeData` (nodes/edges/status)    | per node, then per edge, then per status | `cyanOnBlack` + `statusAmber` recording base | 4 |
 
 StairChain authoring notes: each step carries `title` (uppercase white, rendered
 inside the block), `caption` (one accent line below), and an optional `lift` —
@@ -154,6 +157,85 @@ the block's total rise above the base block as a fraction of canvas height;
 omitted lifts follow the uniform 6.8%h-per-step ramp. The demo seed reproduces
 the v1 recording's RETRY dip through measured `lift` overrides, and the optional
 `callout` renders the amber floating annotation that reveals first.
+
+## Family component: NodeEdge (`components/NodeEdge.vue`)
+
+The free-position node-edge network built-in, on the shared contract
+(v3 recording — research art_0AzKGXnD §F2, re-measured against frame crops).
+Node positions are **data**, never computed: `(xFrac, yFrac)` are
+canvas fractions of the 1920×1080 stage. Edges are polylines over the same
+fractions, drawn with the StepFlow dim-base + stacked accent-copy dashoffset
+draw; the optional status layer (solid blocks, outlined boxes, arrow glyphs)
+hangs off a node and reveals additively — the recording's amber→red swap is
+modeled **appearance-only** (locked deviation): nothing is ever removed.
+
+Choreography: one click per node (data order), then one per edge, then one per
+status element — all native `v-click`s, instant backward nav, reduced-motion
+freezes reveals.
+
+```md
+<NodeEdge
+  title="DATA"
+  title-accent="PLATFORM"
+  :palette="{ accent: '#349aea', accentAlt: '#e5413f' }"
+  :nodes="[
+    { id: 'ingest', xFrac: 0.6363, yFrac: 0.4017, tone: 'alt', label: 'INGEST' },
+    { id: 'catalog', xFrac: 0.7569, yFrac: 0.7723, tone: 'plain', icon: 'database' },
+  ]"
+  :edges="[
+    { from: 'ingest', to: 'catalog', status: true,
+      points: [[0.6363, 0.4476], [0.6363, 0.8462]] },
+  ]"
+  :status="[
+    { attach: 'catalog', text: 'SLOW 5m', tone: 'alt', kind: 'block' },
+  ]"
+/>
+```
+
+Component props:
+
+| Prop          | Type                          | Purpose                                                        |
+| ------------- | ----------------------------- | -------------------------------------------------------------- |
+| `nodes`       | `FlowNode[]` (required)       | Free-position nodes; positions are data (canvas fractions)     |
+| `edges`       | `FlowEdge[]` (required)       | Polylines between node ids; fractions of the canvas            |
+| `status`      | `FlowStatus[]`                | Optional status layer, one click per element                   |
+| `palette`     | `Partial<StepFlowPalette>`    | Merged over the measured `cyanOnBlack` preset (`statusAmber` is the recording's base) |
+| `title`       | `string`                      | Mono header line rendered top-left (e.g. `DATA`)               |
+| `titleAccent` | `string`                      | Header tail rendered in chrome green (two-tone chrome)         |
+
+Data contract (exported from `components/stepflow/nodeEdge.ts`; the exact shape
+an MCP agent writes):
+
+```ts
+interface FlowNode {
+  id: string                       // stable key — edge endpoints + status attachment
+  xFrac: number                    // circle-center x, canvas fraction [0, 1]
+  yFrac: number                    // circle-center y, canvas fraction [0, 1]
+  tone: 'accent' | 'alt' | 'plain' // accent/alt stroke; plain = chrome white + icon
+  icon?: string                    // key into the icon registry (plain nodes)
+  label?: string                   // short label rendered inside the circle
+}
+interface FlowEdge {
+  from: string                     // FlowNode.id
+  to: string                       // FlowNode.id
+  points: [number, number][]       // polyline vertices, canvas fractions
+  status?: boolean                 // red status edge → dim base + accentAlt draw
+}
+interface FlowStatus {
+  attach: string                   // FlowNode.id this element hangs off
+  text: string                     // short label inside block/outline, under the arrow
+  tone: 'alt' | 'accent'           // palette role of the element's fill/stroke
+  kind: 'block' | 'outline' | 'arrow'
+}
+```
+
+Layout rules an author can rely on: nodes render as ~48px-radius outlined
+circles (measured 5.0%w); block/outline status elements hang left of their
+node, arrows hang below; edges must reference known node ids and stay inside
+the canvas — violations throw `RangeError` (at build/authoring time), never
+render blank. `polylinePath`/`polylineLength` are exported from the same
+module and are reused by later families (extracted to `paths.ts` when
+SchematicRows becomes the third consumer).
 
 ## Hands-free playback (auto-advance)
 
