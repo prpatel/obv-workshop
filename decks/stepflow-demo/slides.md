@@ -144,3 +144,53 @@ canvasWidth: 1920
   inset: 0;
 }
 </style>
+
+---
+
+<!--
+  Demo slide: NodeEdge — free-position nodes and polyline edges. Each click
+  pops one node (clicks 1-4), then draws one polyline edge via the StepFlow
+  dashoffset draw (5-6; the status edge in accentAlt red), then one status
+  element per click (7-9). Measured deviation (locked): the v3 recording's
+  amber→red swap is modeled appearance-only — status reveals additively,
+  nothing is removed. Node positions are DATA (canvas fractions), never
+  computed. AutoAdvance is renderless deck-level wiring: the `a` key toggles a
+  hands-free run and `?autoplay=N` in the URL starts one on slide enter.
+-->
+
+<div class="sf-demo-stage">
+
+<NodeEdge
+  title="DATA"
+  title-accent="PLATFORM"
+  :palette="{ accent: '#349aea', accentAlt: '#e5413f' }"
+  :nodes="[
+    { id: 'ingest', xFrac: 0.6363, yFrac: 0.4017, tone: 'alt', label: 'INGEST' },
+    { id: 'lake', xFrac: 0.7569, yFrac: 0.5245, tone: 'accent', label: 'LAKEHOUSE' },
+    { id: 'catalog', xFrac: 0.7569, yFrac: 0.7723, tone: 'plain', icon: 'database' },
+    { id: 'serve', xFrac: 0.6363, yFrac: 0.8972, tone: 'accent', label: 'SERVE' },
+  ]"
+  :edges="[
+    { from: 'ingest', to: 'serve', status: true,
+      points: [[0.6363, 0.4476], [0.6363, 0.8462]] },
+    { from: 'lake', to: 'catalog',
+      points: [[0.7569, 0.549], [0.7569, 0.7478]] },
+  ]"
+  :status="[
+    { attach: 'lake', text: 'SLOW 5m', tone: 'alt', kind: 'block' },
+    { attach: 'catalog', text: 'DRIFT', tone: 'alt', kind: 'outline' },
+    { attach: 'serve', text: 'REPLAY', tone: 'accent', kind: 'arrow' },
+  ]"
+/>
+
+<AutoAdvance />
+
+</div>
+
+<style>
+/* Stage fills the 1920×1080 canvas; the black canvas lives in styles/index.css. */
+.sf-demo-stage {
+  position: absolute;
+  inset: 0;
+}
+</style>
