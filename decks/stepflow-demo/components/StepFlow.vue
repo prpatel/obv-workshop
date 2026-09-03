@@ -193,7 +193,14 @@ const HEADER_FILL = '#ffffff'
  */
 .sf-track-fill {
   stroke-dasharray: var(--sf-len);
-  stroke-dashoffset: var(--sf-drawn);
+  /* Dash phase: a --sf-len dash at offset o paints the span [0, len − o], so the
+   * offset must be the REMAINING length, not the drawn distance. Binding
+   * --sf-drawn directly painted [0, len − drawn] per copy — copy 1 covered 97%
+   * of the track from click 1, copy N (offset = len) drew nothing, and the
+   * fully-revealed union stopped d₁ short of the track end: a grey notch right
+   * before the last disc (regression-tested in StepFlow.test.ts).
+   */
+  stroke-dashoffset: calc(var(--sf-len) - var(--sf-drawn));
   transition:
     stroke-dashoffset 300ms cubic-bezier(0, 0, 0.2, 1),
     opacity 120ms ease-out;
