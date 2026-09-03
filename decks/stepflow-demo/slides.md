@@ -315,3 +315,44 @@ canvasWidth: 1920
   inset: 0;
 }
 </style>
+
+---
+
+<!--
+  Demo slide: TwoBarCompare — two large left-anchored comparison bars from the
+  wave-2 recording (src 161–169s). Bar 1 (red, tone 'alt') pops whole on click
+  1, bar 2 (amber, tone 'accent') on click 2, and one shared annotation click
+  reveals the small glyph rows on/under the bars plus the top-right chip
+  (click 3). Bar lengths are the measured wFracs (bar 1 ends 49.2%w, bar 2
+  51.1%w); the shared anchor, bar height, and bar tops default to the module's
+  measured composition. Palette: statusAmber verbatim — the component's family
+  default, so no palette prop is needed. AutoAdvance is renderless deck-level
+  wiring: the `a` key toggles a hands-free run and ?autoplay=N in the URL
+  starts one on slide enter.
+-->
+
+<div class="sf-demo-stage">
+
+<TwoBarCompare
+  title="INFRA"
+  title-accent="COST"
+  chip="FY26"
+  :bars="[
+    { id: 'on-prem', wFrac: 0.325, tone: 'alt', icon: 'server', label: 'ON-PREM', sub: 'SELF-MANAGED' },
+    { id: 'cloud', wFrac: 0.34375, tone: 'accent', icon: 'cloud', label: 'CLOUD', sub: 'MANAGED' },
+  ]"
+/>
+
+<AutoAdvance />
+
+</div>
+
+<style>
+/* Same stage contract as the StepFlow demo slide; re-declared here because a
+   slide's styles are global only once that slide's chunk has loaded (the
+   sibling demo slides do the same). */
+.sf-demo-stage {
+  position: absolute;
+  inset: 0;
+}
+</style>

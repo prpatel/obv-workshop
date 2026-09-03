@@ -1,8 +1,8 @@
 # StepFlow demo deck
 
 Slidev deck for the StepFlow animated-diagram demo (`decks/stepflow-demo`): a house-style
-title slide, a six-step demo slide that reveals one node per click, and a NodeEdge
-network demo slide — all on the 1920×1080 black canvas.
+title slide, a six-step demo slide that reveals one node per click, and the
+family built-in demo slides appended after it — all on the 1920×1080 black canvas.
 
 ## Run (dev server + hot reload)
 
@@ -40,7 +40,7 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (8)
+├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (8) · TwoBarCompare (3)
 ├─ components/
 │  ├─ StepFlow.vue                # the serpentine flow diagram (auto-imported by Slidev)
 │  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
@@ -48,11 +48,13 @@ decks/stepflow-demo/
 │  ├─ VerticalSpine.vue           # family built-in: center-axis rhythm (marker, label row, side cards)
 │  ├─ HeroTile.vue                # family built-in: single-click section-divider tile
 │  ├─ SchematicRows.vue           # terminal-style token listing with an embedded thin-line schematic
+│  ├─ TwoBarCompare.vue           # family built-in: two left-anchored comparison bars (icon chips + annotation click)
 │  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance
 │  └─ stepflow/
 │     ├─ geometry.ts              # pure serpentine layout math (viewBox-relative)
 │     ├─ stair.ts                 # pure staircase layout math (uniform ramp + per-block lift overrides)
 │     ├─ nodeEdge.ts              # NodeEdge contract + pure layout math
+│     ├─ compare.ts               # TwoBarCompare contract + pure left-anchored pair layout
 │     ├─ paths.ts                 # shared polylinePath/polylineLength (StepFlow track, NodeEdge edges, rows schematic)
 │     ├─ rows.ts                  # SchematicRows contract + pure token-row/schematic layout math
 │     ├─ spine.ts                 # pure spine + hero-tile layout math + family contracts
@@ -162,6 +164,7 @@ inline on the demo slides; data order is the click order for every family.
 | `VerticalSpine` | `spine.ts` — `SpineNode[]`; an empty-title center node renders the diamond marker, `side` picks the card slots | 4 — marker, label row, 2 side cards | `chainBlue` cards + `orangeSpine` spine/label | 5          | —           |
 | `HeroTile`      | `spine.ts` — `HeroTileData` (tile + icon + optional label on the spine axis) | 1 — tile, icon, label together | `orangeSpine` verbatim (`#f85721`)            | 6          | `user-round` |
 | `SchematicRows` | `rows.ts` — `SchematicRowsData` (rows + optional schematic) | one per row; schematic strokes share their attached row's click | override: v6-measured cool `#2f95b9` + amber `#f2ba1f` | 7          | —           |
+| `TwoBarCompare` | `compare.ts` — `CompareBar[]` + `TwoBarCompareData` (bars/xFrac/barHFrac/yFracs) | 3 — bar 1, bar 2, then one shared annotation click for labels/chips | `statusAmber` (the component's family default) | 8          | —           |
 
 StairChain authoring notes: each step carries `title` (uppercase white, rendered
 inside the block), `caption` (one accent line below), and an optional `lift` —
