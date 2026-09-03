@@ -20,6 +20,13 @@ export interface StepFlowPalette {
    * #f7ba20, red #e5413f, and orange #f85721 across the diagram family (§13).
    */
   accentAlt?: string
+  /**
+   * Optional third accent for the family recordings' teal-green (#1cd798 in
+   * v4, #20c88c in v5). Deep-merged like `glow` — an override wins — and when
+   * omitted, consumers fall back to `accent`:
+   * `palette.accentTertiary ?? palette.accent`.
+   */
+  accentTertiary?: string
   /** Glow behind each disc: peak luminance fraction at the disc edge, falloff in px (§4: 0.28 peak, invisible by ~60px). */
   glow: { peak: number; spread: number }
 }
@@ -58,10 +65,29 @@ export const statusAmber: StepFlowPalette = {
 }
 
 /**
+ * Cool blue of the staircase/network family recordings, normalized to the
+ * measured v1 accent #349aea (blue-family hues read #27b5db–#2692bd across
+ * v5/v7 — one family at different balances, §13), with the locked amber as
+ * the alternate. Shape matches the locked default preset exactly; the black
+ * background is the deck canvas, not a palette field.
+ */
+export const chainBlue: StepFlowPalette = {
+  accent: '#349aea',
+  accentAlt: '#f7ba20',
+  track: '#40424e',
+  subtext: '#a6a8ae',
+  iconStroke: '#000000',
+  glow: { peak: 0.28, spread: 60 },
+}
+
+/**
  * Merge a partial palette over the measured default.
  *
  * - No argument returns the full `cyanOnBlack` preset.
  * - `glow` is deep-merged: overriding `peak` keeps the default `spread`, and vice versa.
+ * - Optional top-level accents (`accentAlt`, `accentTertiary`) follow the same
+ *   override-wins rule; an omitted `accentTertiary` stays undefined and the
+ *   consumer falls back to `accent`.
  * - Unknown keys are tolerated (no validation, no throw); typed fields always resolve.
  * - Pure: no DOM access, no mutation of the presets or the override.
  */

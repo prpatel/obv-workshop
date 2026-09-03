@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { cyanOnBlack, orangeSpine, resolvePalette, statusAmber } from './palettes'
+import { chainBlue, cyanOnBlack, orangeSpine, resolvePalette, statusAmber } from './palettes'
 import type { StepFlowPalette, StepFlowPaletteOverride } from './palettes'
 
 describe('presets', () => {
@@ -27,6 +27,17 @@ describe('presets', () => {
     expect(statusAmber).toEqual({
       accent: '#f7ba20',
       accentAlt: '#e5413f',
+      track: '#40424e',
+      subtext: '#a6a8ae',
+      iconStroke: '#000000',
+      glow: { peak: 0.28, spread: 60 },
+    })
+  })
+
+  it('chainBlue deep-equals the v1-measured literals with the locked amber alternate', () => {
+    expect(chainBlue).toEqual({
+      accent: '#349aea',
+      accentAlt: '#f7ba20',
       track: '#40424e',
       subtext: '#a6a8ae',
       iconStroke: '#000000',
@@ -61,5 +72,27 @@ describe('resolvePalette', () => {
     // unknown key's harmless pass-through — the contract is "no corruption",
     // not runtime key stripping.
     expect(result).toMatchObject({ ...cyanOnBlack, accent: '#00ff88' })
+  })
+
+  it('resolves the complete chainBlue preset to itself over the measured default', () => {
+    expect(resolvePalette(chainBlue)).toEqual(chainBlue)
+  })
+
+  it('passes an accentTertiary override through untouched', () => {
+    expect(resolvePalette({ accentTertiary: '#1cd798' }).accentTertiary).toBe('#1cd798')
+  })
+
+  it('an accentTertiary override does not disturb the resolved accent', () => {
+    expect(resolvePalette({ accentTertiary: '#1cd798' }).accent).toBe(cyanOnBlack.accent)
+  })
+
+  it('when omitted, accentTertiary stays undefined and consumers fall back to the resolved accent', () => {
+    // Documented consumer contract: `palette.accentTertiary ?? palette.accent`.
+    const resolved = resolvePalette()
+    expect(resolved.accentTertiary).toBeUndefined()
+    expect(resolved.accentTertiary ?? resolved.accent).toBe(cyanOnBlack.accent)
+    // The fallback reads the RESOLVED accent, so an accent override flows into it.
+    const overridden = resolvePalette({ accent: '#ff0055' })
+    expect(overridden.accentTertiary ?? overridden.accent).toBe('#ff0055')
   })
 })

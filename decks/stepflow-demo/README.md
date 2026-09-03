@@ -89,6 +89,53 @@ Icon keys resolve against the Lucide registry in `components/stepflow/icons.ts`
 (`git-branch`, `square-terminal`, `flask-conical`, `braces`, `rotate-cw`, `server`, …);
 an unknown key renders a visible fallback and warns in dev.
 
+## Shared contract: palettes, icons, title chrome
+
+Foundation conventions for the diagram-family components (StairChain, NodeEdge,
+StackPanels, HexCluster, SchematicRows, VerticalSpine, HeroTile). StepFlow ships
+today; each family component adopts these in its own PR — with zero visual
+change to existing slides.
+
+### Palette presets (`components/stepflow/palettes.ts`)
+
+Pass a preset as the `palette` prop (or merge fields over it with
+`resolvePalette`). Blue-family hues normalize to `#349aea`; the black canvas is
+the deck style, not a palette field.
+
+| Preset        | `accent`  | `accentAlt` | Measured from                                   |
+| ------------- | --------- | ----------- | ----------------------------------------------- |
+| `cyanOnBlack` | `#23d7ed` | —           | default house style (visual spec §2–§7)         |
+| `orangeSpine` | `#f85721` | —           | v7 spine marker / hero tile                     |
+| `statusAmber` | `#f7ba20` | `#e5413f`   | v3 node-edge status recording                   |
+| `chainBlue`   | `#349aea` | `#f7ba20`   | v1 staircase recording (amber = locked default) |
+
+### Optional palette fields
+
+| Field            | Type     | Fallback             | Consumed by                              |
+| ---------------- | -------- | -------------------- | ---------------------------------------- |
+| `accentAlt`      | `string` | — (stays undefined)  | status tones; NodeEdge red edges          |
+| `accentTertiary` | `string` | `accent`             | teal-green (`#1cd798` family): StackPanels green panel, HexCluster green icon |
+
+`accentTertiary` merges with the same override-wins rule as every top-level
+field. When omitted it resolves absent, and consumers read
+`palette.accentTertiary ?? palette.accent` — so an `accent` override flows
+into the fallback.
+
+### Icon registry keys (`components/stepflow/icons.ts`)
+
+`git-branch` · `square-terminal` · `flask-conical` · `braces` · `rotate-cw` ·
+`server` · `database` · `cloud` — unknown keys render the visible fallback and
+warn in dev, so a wrong identification degrades safely.
+
+### Title chrome convention: `titleAccent`
+
+Family components accept an optional `titleAccent?: string` prop: the mono
+header renders `title` in white with the `titleAccent` tail in chrome-green
+`#66fb00` (the recordings' two-tone header). `#66fb00` is a constant of this
+convention, never a palette field. There is deliberately **no shared chrome
+component** — each family component renders its own two-tone title (word order
+varies per recording; arbitrary word-level coloring is out of scope).
+
 ## Hands-free playback (auto-advance)
 
 The demo slide can play its six-click reveal by itself — built for screen
