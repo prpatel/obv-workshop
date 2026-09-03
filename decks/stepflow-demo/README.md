@@ -40,7 +40,7 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (8) · TwoBarCompare (3) · ColumnRow (6)
+├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (8) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6)
 ├─ components/
 │  ├─ StepFlow.vue                # the serpentine flow diagram (auto-imported by Slidev)
 │  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
@@ -50,6 +50,7 @@ decks/stepflow-demo/
 │  ├─ SchematicRows.vue           # terminal-style token listing with an embedded thin-line schematic
 │  ├─ TwoBarCompare.vue           # family built-in: two left-anchored comparison bars (icon chips + annotation click)
 │  ├─ ColumnRow.vue               # family built-in: tone-coded column row (rising columns + label rows)
+│  ├─ TileGrid.vue                # family built-in: tone-coded icon-tile grid (row-major build)
 │  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance
 │  └─ stepflow/
 │     ├─ geometry.ts              # pure serpentine layout math (viewBox-relative)
@@ -168,6 +169,7 @@ inline on the demo slides; data order is the click order for every family.
 | `SchematicRows` | `rows.ts` — `SchematicRowsData` (rows + optional schematic) | one per row; schematic strokes share their attached row's click | override: v6-measured cool `#2f95b9` + amber `#f2ba1f` | 7          | —           |
 | `TwoBarCompare` | `compare.ts` — `CompareBar[]` + `TwoBarCompareData` (bars/xFrac/barHFrac/yFracs) | 3 — bar 1, bar 2, then one shared annotation click for labels/chips | `statusAmber` (the component's family default) | 8          | —           |
 | `ColumnRow`     | `columns.ts` — `ColumnRowData` (columns + `yFrac`/`hFrac` + optional `labelRows`) | 5 columns left→right, then the label rows | `cyanOnBlack` base + token mix (`orangeSpine`/`statusAmber` accents, `accentTertiary` teal) | 9          | —           |
+| `TileGrid`      | `tiles.ts` — `TileGridData` (tiles/cols + tile & pitch fracs; per-tile `tone`/`wFrac`/`hFrac` overrides) | 6 — one per tile, row-major | `cyanOnBlack` (matrix/row tones via `accentAlt`/`accentTertiary` + status/plain constants) | 10         | `cpu` · `boxes` · `layers` (candidates; fallback covers a wrong guess) |
 
 StairChain authoring notes: each step carries `title` (uppercase white, rendered
 inside the block), `caption` (one accent line below), and an optional `lift` —
@@ -195,6 +197,14 @@ palette prop), `alt` (`accentAlt` override, else the `orangeSpine` accent),
 `tertiary` (`accentTertiary`, else accent), `status` (the `statusAmber`
 accent). The optional `labelRows` carry the measured dot row + label row below
 the columns — one string per column, revealed together on the final click.
+
+TileGrid authoring notes: tiles lay out row-major from `x0Frac`/`y0Frac` with
+uniform `pitchXFrac`/`pitchYFrac` steps and `tileWFrac`/`tileHFrac` defaults —
+geometry is a pure SSR-safe module with fraction and canvas-bound validation.
+One click per tile in data order. The measured matrix (research src 57–60s:
+tone-coded 3×3 incl. amber/red/plain) and flat-row (107–110s: eight tiles in
+two tone groups of four) are seed-data arrangements, not extra components;
+unknown icon keys render the visible fallback icon and warn in dev.
 
 ## Family component: NodeEdge (`components/NodeEdge.vue`)
 

@@ -403,3 +403,50 @@ canvasWidth: 1920
   inset: 0;
 }
 </style>
+
+---
+
+<!--
+  TileGrid demo (research §3.5, src 25–35s): six cyan tiles (6.2%w × 9.7%h,
+  pitch 27.5%w × 31.25%h) on the black canvas, built row-major with six native
+  v-clicks — one per tile. Measured cyanOnBlack tiles carry small teal icons
+  (accentTertiary) and white mono labels; the two-tone header follows the
+  family chrome convention. The matrix (src 57–60s) and flat-row (107–110s)
+  variants are seed-data arrangements of the same contract, covered in tests.
+  AutoAdvance is renderless deck-level wiring (`a` key, ?autoplay=N on the URL).
+-->
+
+<div class="sf-demo-stage">
+
+<TileGrid
+  title="DATA"
+  title-accent="TOOLING"
+  :tiles="[
+    { id: 'extract', icon: 'database', label: 'EXTRACT' },
+    { id: 'transform', icon: 'cpu', label: 'TRANSFORM' },
+    { id: 'load', icon: 'boxes', label: 'LOAD' },
+    { id: 'orchestrate', icon: 'git-branch', label: 'ORCHESTRATE' },
+    { id: 'quality', icon: 'layers', label: 'QUALITY' },
+    { id: 'serve', icon: 'server', label: 'SERVE' },
+  ]"
+  :cols="3"
+  :tile-w-frac="0.062"
+  :tile-h-frac="0.097"
+  :pitch-x-frac="0.275"
+  :pitch-y-frac="0.3125"
+  :x0-frac="0.1953125"
+  :y0-frac="0.384722"
+/>
+
+<AutoAdvance />
+
+</div>
+
+<style>
+/* Same stage contract as the HeroTile demo slide; re-declared here because a
+   slide's styles are global only once that slide's chunk has loaded. */
+.sf-demo-stage {
+  position: absolute;
+  inset: 0;
+}
+</style>

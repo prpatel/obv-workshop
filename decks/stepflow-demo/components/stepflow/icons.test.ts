@@ -82,3 +82,27 @@ describe('consumer contract: iconPath(key) ?? ICON_FALLBACK', () => {
     }
   })
 })
+
+
+describe('tile-grid registry keys (research art_2kSBGNmJ §3.5 — icon identities [I], fallback covers a wrong guess)', () => {
+  const TILE_KEYS = ['cpu', 'boxes', 'layers'] as const
+
+  it.each(TILE_KEYS)('resolves the tile-grid key %s to non-empty shape markup', (key) => {
+    const markup = iconPath(key)
+    expect(markup).toBeTruthy()
+    expect(markup!.trim()).toMatch(SHAPE_MARKUP)
+  })
+
+  it('layers and boxes are path-based; cpu mixes paths with two rects', () => {
+    expect(iconPath('layers')).toContain('<path')
+    expect(iconPath('boxes')).toContain('<path')
+    expect(iconPath('cpu')).toContain('<path')
+    expect(iconPath('cpu')).toContain('<rect')
+  })
+
+  it('the consumer contract holds for the tile-grid keys too', () => {
+    for (const key of TILE_KEYS) {
+      expect(iconPath(key) ?? ICON_FALLBACK).toBeTruthy()
+    }
+  })
+})
