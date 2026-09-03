@@ -43,11 +43,13 @@ decks/stepflow-demo/
 ├─ slides.md                      # slide 1: title · slide 2: StepFlow demo (six v-clicks)
 ├─ components/
 │  ├─ StepFlow.vue                # the diagram component (auto-imported by Slidev)
+│  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance
 │  └─ stepflow/
 │     ├─ geometry.ts              # pure serpentine layout math (viewBox-relative)
 │     ├─ palettes.ts              # StepFlowPalette presets + resolvePalette merge
 │     ├─ icons.ts                 # named Lucide path registry + visible fallback
-│     └─ steps.ts                 # StepFlowStep contract + the measured six-step seed data
+│     ├─ steps.ts                 # StepFlowStep contract + the measured six-step seed data
+│     └─ useAutoAdvance.ts        # pure click-cadence runner (nav boundary injected)
 └─ styles/index.css               # deck-wide house style: black canvas, mono base font
 ```
 
@@ -86,6 +88,38 @@ Component props:
 Icon keys resolve against the Lucide registry in `components/stepflow/icons.ts`
 (`git-branch`, `square-terminal`, `flask-conical`, `braces`, `rotate-cw`, `server`, …);
 an unknown key renders a visible fallback and warns in dev.
+
+## Hands-free playback (auto-advance)
+
+The demo slide can play its six-click reveal by itself — built for screen
+recordings. Orchestration lives at deck level (`components/AutoAdvance.vue`
+bridging the pure `components/stepflow/useAutoAdvance.ts` runner to Slidev's
+navigation); the StepFlow component itself stays pure — no timers, no global
+state reads.
+
+| Surface | Behavior |
+| ------- | -------- |
+| `?autoplay=N` URL param | Auto-starts the run on slide enter, evenly spaced across N seconds (`/2?autoplay=7` → the six clicks over 7 s, ≈1.17 s apart, first click one interval in). Bare `?autoplay` or an invalid value falls back to the 7 s demo default. |
+| `a` key | Toggles a run over the demo default of 7 seconds (no modifier held; `A` works too). |
+| Arrow keys / space / PageUp / PageDown | Cancel a running auto-advance — the native navigation still applies. |
+| Final click reached | The run stops cleanly; it never skips ahead to the next slide. |
+| Leaving the slide / unmount | All timers and key listeners are cleaned up; re-entering with `?autoplay` still in the URL replays the run. |
+
+### Recording workflow
+
+1. `npm run dev -- --port 4321`
+2. Open `http://localhost:4321/2?autoplay=7` — the run starts the moment the
+   slide mounts (first click ≈1.17 s in, last click at 7 s).
+3. Hit record. No UI chrome is added to the slide, so the capture stays clean.
+
+Notes:
+
+- The `a` key is verified free of built-in Slidev 52.19.1 shortcuts (the client
+  binds space, arrows, PageUp/PageDown, `d`, `o`, backtick, `g`, `f`, escape).
+- Pressing `a` at the final click is a no-op — navigate back first to replay.
+- The runner drives Slidev's real click state, so URL `?clicks` sync, the
+  per-segment ~300 ms draw animations, and backward navigation all keep working
+  mid-run.
 
 ## MCP: text descriptions become hot-reloading slides
 

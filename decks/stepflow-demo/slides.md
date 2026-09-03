@@ -74,6 +74,8 @@ canvasWidth: 1920
   Demo slide: each click pops one node and draws its track segment (six v-clicks,
   owned by the component). The stage div gives the SVG the full slide canvas.
   Step data is inline so MCP write-back and hand edits follow the same path.
+  AutoAdvance is renderless deck-level wiring: the `a` key toggles a hands-free
+  run over 7s and `?autoplay=N` in the URL starts one on slide enter.
 -->
 
 <div class="sf-demo-stage">
@@ -89,6 +91,8 @@ canvasWidth: 1920
     { id: 'infra', title: 'INFRA AS CODE', subtext: 'servers defined in git', icon: 'server' },
   ]"
 />
+
+<AutoAdvance />
 
 </div>
 
