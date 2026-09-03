@@ -40,18 +40,21 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1)
+├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (8)
 ├─ components/
 │  ├─ StepFlow.vue                # the serpentine flow diagram (auto-imported by Slidev)
 │  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
 │  ├─ NodeEdge.vue                # free-position network diagram component (diagram-family spec)
 │  ├─ VerticalSpine.vue           # family built-in: center-axis rhythm (marker, label row, side cards)
 │  ├─ HeroTile.vue                # family built-in: single-click section-divider tile
+│  ├─ SchematicRows.vue           # terminal-style token listing with an embedded thin-line schematic
 │  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance
 │  └─ stepflow/
 │     ├─ geometry.ts              # pure serpentine layout math (viewBox-relative)
 │     ├─ stair.ts                 # pure staircase layout math (uniform ramp + per-block lift overrides)
-│     ├─ nodeEdge.ts              # NodeEdge contract + polyline helpers + pure layout math
+│     ├─ nodeEdge.ts              # NodeEdge contract + pure layout math
+│     ├─ paths.ts                 # shared polylinePath/polylineLength (StepFlow track, NodeEdge edges, rows schematic)
+│     ├─ rows.ts                  # SchematicRows contract + pure token-row/schematic layout math
 │     ├─ spine.ts                 # pure spine + hero-tile layout math + family contracts
 │     ├─ palettes.ts              # StepFlowPalette presets + resolvePalette merge
 │     ├─ icons.ts                 # named Lucide path registry + visible fallback
@@ -158,6 +161,7 @@ inline on the demo slides; data order is the click order for every family.
 | `NodeEdge`      | `nodeEdge.ts` — `NodeEdgeData` (nodes/edges/status)     | per node, then per edge, then per status | `cyanOnBlack` + `statusAmber` recording base | 4          | `database` · `cloud` |
 | `VerticalSpine` | `spine.ts` — `SpineNode[]`; an empty-title center node renders the diamond marker, `side` picks the card slots | 4 — marker, label row, 2 side cards | `chainBlue` cards + `orangeSpine` spine/label | 5          | —           |
 | `HeroTile`      | `spine.ts` — `HeroTileData` (tile + icon + optional label on the spine axis) | 1 — tile, icon, label together | `orangeSpine` verbatim (`#f85721`)            | 6          | `user-round` |
+| `SchematicRows` | `rows.ts` — `SchematicRowsData` (rows + optional schematic) | one per row; schematic strokes share their attached row's click | override: v6-measured cool `#2f95b9` + amber `#f2ba1f` | 7          | —           |
 
 StairChain authoring notes: each step carries `title` (uppercase white, rendered
 inside the block), `caption` (one accent line below), and an optional `lift` —
@@ -251,9 +255,33 @@ Layout rules an author can rely on: nodes render as ~48px-radius outlined
 circles (measured 5.0%w); block/outline status elements hang left of their
 node, arrows hang below; edges must reference known node ids and stay inside
 the canvas — violations throw `RangeError` (at build/authoring time), never
-render blank. `polylinePath`/`polylineLength` are exported from the same
-module and are reused by later families (extracted to `paths.ts` when
-SchematicRows becomes the third consumer).
+render blank. `polylinePath`/`polylineLength` now live in `paths.ts`, shared
+by the NodeEdge edges and the SchematicRows schematic (the extraction
+triggered when SchematicRows became the third consumer).
+
+## Family component: SchematicRows (`components/SchematicRows.vue`)
+
+The terminal-style token listing with an embedded thin-line schematic (v6
+recording — research art_0AzKGXnD §F5, re-measured against the settled frame).
+Rows render as **HTML** — token `<span>`s inside v-click'd row divs, mono,
+`white-space: pre` — because SVG text makes per-token coloring awkward; the
+schematic is SVG polylines drawn with the shared dim-base + dashoffset pattern
+(`components/stepflow/paths.ts`).
+
+Token tones: `accent` and `alt` map to palette fields; `plain` (chrome white
+`#f5f4f7`) and `chrome` (terminal green `#66fb00`) are constants of the tone
+convention, never palette fields. An omitted `accentAlt` falls back to `accent`.
+
+Choreography: one click per row (data order); a schematic line carries no click
+of its own — it draws within its **attached row's** click (`attach: '<rowId>'`;
+unattached lines distribute in order over the last rows). Rows fade-and-rise
+~150ms; strokes draw ~300ms — all native `v-click`s, instant backward nav,
+reduced-motion freezes reveals.
+
+Locked deviation: the recording's continuous auto-run (a typewriter effect) is
+re-paced to one click per row — no typewriter is built. Layout constants: row
+pitch 5.8%h, first row 31.5%h, code margin 6.5%w, indent step 4.1%w, mono size
+2.5%h — all re-measured from the settled v6 frame.
 
 ## Hands-free playback (auto-advance)
 
