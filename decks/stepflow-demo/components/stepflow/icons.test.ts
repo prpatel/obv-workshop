@@ -19,7 +19,7 @@ const PATH_BASED_KEYS = DEMO_KEYS.filter((key) => key !== 'server')
 
 // Registered for the diagram-family components (spec art_3VsrSvLm) ahead of
 // their first render — same shape-markup contract as the demo keys.
-const FAMILY_KEYS = ['database', 'cloud'] as const
+const FAMILY_KEYS = ['database', 'cloud', 'bot'] as const
 
 // Lucide markup lives in the 24x24 coordinate system as stroke-based shapes;
 // whatever the exact element mix, it must be real shape markup, not text/empty.
@@ -34,6 +34,11 @@ describe('iconPath', () => {
 
   it.each(PATH_BASED_KEYS)('resolves %s to path-based markup', (key) => {
     expect(iconPath(key)).toContain('<path')
+  })
+
+  it('bot mixes a rect head with antenna/ear/eye paths', () => {
+    expect(iconPath('bot')).toContain('<rect')
+    expect(iconPath('bot')).toContain('<path')
   })
 
   it('returns undefined for an unknown key', () => {

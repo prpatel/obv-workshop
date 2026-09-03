@@ -626,3 +626,39 @@ canvasWidth: 1920
   inset: 0;
 }
 </style>
+
+---
+
+<!--
+  Demo slide: each click draws one hexagon outline and fades in its inner content
+  (three v-clicks, owned by the component). Node data is inline so MCP write-back
+  and hand edits follow the same path. AutoAdvance is renderless deck-level wiring
+  (see the StepFlow demo slide for the ?autoplay=N / a-key contract).
+-->
+
+<div class="sf-hex-stage">
+
+<HexCluster
+  title="THE MODERN DATA STACK"
+  titleAccent="AT A GLANCE"
+  arrangement="v"
+  :palette="{ accent: '#349aea', accentTertiary: '#20c88c' }"
+  :nodes="[
+    { id: 'sources', title: 'SOURCES', caption: 'streams, lakes & warehouses', icon: 'database' },
+    { id: 'models', title: 'TRANSFORM', caption: 'sql models compiled in git', icon: 'braces' },
+    { id: 'agents', title: 'AI AGENTS', caption: 'agents act on trusted data', icon: 'bot', tone: 'tertiary' },
+  ]"
+/>
+
+<AutoAdvance />
+
+</div>
+
+<style>
+/* Stage fills the 1920×1080 canvas; the black canvas lives in styles/index.css
+   (the deck is black-canvas by design — build-scope boundary: no theme switching). */
+.sf-hex-stage {
+  position: absolute;
+  inset: 0;
+}
+</style>

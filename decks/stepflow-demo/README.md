@@ -40,7 +40,7 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (8) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (2) · SegmentTimeline (3) · StackPanels (4) · MilestoneLanes (5)
+├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (8) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (2) · SegmentTimeline (3) · StackPanels (4) · MilestoneLanes (5) · HexCluster (3)
 ├─ components/
 │  ├─ StepFlow.vue                # the serpentine flow diagram (auto-imported by Slidev)
 │  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
@@ -55,6 +55,7 @@ decks/stepflow-demo/
 │  ├─ SegmentTimeline.vue         # family built-in: proportional sweep bar with milestone ticks
 │  ├─ StackPanels.vue             # family built-in: measured panel mosaic (sweep band + pop panels)
 │  ├─ MilestoneLanes.vue          # family built-in: four-lane Gantt/milestone chart (offset bars + tick markers)
+│  ├─ HexCluster.vue              # family built-in: hexagon cluster (outline draw + content fade)
 │  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance
 │  └─ stepflow/
 │     ├─ geometry.ts              # pure serpentine layout math (viewBox-relative)
@@ -68,6 +69,7 @@ decks/stepflow-demo/
 │     ├─ columns.ts               # ColumnRow contract + pure column-row layout math
 │     ├─ strip.ts                 # pure ratio-strip layout math (initial + final width states)
 │     ├─ lanes.ts                 # MilestoneLanes contract + pure lane-grid layout math
+│     ├─ hex.ts                   # pure hex-cluster layout + HexNodeData contract
 │     ├─ palettes.ts              # StepFlowPalette presets + resolvePalette merge
 │     ├─ icons.ts                 # named Lucide path registry + visible fallback
 │     ├─ steps.ts                 # StepFlowStep contract + the measured six-step seed data
@@ -146,8 +148,8 @@ into the fallback.
 ### Icon registry keys (`components/stepflow/icons.ts`)
 
 `git-branch` · `square-terminal` · `flask-conical` · `braces` · `rotate-cw` ·
-`server` · `database` · `cloud` · `user-round` — unknown keys render the visible
-fallback and warn in dev, so a wrong identification degrades safely.
+`server` · `database` · `cloud` · `user-round` · `bot` — unknown keys render the
+visible fallback and warn in dev, so a wrong identification degrades safely.
 
 ### Title chrome convention: `titleAccent`
 
@@ -181,6 +183,7 @@ inline on the demo slides; data order is the click order for every family.
 | `SegmentTimeline` | `timeline.ts` — `TimelineSegment[]` (`tone` is `'accent'` or `'alt'`, optional proportional `wFrac`) + `TimelineTick[]` (`xFrac`, `label`) | 3 — one sweep per segment, then the labels layer | `chainBlue` + `orangeSpine` composed (no preset added) | 12         | —           |
 | `StackPanels`   | `panels.ts` — `StackPanel[]` + optional `caption`       | one per panel + one label click     | `cyanOnBlack` + `accentTertiary`              | 13         | —           |
 | `MilestoneLanes` | `lanes.ts` — `MilestoneLanesData` (lanes + measured y0/pitch/barH grid, per-bar `hFrac` override) | one per bar, then tick markers | `statusAmber` verbatim | 14         | —           |
+| `HexCluster`    | `hex.ts` — `HexNodeData[]` + `arrangement`              | one per cell                        | `chainBlue` + `accentTertiary`                | 15         | `bot`       |
 
 StairChain authoring notes: each step carries `title` (uppercase white, rendered
 inside the block), `caption` (one accent line below), and an optional `lift` —
@@ -392,6 +395,34 @@ Locked deviation: the recording's continuous auto-run (a typewriter effect) is
 re-paced to one click per row — no typewriter is built. Layout constants: row
 pitch 5.8%h, first row 31.5%h, code margin 6.5%w, indent step 4.1%w, mono size
 2.5%h — all re-measured from the settled v6 frame.
+
+#### HexCluster — hexagon cluster (v5)
+
+One cell per node; each click draws one cell's full outline (stroke-draw, the
+StepFlow dashoffset pattern) and fades in its inner title, caption, and icon on
+the same click — the two-phase pattern.
+
+| Prop | Type | Purpose |
+| ---- | ---- | ------- |
+| `nodes` | `HexNodeData[]` (required) | One entry per cell: `id`, `title`, `caption`, `icon`, `tone?` |
+| `palette` | `Partial<StepFlowPalette>` | Merged over the measured `cyanOnBlack` preset — pass `{ accent: '#349aea', accentTertiary: '#20c88c' }` for the measured chainBlue/teal combination |
+| `geometry` | `HexOptions` | Optional fraction overrides: `hexRFrac`, `pitchXFrac`, `dropFrac`, `topFrac`, `centerXFrac`, `strokeFrac` |
+| `arrangement` | `'v' \| 'row'` | Honeycomb V (default, the recording's shape) or a single row |
+| `title` | `string` | Mono header line (white) |
+| `titleAccent` | `string` | Header tail in chrome green (the convention above) |
+
+`tone: 'tertiary'` renders that cell's icon in `accentTertiary ?? accent` (the
+teal-green icon in the recording); other cells' icons stay in the accent.
+Geometry lives in `components/stepflow/hex.ts` (pure, SSR-safe, analytic
+perimeter = 6·R); the demo slide is slide 15 with inline seed data.
+
+Accepted deviation (measured this session): the v5 recording's three outlines
+are geometrically **circles** (radial spread ≤ 2.5%, where a regular hexagon
+varies ~15.5% between facet midpoints and vertices). The locked family design
+— name, roster row, and contract — specifies hexagons, so the measured
+across-diameter (≈ 0.406·canvas height) maps onto a pointy-top hexagon's
+vertical extent. Flipping the family to circles is a one-constant change in
+`hex.ts` if the design is amended.
 
 ## Hands-free playback (auto-advance)
 
