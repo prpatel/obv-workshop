@@ -104,3 +104,43 @@ canvasWidth: 1920
   inset: 0;
 }
 </style>
+
+---
+
+<!--
+  StairChain demo slide: the amber callout reveals on click 1, then one block
+  per click — seven v-clicks total, owned by the component. The seed mirrors
+  the v1 reference recording (THE DATA ENGINEERING LIFECYCLE): the RETRY block
+  dips below TRANSFORM, reproduced through the measured per-step `lift`
+  overrides. AutoAdvance is renderless deck-level wiring: the `a` key toggles a
+  hands-free run and `?autoplay=N` in the URL starts one on slide enter.
+-->
+
+<div class="sf-demo-stage">
+
+<StairChain
+  title="THE DATA ENGINEERING"
+  title-accent="LIFECYCLE"
+  :callout="{ text: '= 3×', xFrac: 0.026, yFrac: 0.528 }"
+  :steps="[
+    { id: 'ingest', title: 'INGEST', caption: 'SOURCE SYSTEMS', lift: 0 },
+    { id: 'transform', title: 'TRANSFORM', caption: 'CLEAN + MODEL', lift: 0.0603 },
+    { id: 'retry', title: 'RETRY', caption: 'EXPECT FAILURE', lift: 0.0227 },
+    { id: 'quality', title: 'QUALITY', caption: 'TESTS GATE DEPLOYS', lift: 0.1346 },
+    { id: 'serve', title: 'SERVE', caption: 'DASHBOARDS + APIS', lift: 0.2028 },
+    { id: 'govern', title: 'GOVERN', caption: 'LINEAGE + ACCESS', lift: 0.271 },
+  ]"
+/>
+
+<AutoAdvance />
+
+</div>
+
+<style>
+/* Same stage contract as the StepFlow demo slide; re-declared here because a
+   slide's styles are global only once that slide's chunk has loaded. */
+.sf-demo-stage {
+  position: absolute;
+  inset: 0;
+}
+</style>
