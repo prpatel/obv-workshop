@@ -1,0 +1,16 @@
+/*
+ * StepFlow demo deck — global house style (black canvas, monospace base).
+ *
+ * Injected into the app root via Slidev's styles/ convention
+ * (https://sli.dev/custom/directory-structure#style). Scoped under
+ * .slidev-layout so presenter-mode chrome keeps its own styling, per the
+ * documented warning about global CSS leaking into the presenter UI.
+ *
+ * Font stack per build spec open question #1: system mono fallbacks only —
+ * no network webfont dependency. Self-hosting is a later, reversible change.
+ */
+.slidev-layout {
+  background: #000000;
+  color: #e8e9eb;
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+}

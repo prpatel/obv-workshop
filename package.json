@@ -1,0 +1,26 @@
+{
+  "name": "obv-workshop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Slidev workshop: StepFlow animated diagram system demo decks",
+  "scripts": {
+    "dev": "slidev decks/stepflow-demo/slides.md",
+    "build": "slidev build decks/stepflow-demo/slides.md",
+    "preview": "npx --yes serve decks/stepflow-demo/dist",
+    "export": "slidev export decks/stepflow-demo/slides.md --with-clicks --output decks/stepflow-demo/export/deck.pdf",
+    "lint": "eslint .",
+    "test": "vitest run"
+  },
+  "engines": {
+    "node": ">=20.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.0.0",
+    "@slidev/cli": "52.19.1",
+    "@slidev/theme-default": "^0.25.0",
+    "eslint": "^9.0.0",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^3.0.0"
+  }
+}
