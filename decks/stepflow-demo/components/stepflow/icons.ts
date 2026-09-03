@@ -32,6 +32,11 @@ const ICON_REGISTRY: Record<string, string> = {
   <path d="M3 5V19A9 3 0 0 0 21 19V5" />
   <path d="M3 12A9 3 0 0 0 21 12" />`,
   cloud: `<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />`,
+  // v7 hero tile icon (visual identification: person glyph — circular head
+  // merged into a shoulder arch; user-round over user because the arch touches
+  // the head in the recording crop).
+  'user-round': `<circle cx="12" cy="8" r="5" />
+  <path d="M20 21a8 8 0 0 0-16 0" />`,
 }
 
 // Visible generic fallback (Lucide "circle-help") for unknown keys, in the same
