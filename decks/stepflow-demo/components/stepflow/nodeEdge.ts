@@ -15,6 +15,12 @@
  * status layer reveals additively, one click per element.
  */
 
+import { polylineLength, polylinePath } from './paths'
+
+// The helpers live in `./paths` since SchematicRows became the third consumer
+// (rule of three); re-exported so existing `./nodeEdge` imports keep working.
+export { polylineLength, polylinePath }
+
 /** A free-position node. `(xFrac, yFrac)` is the circle CENTER as a canvas fraction. */
 export interface FlowNode {
   /** Stable key — edge endpoints, status attachment, and test selectors. */
@@ -91,22 +97,6 @@ export function edgePoints(points: [number, number][], viewBox: Canvas = { width
     }
     return [xFrac * viewBox.width, yFrac * viewBox.height] as [number, number]
   })
-}
-
-/** SVG polyline path `d` for absolute px points: `M x y L x y …`. */
-export function polylinePath(points: [number, number][]): string {
-  return points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'} ${x} ${y}`).join(' ')
-}
-
-/** Analytic polyline length: the sum of its segment lengths. */
-export function polylineLength(points: [number, number][]): number {
-  let total = 0
-  for (let i = 1; i < points.length; i++) {
-    const dx = points[i][0] - points[i - 1][0]
-    const dy = points[i][1] - points[i - 1][1]
-    total += Math.hypot(dx, dy)
-  }
-  return total
 }
 
 /** Resolved px geometry for one node, ready to render. */
