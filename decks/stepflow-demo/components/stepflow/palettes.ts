@@ -81,6 +81,13 @@ export const chainBlue: StepFlowPalette = {
 }
 
 /**
+ * Cool step blue measured across the wave-2 family frames (art_iHm120ov:
+ * ColumnRow column 1 #3698fb, SegmentTimeline node 1 #3699fa). Ship-endpoint
+ * constant like the other measured accents — never hardcoded at call sites.
+ */
+export const stepBlue = '#3698fb'
+
+/**
  * Merge a partial palette over the measured default.
  *
  * - No argument returns the full `cyanOnBlack` preset.

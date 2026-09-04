@@ -1,7 +1,19 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { columnRowLayout, RISE_FRAC, typeScale, type Column } from './stepflow/columns'
-import { orangeSpine, resolvePalette, statusAmber, type StepFlowPaletteOverride } from './stepflow/palettes'
+import {
+  BADGE_ICON_AT_1080,
+  columnRowLayout,
+  headingLayout,
+  RISE_FRAC,
+  TINTED_LABEL_SIZE_SOURCE,
+  typeScale,
+  type Column,
+  type ColumnRowHeading,
+  type LabelRowInput,
+  type LabelRowLayout,
+} from './stepflow/columns'
+import { iconPath, ICON_FALLBACK } from './stepflow/icons'
+import { orangeSpine, resolvePalette, statusAmber, stepBlue, type StepFlowPaletteOverride } from './stepflow/palettes'
 
 const props = withDefaults(defineProps<{
   /** One entry per column; content travels with the slide. */
@@ -10,8 +22,10 @@ const props = withDefaults(defineProps<{
   yFrac: number
   /** Column height, as a fraction of stage height (measured 23.3%h). */
   hFrac: number
-  /** Optional text rows below the columns — the measured dot row + label row. */
-  labelRows?: string[][]
+  /** Optional text rows below the columns — plain rows or `{ texts, tone: 'column' }` tinted rows. */
+  labelRows?: LabelRowInput[]
+  /** Measured heading chrome above the field: amber bar-chip, white icon badge, white caption. */
+  heading?: ColumnRowHeading
   /** Partial palette merged over the measured `cyanOnBlack` preset. */
   palette?: StepFlowPaletteOverride
   /** Mono header line, e.g. 'PIPELINE'. */
@@ -23,6 +37,20 @@ const props = withDefaults(defineProps<{
 const p = computed(() => resolvePalette(props.palette))
 const layout = computed(() => columnRowLayout({ columns: props.columns, yFrac: props.yFrac, hFrac: props.hFrac, labelRows: props.labelRows }))
 
+// Heading chrome resolves with the viewBox; the data (icon key + caption text)
+// travels with the geometry so the template needs a single guarded object.
+const headingView = computed(() => {
+  if (!props.heading) return null
+  return {
+    ...headingLayout(layout.value.viewBox),
+    icon: resolveIcon(props.heading.icon),
+    // The caption string rides as captionText so the layout's caption geometry
+    // (x / baseline y / size) survives the spread above.
+    captionText: props.heading.caption,
+  }
+})
+const iconSize = computed(() => BADGE_ICON_AT_1080 * (layout.value.viewBox.height / 1080))
+
 // Tone → token: measured hues reach the component through the existing preset
 // tokens — `accent` reads the palette prop (house cyan), `alt` reads the
 // accentAlt override with the orangeSpine accent as fallback, `tertiary` reads
@@ -33,11 +61,33 @@ function toneColor(tone: Column['tone']): string {
   if (tone === 'alt') return p.value.accentAlt ?? orangeSpine.accent
   if (tone === 'tertiary') return p.value.accentTertiary ?? p.value.accent
   if (tone === 'status') return statusAmber.accent
+  if (tone === 'blue') return stepBlue
   return p.value.accent
 }
 
-// The underline rides the same amber status token as the measured middle-column mark.
+// Row cell fill: a 'column'-toned row tints every cell with its host column's
+// tone (the ref's tinted label row); plain string rows stay white.
+function rowFill(row: LabelRowLayout, index: number): string {
+  const col = row.tone === 'column' ? layout.value.columns[index] : undefined
+  return col ? toneColor(col.tone) : ROW_FILL
+}
+
+// Unknown icon key renders the visible fallback (never undefined into v-html)
+// and names the bad key in dev — TwoBarCompare's resolveIcon pattern.
+function resolveIcon(key: string): string {
+  const path = iconPath(key)
+  if (!path && import.meta.env?.DEV) {
+    console.warn(`[ColumnRow] unknown icon key "${key}" — rendering the fallback icon`)
+  }
+  return path ?? ICON_FALLBACK
+}
+
+// The underline and chip bars ride the same amber status token as the measured
+// middle-column mark; the heading chrome reads the report's measured heading
+// hex and the plate outlines the measured near-black rim tone.
 const UNDERLINE_FILL = statusAmber.accent
+const HEADING_FILL = '#f4f4f6'
+const PLATE_FILL = '#0d1a26'
 
 // Chrome constants: white column labels and header, chrome-green title tail
 // (titleAccent convention — a constant, never a palette field).
@@ -56,6 +106,7 @@ const type = computed(() => {
     titleSize: 34 * (height / 848),
     dotSize: 10 * k,
     labelSize: 13 * k,
+    tintedSize: TINTED_LABEL_SIZE_SOURCE * k,
   }
 })
 
@@ -79,6 +130,31 @@ function px(n: number): string {
     role="img"
     :aria-label="`${columns.length}-column row diagram`"
   >
+    <!-- Measured outline layer: the thin dark plate rim behind each column and
+         the field base rail. Near-black chrome — effectively invisible against
+         the slide background until the columns light up, so it renders without
+         a click of its own. -->
+    <g class="sf-col-plates">
+      <rect
+        class="sf-col-rail"
+        :x="layout.rail.x"
+        :y="layout.rail.y"
+        :width="layout.rail.w"
+        :height="layout.rail.h"
+        :fill="PLATE_FILL"
+      />
+      <rect
+        v-for="col in layout.columns"
+        :key="`plate-${col.id}`"
+        class="sf-col-plate"
+        :x="col.plate.x"
+        :y="col.plate.y"
+        :width="col.plate.w"
+        :height="col.plate.h"
+        :fill="PLATE_FILL"
+      />
+    </g>
+
     <!-- One sibling group per column: block + optional amber underline + inside
          label, rising bottom→top on the column's click (clicks 1…n). -->
     <g
@@ -117,8 +193,59 @@ function px(n: number): string {
       >{{ col.label }}</text>
     </g>
 
-    <!-- Dot row + label row: one shared click after the columns (n + 1),
-         white glyphs centered under their columns at the measured tops. -->
+    <!-- Measured heading chrome: amber bar-chip (four bars on a baseline) and
+         white icon badge over the middle column, with the white caption line
+         underneath. Static chrome — the recording shows chip and badge already
+         present when the first column pops. -->
+    <g v-if="headingView" class="sf-col-heading">
+      <rect
+        v-for="(bar, bi) in headingView.bars"
+        :key="`chip-bar-${bi}`"
+        :x="bar.x"
+        :y="bar.y"
+        :width="bar.w"
+        :height="bar.h"
+        :fill="UNDERLINE_FILL"
+      />
+      <rect
+        class="sf-col-chip-baseline"
+        :x="headingView.chip.x"
+        :y="headingView.baseline.y"
+        :width="headingView.chip.w"
+        :height="headingView.baseline.h"
+        :fill="UNDERLINE_FILL"
+      />
+      <circle
+        class="sf-col-badge"
+        :cx="headingView.badge.cx"
+        :cy="headingView.badge.cy"
+        :r="headingView.badge.r"
+        :fill="HEADING_FILL"
+      />
+      <g
+        class="sf-col-heading-icon"
+        :transform="`translate(${fmt(headingView.badge.cx - iconSize / 2)} ${fmt(headingView.badge.cy - iconSize / 2)}) scale(${fmt(iconSize / 24)})`"
+        fill="none"
+        stroke="#000000"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        v-html="headingView.icon"
+      />
+      <text
+        class="sf-col-caption"
+        :x="headingView.caption.x"
+        :y="headingView.caption.y"
+        text-anchor="middle"
+        :font-size="headingView.caption.size"
+        :fill="HEADING_FILL"
+        letter-spacing="0.08em"
+      >{{ headingView.captionText }}</text>
+    </g>
+
+    <!-- Label rows: one shared click after the columns (n + 1). Plain rows keep
+         the legacy white dot/label sizing; tinted rows render at the measured
+         size with every cell filled in its column's tone. -->
     <g
       v-if="layout.labelRows.length"
       v-click="layout.columns.length + 1"
@@ -133,8 +260,8 @@ function px(n: number): string {
           :y="row.y"
           text-anchor="middle"
           dominant-baseline="hanging"
-          :font-size="r === 0 ? type.dotSize : type.labelSize"
-          :fill="ROW_FILL"
+          :font-size="row.tone === 'column' ? type.tintedSize : (r === 0 ? type.dotSize : type.labelSize)"
+          :fill="rowFill(row, c)"
           letter-spacing="0.06em"
         >{{ cell.text }}</text>
       </template>
