@@ -3,6 +3,7 @@
 exports[`hexLayout — validation and determinism > matches the locked snapshot 1`] = `
 {
   "arrangement": "v",
+  "axisX": 960,
   "cells": [
     {
       "cx": 303.3599999999999,

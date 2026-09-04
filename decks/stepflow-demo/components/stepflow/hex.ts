@@ -12,6 +12,12 @@
  * future embed. All functions here are pure and deterministic: same inputs
  * produce byte-identical output, and nothing touches the DOM (SSR-safe build).
  *
+ * Settled-state note (fidelity rework): the recording builds the V through frame
+ * f006 and then RE-FLOWS — the settled state the wave-1 census measured is a
+ * single row of three tangent cells (centers ≈ 24.8/47.5/70.3%w, cy ≈ 0.603·h,
+ * span x ≈ 13.4–81.7%w). The measured defaults here stay the mid-reveal V;
+ * slides ship the settled row via `arrangement: 'row'` + geometry overrides.
+ *
  * Measured-shape note: the v5 outlines are geometrically CIRCLES (radial spread
  * < 0.5% across all 360°, where a regular hexagon varies 15.5% between facet
  * midpoints and vertices). The family design locked hexagon outlines for this
@@ -62,6 +68,8 @@ export interface HexLayout {
   cells: HexCell[]
   arrangement: HexArrangement
   viewBox: { width: number; height: number }
+  /** Cluster axis x in viewBox units (centerXFrac × width) — chrome centers here. */
+  axisX: number
   /** Absolute hexagon circumradius in viewBox units (hexRFrac × height). */
   hexR: number
   /** Absolute outline stroke width in viewBox units (strokeFrac × height). */
@@ -168,5 +176,5 @@ export function hexLayout(
     return { index, cx: c.cx, cy: c.cy, vertices, path: d, perimeter: 6 * hexR }
   })
 
-  return { cells, arrangement, viewBox: { width, height }, hexR, strokeWidth }
+  return { cells, arrangement, viewBox: { width, height }, axisX, hexR, strokeWidth }
 }
