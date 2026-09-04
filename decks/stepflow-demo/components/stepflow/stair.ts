@@ -24,6 +24,14 @@ export interface StairStep {
   /** One accent-colored caption line below the block. */
   caption: string
   /**
+   * Block tone role: `'accent'` (the blue block fill) or `'tertiary'`
+   * (the cyan fill, `accentTertiary ?? accent`). The v1 recording is two-tone
+   * — blocks 1–3 blue #3599fb, blocks 4–6 cyan #1fd0ea (frame t=7.9, wave-1
+   * report art_v4jVdTnp §1) — so the demo seeds the split through the slide's
+   * palette override. Default: `'accent'`.
+   */
+  tone?: 'accent' | 'tertiary'
+  /**
    * Optional per-block lift override: this block's total rise above the base
    * block, as a fraction of canvas height. Default: `index × liftFrac`
    * (uniform ascent). Overriding one block never cascades into its neighbors.

@@ -603,3 +603,20 @@ It resolves the dev server's loopback family (Vite binds `localhost` to either
 `127.0.0.1` or `[::1]` depending on runtime DNS resolution) and cleans the server up
 (SIGTERM, then SIGKILL). CI stays lint + test + build; run the smoke test locally
 when touching the deck, the MCP surface, or upgrade Slidev.
+
+## StairChain two-tone fidelity note (wave-1 rework)
+
+Supplements the StairChain authoring notes above: a step now also carries an
+optional `tone` role — `'accent'` (the blue block fill, default) or
+`'tertiary'` (the cyan fill, `accentTertiary ?? accent`). The v1 recording is
+two-tone — blocks 1–3 blue `#3599fb`, blocks 4–6 cyan `#1fd0ea` (frame t=7.9,
+wave-1 fidelity report) — so the demo slide passes
+`:palette="{ accent: '#3599fb', accentTertiary: '#1fd0ea' }"` and seeds the
+split through per-step tones, leaving the component's `chainBlue` default
+untouched for the other chainBlue consumers. The recording's in-block labels
+are the step numbers `01`–`06` (28–40px white mono, centered), so the demo
+seeds those as the `title`s; the ambient layer — slate `#363946` shadow masses
+beside blue blocks, dark-teal ambience feathers around cyan ones — is drawn
+beside/behind each block and reveals with it. The block rise is a measured
+80ms ease-out pop; the ~300ms block stagger stays owned by the slide's
+AutoAdvance beat.

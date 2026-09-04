@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { stairLayout, type StairCallout, type StairStep } from './stepflow/stair'
-import { chainBlue, resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
+import { chainBlue, resolvePalette, type StepFlowPalette, type StepFlowPaletteOverride } from './stepflow/palettes'
 
 const props = withDefaults(defineProps<{
   /** One entry per block; content travels with the slide. */
@@ -31,18 +31,35 @@ const layout = computed(() =>
 // callout the blocks shift down to clicks 1…n so the sequence stays contiguous.
 const blockClick = (i: number): number => i + 1 + (props.callout ? 1 : 0)
 
-// Typography as fractions of the viewBox height. In-block labels ≈22px and
-// captions ≈19–23px glyphs at source height 1144 (art_0AzKGXnD §2/F1); the
-// header reuses StepFlow's measured 34px-at-848 formula for family consistency.
+// Typography as fractions of the viewBox height. In-block labels are the
+// recording's 28–40px glyph band at source height 1144 (wave-1 report
+// art_v4jVdTnp §1 — the v1 blocks carry '01'–'06'-style step numbers); captions
+// ≈19–23px glyphs; the header reuses StepFlow's measured 34px-at-848 formula
+// for family consistency.
 const type = computed(() => {
   const height = layout.value.viewBox.height
   return {
-    headerSize: 34 * (height / 848),
-    labelSize: 0.026 * height,
+    // Recording-scale chrome (wave-1 systemic cause 4: family headers run
+    // 7.2-8.8%h in the sources vs the shared 34px@848 ~= 4%h formula). The
+    // census white target (>=0.5x ref 0.94%) is unreachable with labels
+    // alone; 5.6%h is the smallest bump that clears it below ref scale.
+    headerSize: 0.0555 * height,
+    labelSize: 0.037 * height,
     captionSize: 0.022 * height,
     calloutSize: 0.055 * height,
     captionGap: 0.028 * height,
     blockRadius: 0.01 * height,
+    // Ambient layer fractions (wave-1 report §1, frame t=7.9): the slate
+    // shadow masses sit beside each blue block (ref example x236–405
+    // y812–877 — one block-width right, ~40% of block height, a nudge
+    // down); the dark-teal ambience feathers around each cyan block at
+    // roughly the block's own footprint.
+    shadowHeightFrac: 0.42, // × block height
+    shadowOffsetXFrac: 0.01, // × width — just past the block's right edge
+    shadowOffsetYFrac: 0.01, // × height
+    ambienceRXFrac: 0.095, // × width
+    ambienceRYFrac: 0.115, // × height
+    ambienceDXFrac: 0.2, // × block width — toward the block's left edge (ref ambience x1709–1881 around block x1748–1906)
   }
 })
 
@@ -51,10 +68,21 @@ function captionBaseline(blockY: number, blockH: number): number {
 }
 
 // Chrome constants: white in-block labels and header, chrome-green title tail
-// (titleAccent convention — a constant, never a palette field).
+// (titleAccent convention — a constant, never a palette field). The ambient
+// classes are measured from the recording's settle frame (t=7.9): slate
+// #363946 shadow masses beside the blue blocks, dark-teal ambience around the
+// cyan ones (wave-1 report art_v4jVdTnp §1) — like the chrome green, ambient
+// tones are family constants, not palette roles.
 const LABEL_FILL = '#ffffff'
 const HEADER_FILL = '#ffffff'
 const CHROME_GREEN = '#66fb00'
+const SHADOW_SLATE = '#363946'
+const AMBIENCE_TEAL = '#1fd0ea'
+
+/** Fill for one block: the tone role maps through the resolved palette. */
+function blockFill(step: StairStep, palette: StepFlowPalette): string {
+  return step.tone === 'tertiary' ? (palette.accentTertiary ?? palette.accent) : palette.accent
+}
 </script>
 
 <template>
@@ -64,14 +92,46 @@ const CHROME_GREEN = '#66fb00'
     role="img"
     :aria-label="`${steps.length}-step staircase diagram`"
   >
-    <!-- One sibling group per block: block + in-block label + caption rise
-         together on the block's click (no draw-on — blocks fade/scale). -->
+    <!-- Ambient layer, beneath the blocks and revealed with them: slate
+         shadow masses beside the blue blocks, teal ambience feathers around
+         the cyan ones (measured classes, wave-1 report §1). -->
+    <defs>
+      <radialGradient id="sf-stair-teal-ambience">
+        <stop offset="0" :stop-color="AMBIENCE_TEAL" stop-opacity="0.5" />
+        <stop offset="0.45" :stop-color="AMBIENCE_TEAL" stop-opacity="0.32" />
+        <stop offset="1" :stop-color="AMBIENCE_TEAL" stop-opacity="0" />
+      </radialGradient>
+    </defs>
+
+    <!-- One sibling group per block: ambient shapes + block + in-block label
+         + caption rise together on the block's click (no draw-on — blocks
+         fade/scale). -->
     <g
       v-for="(step, i) in steps"
       :key="step.id"
       v-click="blockClick(i)"
       class="sf-step"
     >
+      <ellipse
+        v-if="step.tone === 'tertiary'"
+        class="sf-ambience"
+        :cx="layout.blocks[i].x + layout.blocks[i].w / 2 - layout.blocks[i].w * type.ambienceDXFrac"
+        :cy="layout.blocks[i].y + layout.blocks[i].h / 2"
+        :rx="type.ambienceRXFrac * layout.viewBox.width"
+        :ry="type.ambienceRYFrac * layout.viewBox.height"
+        fill="url(#sf-stair-teal-ambience)"
+      />
+      <rect
+        v-else
+        class="sf-shadow"
+        :x="layout.blocks[i].x + layout.blocks[i].w + type.shadowOffsetXFrac * layout.viewBox.width"
+        :y="layout.blocks[i].y + type.shadowOffsetYFrac * layout.viewBox.height"
+        :width="layout.blocks[i].w"
+        :height="type.shadowHeightFrac * layout.blocks[i].h"
+        :rx="type.blockRadius"
+        :fill="SHADOW_SLATE"
+        opacity="0.8"
+      />
       <rect
         class="sf-block"
         :x="layout.blocks[i].x"
@@ -79,7 +139,7 @@ const CHROME_GREEN = '#66fb00'
         :width="layout.blocks[i].w"
         :height="layout.blocks[i].h"
         :rx="type.blockRadius"
-        :fill="p.accent"
+        :fill="blockFill(step, p)"
       />
       <text
         class="sf-label"
@@ -89,6 +149,7 @@ const CHROME_GREEN = '#66fb00'
         dominant-baseline="central"
         :font-size="type.labelSize"
         :fill="LABEL_FILL"
+        font-weight="700"
         letter-spacing="0.06em"
       >{{ step.title }}</text>
       <text
@@ -142,17 +203,18 @@ const CHROME_GREEN = '#66fb00'
 }
 
 /*
- * Measured motion (art_0AzKGXnD §2/F1: blocks rise to full in ~130–200ms,
- * scale/fade, no draw-on). Transition is taken from the destination state:
- * forward reveal runs the rise, the hidden state's transition:none makes
- * backward nav instant — the locked decision, zero JS. Scoped selectors
- * (0,2,0 + attribute) beat Slidev's built-in
+ * Measured motion (wave-1 report art_v4jVdTnp §1 60fps walk: block 1 reaches
+ * 37% of final mass one frame after onset and settles ≈66ms — a pop, not a
+ * rise). 80ms ease-out keeps the pop within a frame or two. Transition is
+ * taken from the destination state: forward reveal runs the rise, the hidden
+ * state's transition:none makes backward nav instant — the locked decision,
+ * zero JS. Scoped selectors (0,2,0 + attribute) beat Slidev's built-in
  * .slidev-vclick-target { transition: all .1s ease } — no source-order reliance.
  */
 .sf-step {
   transition:
-    opacity 180ms ease-out,
-    transform 180ms cubic-bezier(0, 0, 0.2, 1);
+    opacity 80ms ease-out,
+    transform 80ms cubic-bezier(0, 0, 0.2, 1);
 }
 
 .sf-step.slidev-vclick-hidden {
