@@ -16,17 +16,24 @@
  * Fidelity rework (report art_iHm120ov §TwoBarCompare, ref frame t=168.7s
  * read at 1920×1080): the bars already match the source within 1px — bar
  * geometry here is unchanged. What the recording carries around them is
+ * Fidelity rework (report art_iHm120ov §TwoBarCompare, ref frame t=168.7s
+ * read at 1920×1080): the bars already match the source within 1px — bar
+ * geometry here is unchanged. What the recording carries around them is
  * text: a centered white + chrome-green headline row (caps y110–161), the
- * big light-cyan #84eef8 data-text block (two ~29px-cap rows y411/485 plus
- * a ~21px row y559, all left-anchored on the bar anchor), ~32px dark on-bar
- * labels over ~28px gray under-bar notes, and the teal #1cd797 top-right
- * chip. Those layers ship as the optional `dataText` / `subhead` props
- * below. A second evidence pass on the same frame (ink census against the
- * ref) added the block's caption/note rows and the two dim full-width
- * divider rules: a ~22px dim caption row (baseline y767), a ~47px white
- * note row (baseline y836), and 2px #1e1e20 rules at y722/y970 spanning
- * x234–1685 — they frame the two bar bands and carry ~5.7k ink px in the
- * ref census.
+ * big light-cyan #84eef8 data-text block, ~32px dark on-bar labels, and the
+ * teal #1cd797 top-right chip. A second evidence pass (ink census) added
+ * the caption/note rows and the two dim divider rules at y722/y970.
+ * A third pass (2026-09-04) re-read the annotation layer's STRINGS from the
+ * reference frame itself: the wave-2 sheet's headline/annotation strings are
+ * spec-derived and appear nowhere in the source recording. The frame reads —
+ * title "Is it actually correct?" (white lead + chrome-green tail, measured
+ * ink x565–1359), legend "mart_revenue.sql", three ~30px SQL code rows, gray
+ * caps "SUGGESTED PIPELINE DESIGN", the teal-marked mint row "backfill the
+ * whole table every night", on-bar labels "EVERY CUSTOMER COMES BACK TWICE"
+ * / "THIS BACKFILLS THE SAME DAY TWICE", and a teal "GENERATED" chip. All
+ * constants below carry the frame's direct measurements. The separate
+ * `subhead` prop is gone: the headline row IS the shared TitleChrome band
+ * (cap 53, top 98, center x962, condensed to the measured extent).
  */
 
 /** One comparison bar. Both bars anchor at the shared `xFrac`; length is data. */
@@ -46,20 +53,23 @@ export interface CompareBar {
 }
 
 /**
- * The big light-cyan data-text block above the bars — the family's largest
- * text layer (report art_iHm120ov §TwoBarCompare: "the single largest missing
- * element"). All rows are left-anchored on the shared bar anchor.
+ * The annotation text block — the family's largest text layer (report
+ * art_iHm120ov §TwoBarCompare: "the single largest missing element"). Rows
+ * are left-anchored on the shared bar anchor; strings come from the ref
+ * frame's third-pass read (see module header).
  */
 export interface DataTextBlock {
-  /** Two headline rows at the measured ~29px-cap size. */
+  /** Two code rows at the measured 30px size. */
   lines: [string, string]
-  /** Optional smaller third row (~21px cap) in bar 1's chip band. */
+  /** Optional third code row (same measured size) in bar 1's chip band. */
   subline?: string
-  /** Small dim caption row (~22px, baseline y767) between the bars — the ref frame's y752–767 row. */
+  /** Small dim caps row (~16px cap, baseline y767) between the bars. */
   caption?: string
-  /** Big white note row (~47px, baseline y836) between the bars — the ref frame's y789–838 heading. */
+  /** Mint note row (~21px cap, baseline y827) between the bars, teal-marked. */
   note?: string
-  /** Two dim 2px divider rules framing the bar bands (y722/y970, x234–1685 on the ref frame). */
+  /** Gray caps legend text right of the three tone chips (measured y315 band). */
+  legend?: string
+  /** Two dim 2px divider rules framing the bar bands (y722/y970 on the ref frame). */
   rules?: boolean
 }
 
@@ -79,12 +89,8 @@ export interface TwoBarCompareData {
   yFracs?: number[]
   /** Optional text for the top-right chip (measured position; reveals with the annotation click). */
   chip?: string
-  /** The big light-cyan data-text block above the bars (reveals with the annotation click). */
+  /** The annotation text block above/around the bars (reveals with the annotation click). */
   dataText?: DataTextBlock
-  /** Centered white headline row under the header band (measured y110–161 composition). */
-  subhead?: string
-  /** Chrome-green tail rendered after `subhead` (two-tone chrome convention). */
-  subheadAccent?: string
 }
 
 export interface Canvas {
@@ -112,11 +118,11 @@ export const TOP_CHIP_Y_FRAC = 202 / 720
 export const TOP_CHIP_W_FRAC = 124 / 1280
 export const TOP_CHIP_H_FRAC = 30 / 720
 /**
- * Derived annotation anchors (crop-calibrated, not pixel-measured — the
- * glyph rows sit below single-glyph resolution): the on-bar label inset and
- * the bar-bottom → under-bar gap.
+ * Derived annotation anchors: the on-bar label anchor sits 28px right of the
+ * shared bar anchor (ref label ink starts x352 @1080p; the mono left bearing
+ * eats ~2px) and under-bar notes hang 14px below their bar.
  */
-export const LABEL_INSET_X_FRAC = 24 / 1280
+export const LABEL_INSET_X_FRAC = 28 / 1920
 export const SUB_GAP_Y_FRAC = 14 / 720
 
 /**
@@ -125,29 +131,51 @@ export const SUB_GAP_Y_FRAC = 14 / 720
  * cap tops y411/485/559 and cap heights ~29/~29/~21px (≈40/40/29px font at
  * the mono stack's 0.73 cap ratio) — baselines y440/514/580.
  */
-export const DATA_TEXT_LINE_SIZE = 40
-export const DATA_TEXT_SUB_SIZE = 29
-export const DATA_TEXT_Y_FRACS: [number, number, number] = [440 / 1080, 514 / 1080, 580 / 1080]
+export const DATA_TEXT_LINE_SIZE = 30
+export const DATA_TEXT_SUB_SIZE = 30
+/**
+ * Baselines y436/509/579: the ref rows' ink bands sit at y411–441/485–514/
+ * 549–587 — ascender tops y411/485/549, descender bottoms 441/514/587. The
+ * rows' ~17.8–18.1px char advance over 25/55/46 chars gives a ~30px mono
+ * size for all three rows (the frame's x-height measure agrees).
+ */
+export const DATA_TEXT_Y_FRACS: [number, number, number] = [436 / 1080, 509 / 1080, 579 / 1080]
 /** The measured light-cyan data-text tone (#84eef8 on the ref frame). */
 export const DATA_TEXT_COLOR = '#84eef8'
-/**
- * Centered white + chrome-green headline row (ref t=168.7s: caps y110–161 →
- * ~52px cap ≈ 71px font, baseline y161). Chrome, not a palette field — the
- * green half is the deck's CHROME_GREEN.
- */
-export const SUBHEAD_SIZE = 71
-export const SUBHEAD_Y_FRAC = 161 / 1080
 
 /**
  * Between-the-bars glyph rows, measured on the ref frame t=168.7s at
- * 1920×1080: a small dim caption row (y752–767, ~16px cap ≈ 22px font,
- * baseline y767) over the big white note row (y789–838, ~35px cap ≈ 47px
- * font, baseline y836) — both left-anchored on the shared bar anchor.
+ * 1920×1080: a small dim caps row (y752–767, ~16px cap ≈ 22px font,
+ * baseline y767) over the mint note row (ink y802–830, ~21px cap ≈ 29px
+ * font, baseline y827) — both left-anchored on the shared bar anchor; the
+ * mint row is introduced by the teal mark box x324–376.
  */
-export const NOTE_SIZE = 47
-export const NOTE_Y_FRAC = 836 / 1080
+export const NOTE_SIZE = 29
+export const NOTE_Y_FRAC = 827 / 1080
 export const CAPTION_SIZE = 22
 export const CAPTION_Y_FRAC = 767 / 1080
+/** Mint note tone (#a2f9da median) and its teal mark (#24d19a median). */
+export const MINT_COLOR = '#a2f9da'
+export const MARK_COLOR = '#24d19a'
+/** Teal mark ink box ahead of the mint row (measured x324–376, y791–839). */
+export const MARK_BOX = { x: 324, y: 791, w: 52, h: 46 } as const
+/** On-bar label ink tone (locked mission value; frame median #060203). */
+export const LABEL_COLOR = '#0a0a0a'
+/**
+ * Legend row above the data block (measured ink y315–330): three 15×16
+ * chips on a 28px pitch starting x259, then the gray legend text at x368
+ * (~13px cap ≈ 19px font, baseline y328). Chip tones are the sheet's
+ * measured red/amber/green trio (frame medians #fa5c55/#fab92d/#27c53f).
+ */
+export const LEGEND_CHIP_W = 15
+export const LEGEND_CHIP_H = 16
+export const LEGEND_CHIP_Y = 315
+export const LEGEND_CHIP_XS = [259, 287, 315] as const
+export const LEGEND_CHIP_COLORS = ['#fc5b55', '#fbb72f', '#26c53f'] as const
+export const LEGEND_TEXT_X = 368
+export const LEGEND_SIZE = 19
+export const LEGEND_Y_FRAC = 328 / 1080
+export const LEGEND_COLOR = '#a3a3ac'
 /**
  * Divider rules framing the two bar bands (ref frame t=168.7s: 2px rows at
  * y722 and y970 spanning x234–1685, measured tone #1e1e20). Their ~5.7k ink
@@ -159,6 +187,29 @@ export const RULE_W_FRAC = 1451 / 1920
 export const RULE_H = 2
 export const RULE_Y_FRACS: [number, number] = [722 / 1080, 970 / 1080]
 export const RULE_COLOR = '#1e1e20'
+
+/**
+ * Full-width dim band above the legend row (measured y276–304, x236–1682;
+ * core median #161518 with a soft vertical feather) and the two side rails
+ * flanking the lower band (y861–961; direct frame medians over each rail
+ * box). Chrome-ambience layers: rendered with the annotation click.
+ */
+export const TOP_BAND = { x: 236, y: 276, w: 1446, h: 28, fill: '#161518' } as const
+export const SIDE_RAILS = [
+  { x: 233, y: 861, w: 5, h: 100, fill: '#1c170d' },
+  { x: 1682, y: 861, w: 5, h: 100, fill: '#0c0b0f' },
+] as const
+
+/**
+ * Measured on-bar label ink extents (settled ref frame @1080: red bar
+ * x352–912, amber bar x352–948, +4px side-bearing allowance). The deck's
+ * mono face runs ~4.8% wider than the recording's condensed face at 32px,
+ * so each label <text> pins textLength to its measured extent — same
+ * mechanism as TitleChrome.titleTextLength (PR #42). Applied only on the
+ * measured default composition (no geometry overrides); null = natural
+ * width (other bar counts or explicit overrides).
+ */
+export const LABEL_TEXT_LENGTHS: Array<number | null> = [564, 600]
 
 /** Resolved px geometry for one bar and its derived chip/label anchors. */
 export interface BarLayout {
@@ -177,6 +228,8 @@ export interface BarLayout {
   /** On-bar label anchor (left-inset, vertically centered), px. */
   labelX: number
   labelY: number
+  /** Measured ink-extent pin (textLength) for the label; null = natural width. */
+  labelLength: number | null
   /** Under-bar note anchor (aligned with the bar's left edge), px. */
   subX: number
   subY: number
@@ -198,25 +251,24 @@ export interface DataTextLineLayout {
   size: number
 }
 
-/** Resolved geometry of the centered headline row (x = canvas mid). */
-export interface SubheadLayout {
-  x: number
-  y: number
-  text: string
-  accent: string
+/** Resolved geometry of the legend row: three fixed-tone chips + caps text. */
+export interface LegendLayout {
+  chips: Array<{ x: number; y: number; w: number; h: number; fill: string }>
+  text: DataTextLineLayout
 }
 
 export interface TwoBarCompareLayout {
   bars: BarLayout[]
   topChip: TopChipLayout
   dataText: DataTextLineLayout[]
+  /** Gray legend row above the data block; null when absent. */
+  legend: LegendLayout | null
   /** Small dim caption row between the bars; null when absent. */
   caption: DataTextLineLayout | null
-  /** Big white note row between the bars; null when absent. */
+  /** Mint note row between the bars; null when absent. */
   note: DataTextLineLayout | null
   /** The two divider rules framing the bar bands (px rects). */
   rules: Array<{ x: number; y: number; w: number; h: number }>
-  subhead: SubheadLayout | null
   viewBox: Canvas
 }
 
@@ -262,6 +314,11 @@ export function twoBarCompareLayout(data: TwoBarCompareData, viewBox: Canvas = {
     throw new RangeError(`barHFrac (${barHFrac}) must be positive`)
   }
 
+  // The measured label-extent pins describe the measured two-bar
+  // composition; explicit geometry overrides step off the measurement.
+  const measuredComposition =
+    data.xFrac === undefined && data.barHFrac === undefined && data.yFracs === undefined
+
   const bars: BarLayout[] = data.bars.map((bar, i) => {
     requireFrac(`bar "${bar.id}" wFrac`, bar.wFrac)
     requireFrac(`bar "${bar.id}" yFrac`, yFracs[i])
@@ -299,6 +356,7 @@ export function twoBarCompareLayout(data: TwoBarCompareData, viewBox: Canvas = {
       chip,
       labelX: (xFrac + LABEL_INSET_X_FRAC) * viewBox.width,
       labelY: y + h / 2,
+      labelLength: measuredComposition ? LABEL_TEXT_LENGTHS[i] ?? null : null,
       subX: x,
       subY: y + h + SUB_GAP_Y_FRAC * viewBox.height,
     }
@@ -322,8 +380,18 @@ export function twoBarCompareLayout(data: TwoBarCompareData, viewBox: Canvas = {
     })
   }
 
-  const subhead: SubheadLayout | null = data.subhead
-    ? { x: viewBox.width / 2, y: SUBHEAD_Y_FRAC * viewBox.height, text: data.subhead, accent: data.subheadAccent ?? '' }
+  // Legend row: three fixed-tone chips + gray caps text (ref frame y315 band).
+  const legend: LegendLayout | null = data.dataText?.legend
+    ? {
+        chips: LEGEND_CHIP_XS.map((x, i) => ({
+          x,
+          y: LEGEND_CHIP_Y,
+          w: LEGEND_CHIP_W,
+          h: LEGEND_CHIP_H,
+          fill: LEGEND_CHIP_COLORS[i],
+        })),
+        text: { text: data.dataText.legend, x: LEGEND_TEXT_X, y: LEGEND_Y_FRAC * viewBox.height, size: LEGEND_SIZE },
+      }
     : null
 
   // Caption/note share the bar anchor and the data-text block's click.
@@ -342,5 +410,5 @@ export function twoBarCompareLayout(data: TwoBarCompareData, viewBox: Canvas = {
       }))
     : []
 
-  return { bars, topChip, dataText, caption, note, rules, subhead, viewBox }
+  return { bars, topChip, dataText, legend, caption, note, rules, viewBox }
 }
