@@ -415,38 +415,43 @@ canvasWidth: 1920
 ---
 
 <!--
-  ColumnRow demo (src 223–229s): five equal tone-coded columns rising
-  bottom→top, left → right (clicks 1–5), then the tinted label row below (6).
-  Tones read the existing tokens: the measured step-blue constant for the
-  ship endpoint, house cyan for the accent column, the orangeSpine/statusAmber
-  accents for the alt/status columns, and the accentTertiary teal (passed here
-  — the field resolves absent by default). Heading chrome (amber bar-chip,
-  white icon badge, white caption) is static — no click of its own, matching
-  the recording. The four-column comparison variant (230–237s) is the same
-  component as seed data: fewer columns with `underline: true` on each.
-  AutoAdvance is renderless deck-level wiring (`a` key, ?autoplay=N on the URL).
+  ColumnRow exact-trace demo (src 223–229s; sheet art_7yZkdmCE): five opaque
+  tone-coded plates rise bottom→top (clicks 1,2,3,4,6 — measured col order)
+  carrying centered dark two-digit numerals that ride their plate. Column
+  labels render BELOW each plate in the plate's hue on the measured y868
+  baseline; columns 4–5's labels take private beats (5 and 7) per the motion
+  trace, while columns 1–3's ride their column beats (their reveal cadence is
+  unrecoverable from the source — kept on the shared beat, flagged
+  unverifiable). The sub-heading (amber chip + white 5) lands with the col-5
+  beat (click 6, measured 1833–2167ms); the amber note row is strictly the
+  last beat (click 8, measured 5000–5500ms). Title: measured ink extent
+  x411–1508 pinned via titleTextLength. The sheet reads the note as
+  amber-lead + dim tokens; the settled pixels cluster uniformly amber, which
+  the single amber fill follows. Tones read the existing tokens exactly as
+  before. AutoAdvance is renderless deck-level wiring (`a` key, ?autoplay=N).
 -->
 
 <div class="sf-demo-stage">
 
 <ColumnRow
   title="PIPELINE"
-  title-accent="STAGES"
+  title-accent="DISRUPTION"
+  :title-text-length="1097"
   :palette="{ accentTertiary: '#1cd798' }"
   :columns="[
-    { id: 'extract', tone: 'blue', label: 'EXTRACT' },
-    { id: 'load', tone: 'accent', label: 'LOAD' },
-    { id: 'transform', tone: 'alt', label: 'TRANSFORM', underline: true },
-    { id: 'orchestrate', tone: 'tertiary', label: 'ORCHESTRATE' },
-    { id: 'serve', tone: 'status', label: 'SERVE' },
+    { id: 'practices', tone: 'blue', label: 'SOFTWARE PRACTICES' },
+    { id: 'integration', tone: 'accent', label: 'DEEPER INTEGRATION' },
+    { id: 'collaboration', tone: 'alt', label: 'CLOSER COLLABORATION' },
+    { id: 'assisted', tone: 'tertiary', label: 'AI ASSISTED' },
+    { id: 'products', tone: 'status', label: 'DATA PRODUCTS' },
   ]"
   :yFrac="0.514"
   :hFrac="0.233"
-  :heading="{ icon: 'flask-conical', caption: 'FIVE STAGES · ONE PIPELINE' }"
-  :labelRows="[
-    { texts: ['SOURCES', 'TABLES', 'JOBS', 'MODELS', 'DASHBOARDS'], tone: 'column' },
-    { texts: ['· ·', '·', '· · ·', '·', '· ·'], tone: 'column' },
-  ]"
+  label-position="below"
+  numerals
+  :late-labels="[3, 4]"
+  note="SHAPE OF THE WORK, NOT THE TOOL LIST"
+  :heading="{ numeral: '5', caption: 'TRENDS RESHAPING THE WORK' }"
 />
 
 <AutoAdvance />

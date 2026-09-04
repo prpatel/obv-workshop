@@ -1,19 +1,30 @@
 /**
  * ColumnRow data contract + pure layout math (diagram-family spec, ColumnRow;
- * wave-2 research art_2kSBGNmJ §3.2, src 223–229s).
+ * wave-2 research art_2kSBGNmJ §3.2, src 223–229s; exact-trace rework per
+ * sheet art_7yZkdmCE).
  *
- * Five equal tone-coded columns rising bottom→top, with two small text rows
- * below (a dot row and a label row) that arrive late in the reveal, and an
- * optional thin amber underline under a column. The recording's four-column
- * comparison variant (230–237s, blocks with underlines) folds in as seed data:
- * the same layout with fewer columns and `underline: true` per column — no
- * second component.
+ * Two compositions share this contract:
+ *
+ * - Legacy plain-row composition (the recording's 230–237s four-column
+ *   comparison variant): columns with inside labels, an optional thin amber
+ *   underline, and dot/tinted text rows below that arrive on one shared click.
+ *
+ * - Exact-trace composition (the settled ref frame, sheet art_7yZkdmCE):
+ *   opaque tone-coded plates carrying centered dark two-digit numerals, the
+ *   column label rendered BELOW its plate as hue-matched text (`labelPosition:
+ *   'below'` — the sheet's §3 "underline" band y854–868 resolves to glyph
+ *   text, not bars: a solid-run census over y815–915 finds zero runs ≥40px,
+ *   while the band's glyphs read as the resolved strings), a measured heading
+ *   (amber bar-chip + white numeral glyph) landing with the last column's
+ *   beat, deferred below-labels for the columns named in `lateLabels`, and an
+ *   amber note row on the final beat.
  *
  * Every position is a fraction of the 1920×1080 stage, so the same numbers
  * serve the deck canvas and any future embed. All functions here are pure and
  * deterministic: same inputs produce equal output, and nothing touches the DOM
  * (SSR-safe build).
  */
+import { CAP_HEIGHT_RATIO } from './chrome'
 
 /** One tone-coded column. Click order is data order (left → right). */
 export interface Column {
@@ -26,7 +37,12 @@ export interface Column {
    * `blue` (the measured wave-2 step blue `stepBlue`).
    */
   tone: 'accent' | 'alt' | 'tertiary' | 'status' | 'blue'
-  /** Short label rendered inside the column. */
+  /**
+   * Short label. `labelPosition: 'inside'` (default) renders it centered
+   * inside the column block in white; `'below'` renders it centered under the
+   * plate in the column's tone (the exact-trace measured treatment, sheet
+   * art_7yZkdmCE §3).
+   */
   label: string
   /** Optional thin amber underline under this column (the measured middle-column mark). */
   underline?: boolean
@@ -49,6 +65,33 @@ export interface ColumnRowData {
   labelRows?: LabelRowInput[]
   /** Measured heading chrome above the field: amber bar-chip, white icon badge, white caption. */
   heading?: ColumnRowHeading
+  /**
+   * `'inside'` (default) keeps the legacy in-block white label; `'below'`
+   * moves the label under the plate as tone-colored text (exact-trace §3:
+   * the measured y854–868 band) and drops the in-block label.
+   */
+  labelPosition?: 'inside' | 'below'
+  /**
+   * Render centered dark two-digit numerals (`01`…`0n`) inside the plates
+   * (exact-trace: the measured y761–784 in-plate band). They ride their
+   * column's rise — no click of their own.
+   */
+  numerals?: boolean
+  /**
+   * Column indices (0-based, ascending, unique) whose below-labels get their
+   * own deferred beat immediately after their column's beat instead of riding
+   * it. The exact-trace motion trace measures col-4's label landing between
+   * col-4 and col-5 (333–667ms) and col-5's a beat after col-5
+   * (3170–3250ms); columns 1–3's label cadence is unrecoverable from the
+   * source, so they keep riding their column beats. Only meaningful with
+   * `labelPosition: 'below'`.
+   */
+  lateLabels?: number[]
+  /**
+   * Centered amber note row under the field (exact-trace §4: the measured
+   * y920–943 band). Renders on the final beat, after every label.
+   */
+  note?: string
 }
 
 /** A column with its absolute stage rect resolved. */
@@ -62,6 +105,8 @@ export interface ColumnRect extends Omit<Column, 'underline'> {
   underlineRect?: { x: number; y: number; w: number; h: number }
   /** Thin dark plate rim behind the column (the measured outline layer). */
   plate: { x: number; y: number; w: number; h: number }
+  /** Centered dark two-digit numeral inside the plate (only with `numerals`). */
+  numeral?: { x: number; y: number; size: number; text: string }
 }
 
 /** A text row below the columns — plain strings, or a tone-tinted label row. */
@@ -69,14 +114,22 @@ export type LabelRowInput = string[] | { texts: string[]; tone: 'column' }
 
 /**
  * Measured heading chrome above the field (ref t=229.0, art_iHm120ov
- * §ColumnRow): a 44×45 amber bar-chip and a white icon badge centered over the
- * middle column, above a wide white caption line. Static slide chrome — no
- * click of its own, matching the source recording where the chip and badge are
- * already present when the first column pops.
+ * §ColumnRow; exact-trace sheet art_7yZkdmCE §5). Two modes:
+ *
+ * - `icon`: the wave-2 white badge disc with a dark Lucide glyph inside.
+ * - `numeral`: the exact-trace treatment — the badge slot carries a white
+ *   display numeral glyph instead (the settled ref reads a `5` at cap ≈89px,
+ *   x970–1028 y322–411, centered on the same x999 axis).
+ *
+ * Either way the chip bars + badge/numeral land with the last column's beat
+ * when gated (the exact-trace trace measures chip + numeral + col-5 as one
+ * beat); the caption is static slide chrome.
  */
 export interface ColumnRowHeading {
   /** Lucide registry key rendered dark inside the white badge disc. */
-  icon: string
+  icon?: string
+  /** White display numeral rendered instead of the icon badge (exact-trace). */
+  numeral?: string
   /** White caption line under the chip + badge group. */
   caption: string
 }
@@ -91,6 +144,8 @@ export interface HeadingLayout {
   badge: { cx: number; cy: number; r: number }
   /** Baseline plate under the chip bars. */
   baseline: { x: number; y: number; w: number; h: number }
+  /** White display-numeral slot (badge center, measured baseline/size). */
+  numeral: { x: number; y: number; size: number }
   /** Caption anchor: center x, baseline y, font size. */
   caption: { x: number; y: number; size: number }
 }
@@ -109,9 +164,30 @@ export interface LabelRowLayout {
   cells: LabelCell[]
 }
 
+/** A column's below-plate label at its measured baseline (exact-trace §3). */
+export interface LabelBelowLayout {
+  x: number
+  y: number
+  size: number
+  text: string
+  tone: Column['tone']
+}
+
+/** The centered amber note row under the field (exact-trace §4). */
+export interface NoteLayout {
+  x: number
+  y: number
+  size: number
+  text: string
+}
+
 export interface ColumnRowLayout {
   columns: ColumnRect[]
   labelRows: LabelRowLayout[]
+  /** Below-plate tone labels (exact-trace mode only; empty in the legacy mode). */
+  labels: LabelBelowLayout[]
+  /** Centered amber note row (only when the data carries `note`). */
+  note?: NoteLayout
   viewBox: { width: number; height: number }
   /** Measured base rail under the field — the thin dark line the columns sit on. */
   rail: { x: number; y: number; w: number; h: number }
@@ -137,6 +213,38 @@ export const UNDERLINE_H_FRAC = 2 / 720
 /** Measured text-row tops: dot row y569, label row y613 (fractions of 720). */
 export const DOT_ROW_Y_FRAC = 569 / 720
 export const LABEL_ROW_Y_FRAC = 613 / 720
+
+/**
+ * Exact-trace constants (sheet art_7yZkdmCE; measured on the settled ref frame
+ * at the native 2560×1440, quoted at the 1080 stage):
+ *
+ * - Below-plate labels: baseline y868 (band y854–868, cap 13px), centered per
+ *   column; font size derives from the shared cap-height ratio.
+ * - In-plate numerals: baseline y784 (band y761–784, cap 23px), centered per
+ *   column — a fixed fraction of the column height above the block bottom
+ *   (22.76 of 251.64 measured px).
+ * - Note row: baseline y943 (band y920–943, cap 23px), centered at x958.5
+ *   (measured span x619–1298).
+ * - Heading numeral: baseline y411 (band y322–411, cap 89px) centered on the
+ *   badge axis x999.
+ */
+export const LABEL_BELOW_BASELINE_FRAC = 868 / 1080
+export const NUMERAL_BASELINE_RISE_FRAC = 0.0905
+export const NOTE_BASELINE_FRAC = 943 / 1080
+export const NOTE_CX_FRAC = 958.5 / 1920
+export const HEADING_NUMERAL_BASELINE_FRAC = 411 / 1080
+/** Glyph em size from measured cap height via the shared cap-height ratio. */
+export function capSize(capPx: number): number {
+  return capPx / CAP_HEIGHT_RATIO
+}
+/** Near-black in-plate numeral fill (measured RGB ≈ 3,4,6). */
+export const NUMERAL_FILL = '#030406'
+/** Below-label tracking: the measured 'SOFTWARE PRACTICES' span (208px) needs ≈0.05em over the mono advance. */
+export const LABEL_BELOW_TRACKING = '0.05em'
+/** Note-row tracking: the measured span (x619–1297 = 678px) needs ≈0.017em over the mono advance. */
+export const NOTE_TRACKING = '0.017em'
+/** Caption tracking: the measured 'TRENDS RESHAPING THE WORK' span (x670–1244) needs ≈0.135em. */
+export const CAPTION_TRACKING = '0.135em'
 
 /**
  * Measured heading chrome fractions (ref t=229.0, art_iHm120ov §ColumnRow):
@@ -207,12 +315,24 @@ export function columnRowLayout(
   if (data.yFrac + data.hFrac > 1) {
     throw new RangeError(`column "${data.columns[0].id}": yFrac + hFrac must not exceed 1`)
   }
+  // Deferred-label indices: ascending, unique, in range — a bad index would
+  // otherwise silently strand a label on a non-existent beat.
+  const late = data.lateLabels ?? []
+  late.forEach((j, k) => {
+    if (!Number.isInteger(j) || j < 0 || j >= data.columns.length) {
+      throw new RangeError(`lateLabels[${k}] must be a column index in [0, ${data.columns.length - 1}], received ${j}`)
+    }
+    if (k > 0 && j <= late[k - 1]) {
+      throw new RangeError(`lateLabels must be strictly ascending and unique, received [${late.join(', ')}]`)
+    }
+  })
 
   const columns: ColumnRect[] = data.columns.map((col, i) => {
     const x = (COL_X0_FRAC + i * COL_PITCH_X_FRAC) * viewBox.width
     const y = data.yFrac * viewBox.height
     const w = COL_W_FRAC * viewBox.width
     const h = data.hFrac * viewBox.height
+    const numeralSize = capSize(23) * (viewBox.height / 1080)
     return {
       ...col,
       underline: col.underline ?? false,
@@ -220,6 +340,16 @@ export function columnRowLayout(
       y,
       w,
       h,
+      // Centered dark two-digit numeral riding the plate (exact-trace: the
+      // measured y761–784 band sits a fixed fraction above the block bottom).
+      numeral: data.numerals
+        ? {
+            x: x + w / 2,
+            y: y + h * (1 - NUMERAL_BASELINE_RISE_FRAC),
+            size: numeralSize,
+            text: String(i + 1).padStart(2, '0'),
+          }
+        : undefined,
       // Thin dark plate rim behind the column (the measured outline layer:
       // verticals at every column edge plus top/bottom rims).
       plate: {
@@ -277,7 +407,66 @@ export function columnRowLayout(
     h: RAIL_H_FRAC * viewBox.height,
   }
 
-  return { columns, labelRows, rail, viewBox }
+  // Below-plate tone labels (exact-trace §3): one centered text per column on
+  // the measured baseline, filled in the column's tone at render time.
+  const labels: LabelBelowLayout[] =
+    data.labelPosition === 'below'
+      ? columns.map((col) => ({
+          x: col.x + col.w / 2,
+          y: LABEL_BELOW_BASELINE_FRAC * viewBox.height,
+          size: capSize(13) * (viewBox.height / 1080),
+          text: col.label,
+          tone: col.tone,
+        }))
+      : []
+
+  // Centered amber note row (exact-trace §4), on its own final beat.
+  const note: NoteLayout | undefined = data.note
+    ? {
+        x: NOTE_CX_FRAC * viewBox.width,
+        y: NOTE_BASELINE_FRAC * viewBox.height,
+        size: capSize(23) * (viewBox.height / 1080),
+        text: data.note,
+      }
+    : undefined
+
+  return { columns, labelRows, labels, note, rail, viewBox }
+}
+
+/**
+ * Resolve the click choreography from the data (exact-trace motion order,
+ * sheet art_7yZkdmCE §6): columns left→right, each below-label riding its
+ * column's beat except the deferred indices in `lateLabels`, which take a
+ * private beat immediately after their column; the heading numeral shares the
+ * last column's beat (the trace measures chip + numeral + col-5 as one beat);
+ * the note row lands on the final beat. Pure and deterministic — the template
+ * consumes these numbers and the tests assert the exact ordering.
+ */
+export interface ColumnRowBeats {
+  /** Per-column reveal beat (1-based v-click values, data order). */
+  columnClicks: number[]
+  /** Per-column below-label beat (rides the column unless deferred). */
+  labelClicks: number[]
+  /** The heading chip + numeral beat (the last column's beat). */
+  headingNumeralClick: number
+  /** The note row's beat — the final one when a note is authored. */
+  noteClick?: number
+  /** Total consumed beats. */
+  total: number
+}
+
+export function columnRowBeats(data: ColumnRowData): ColumnRowBeats {
+  const late = data.lateLabels ?? []
+  // A deferred label between columns pushes subsequent columns' beats back by
+  // one (col-4's label owns its own beat between col-4 and col-5).
+  const columnClicks = data.columns.map((_, i) => 1 + i + late.filter((j) => j < i).length)
+  const labelClicks = data.columns.map((_, i) =>
+    late.includes(i) ? columnClicks[i] + 1 : columnClicks[i],
+  )
+  const headingNumeralClick = columnClicks[data.columns.length - 1]
+  const last = Math.max(...columnClicks, ...labelClicks)
+  const noteClick = data.note === undefined ? undefined : last + 1
+  return { columnClicks, labelClicks, headingNumeralClick, noteClick, total: noteClick ?? last }
 }
 
 /**
@@ -316,6 +505,13 @@ export function headingLayout(
       y: CHIP_BAR_BOTTOM_FRAC * viewBox.height,
       w: CHIP_FRAC.w * viewBox.width,
       h: (3 / 1080) * viewBox.height,
+    },
+    // White display-numeral slot (exact-trace §5): the badge disc's center
+    // axis, with the measured cap-89 glyph's baseline and em size.
+    numeral: {
+      x: BADGE_FRAC.cx * viewBox.width,
+      y: HEADING_NUMERAL_BASELINE_FRAC * viewBox.height,
+      size: capSize(89) * (viewBox.height / 1080),
     },
     caption: {
       x: CAPTION_CX_FRAC * viewBox.width,
