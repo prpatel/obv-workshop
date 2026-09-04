@@ -1,0 +1,11 @@
+# .obvious/config.yml — repository policy for prpatel/obv-workshop
+#
+# Auto-detected from GitHub repo settings on 2026-09-03:
+#   default branch: main
+#   merge methods enabled on GitHub: merge commit, squash, rebase
+#   squash selected as the default merge method
+
+repo: prpatel/obv-workshop
+defaultBranch: main
+mergeMethod: squash
+requireHumanMerge: true
