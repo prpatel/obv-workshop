@@ -47,7 +47,7 @@ decks/stepflow-demo/
 │  ├─ NodeEdge.vue                # bordered-square network diagram component (diagram-family spec)
 │  ├─ VerticalSpine.vue           # family built-in: center-axis rhythm (marker, label row, side cards)
 │  ├─ HeroTile.vue                # family built-in: single-click section-divider tile
-│  ├─ SchematicRows.vue           # terminal-style token listing with an embedded thin-line schematic
+│  ├─ SchematicRows.vue           # family built-in: exact-trace window chrome + verbatim 7-row listing, per-char typewriter, callout ladder
 │  ├─ TwoBarCompare.vue           # family built-in: two left-anchored comparison bars (data text, chips, annotation click)
 │  ├─ ColumnRow.vue               # family built-in: tone-coded column row (heading chrome + rising columns + tinted labels)
 │  ├─ TileGrid.vue                # family built-in: hex-tile grid with glow, connector track, and label rows (row-major build)
@@ -64,7 +64,7 @@ decks/stepflow-demo/
 │     ├─ compare.ts               # TwoBarCompare contract + pure left-anchored pair layout
 │     ├─ timeline.ts              # pure proportional-timeline layout math (bar, segments, ticks, chip)
 │     ├─ paths.ts                 # shared polylinePath/polylineLength (StepFlow track, NodeEdge edges, rows schematic)
-│     ├─ rows.ts                  # SchematicRows contract + pure token-row/schematic layout math
+│     ├─ rows.ts                  # SchematicRows contract: verbatim seed rows, measured window/callout geometry, click map + typewriter math
 │     ├─ spine.ts                 # pure spine + hero-tile layout math + family contracts
 │     ├─ columns.ts               # ColumnRow contract + pure column-row layout math
 │     ├─ strip.ts                 # pure ratio-strip layout math (initial + final width states)
@@ -185,7 +185,7 @@ inline on the demo slides; data order is the click order for every family.
 | `NodeEdge`      | `nodeEdge.ts` — `NodeEdgeData` (nodes/edges/status)     | per node, then per edge, then per status | `cyanOnBlack` + measured seed (`#33a5cd`/`#e6b434`/`#5a1e1e`) | 4          | — |
 | `VerticalSpine` | `spine.ts` — `SpineNode[]` + optional `footer`; an empty-title center node renders the diamond marker, `side` picks the card slots | 5 — marker, label row, 2 side cards, footer row | outlined two-tone cards — accent `#24cce5` left / `accentAlt` `#3891e3` right (demo seed), `orangeSpine` spine/label | 5          | —           |
 | `HeroTile`      | `spine.ts` — `HeroTileData` (tile + icon + optional label on the spine axis) | 1 — halo, tile, icon, label together | `orangeSpine` verbatim (`#f85721`), accent-derived halo | 6          | `user-round` |
-| `SchematicRows` | `rows.ts` — `SchematicRowsData` (rows + optional schematic) | one per row; schematic strokes share their attached row's click | override: v6-measured cool `#2f95b9` + amber `#f2ba1f` | 7          | —           |
+| `SchematicRows` | `rows.ts` — `SchematicRowsData` (rows + callouts; defaults to the sheet-authoritative 7-row seed) | 10 — chrome, callout 1, rows 1–3, rail, then rows 4–7 with the band + callouts 2–4 keyed to their rows | sheet-sampled tones — keywords `#4298f2`, near-white idents, dim comments `#888791`, teal band `#08272c`, cyan rail `#35c2ea` | 7          | —           |
 | `TwoBarCompare` | `compare.ts` — `CompareBar[]` + `TwoBarCompareData` (bars/xFrac/barHFrac/yFracs + optional `dataText` block — `lines`/`subline`/`caption`/`note`/`rules` — and centered `subhead`) | 3 — bar 1, bar 2, then one shared annotation click for the data-text block, caption/note rows, divider rules, labels, and chips | `statusAmber` (the component's family default; rework adds the measured teal `#1cd797` top-chip tone) | 8          | —           |
 | `ColumnRow`     | `columns.ts` — `ColumnRowData` (columns + `yFrac`/`hFrac` + optional `heading`/`labelRows`/`labelPosition`/`numerals`/`lateLabels`/`note`) | 8 (exact trace): columns 1,2,3,4,6 — deferred below-labels 5,7 — heading numeral with col-5 (6) — note row last (8); legacy compositions stay at 5 + label rows | `cyanOnBlack` base + token mix (`stepBlue` ship endpoint, `orangeSpine`/`statusAmber` accents, `accentTertiary` teal) | 9          | —           |
 | `TileGrid`      | `tiles.ts` — `TileGridData` (tiles/cols + tile & pitch fracs; per-tile `tone`/`wFrac`/`hFrac`/`mini` overrides) | 6 — one per tile, row-major | `cyanOnBlack` (measured hex core `#1ed0e8` + matrix/row tones via `accentAlt`/`accentTertiary` + status/plain constants) | 10         | `cpu` · `boxes` · `layers` (candidates; fallback covers a wrong guess) |

@@ -307,51 +307,38 @@ canvasWidth: 1920
 ---
 
 <!--
-  Demo slide: SchematicRows — terminal-style token listing. Each click fades
-  one row up into place (10 clicks, owned by the component); the brace-shaped
-  schematic strokes draw via the StepFlow dashoffset draw within their
-  attached row's click (clicks 5-7), and the dim highlight band behind the
-  `ctx` row fades in on that row's click. Measured deviation (locked): the v6
-  recording's continuous auto-run (a typewriter effect) is re-paced to one
-  click per row — no typewriter is built. Rows re-transcribed for the wave-1
-  fidelity rework (report art_v4jVdTnp §5): 10 rows of 60-110 chars reaching
-  ~94% of the canvas width, token tones weighted white > green > amber > blue
-  to the measured t=14.1 ratios (42,920 / 14,008 / 8,419 / 3,210 px); the
-  palette override carries the recording's measured cool #2f95b9 and amber
-  #f2ba1f. AutoAdvance is renderless deck-level wiring: the `a` key toggles a
-  hands-free run and ?autoplay=N in the URL starts one on slide enter.
+  Demo slide: SchematicRows — exact-trace window chrome + the verbatim 7-row
+  listing with the right-hand callout ladder (10 clicks, owned by the
+  component): the window pops on click 1, callout 1 (DEPENDENCIES TO
+  MAINTAIN) on 2, rows 1–3 type on 3/4/5, the cyan rail draws down on 6, then
+  rows 4–7 land on 7/8/9/10 with the teal band + callouts 2–4 keyed to their
+  target rows. The seven verbatim rows and all measured geometry are the
+  component's sheet-authoritative seed (art_mkVNxsft) — no inline data. The
+  recording's continuous ≈9.8s typewriter is re-paced as per-character CSS
+  over the same row windows; AutoAdvance fires the measured cumulative
+  schedule (chrome 2.8s, callout 1 4.2s, rows through 12.9s, ≈14.3s settle;
+  callout landings within ≈1s of their measured anchors). The mixed-case
+  title pins the measured combined ink extent (877.6px) via the shared
+  titleTextLength condensation (PRs #42/#43 pattern). AutoAdvance is
+  renderless deck-level wiring: the `a` key toggles a hands-free run and
+  ?autoplay=N in the URL starts one on slide enter.
 -->
 
 <div class="sf-demo-stage">
 
+<!-- Measured click-fire beats (s from run start) — rows.ts typewriter re-pace:
+     chrome 2817, callout-1 4170, rows 4500→12900, settle ≈14300ms. -->
 <SchematicRows
-  title="HARDER TO"
-  title-accent="MAINTAIN"
-  :palette="{ accent: '#2f95b9', accentAlt: '#f2ba1f' }"
-  :rows="[
-    { id: 'banner', tokens: [{ text: '# ── answer_service.py', tone: 'plain' }, { text: ' · streaming answers ', tone: 'plain' }, { text: 'over the orders graph', tone: 'chrome' }, { text: ' · ', tone: 'plain' }, { text: 'uv run uvicorn', tone: 'chrome' }, { text: ' :8443 --reload', tone: 'plain' }] },
-    { id: 'imports', tokens: [{ text: 'from ', tone: 'accent' }, { text: 'dataclasses ', tone: 'plain' }, { text: 'import ', tone: 'accent' }, { text: 'dataclass, field', tone: 'plain' }, { text: '  # persisted answer', tone: 'chrome' }, { text: ' + citation spans, keyed by question hash', tone: 'plain' }] },
-    { id: 'signature', tokens: [{ text: 'def ', tone: 'accent' }, { text: 'stream_answer(', tone: 'plain' }, { text: 'question: ', tone: 'plain' }, { text: 'str', tone: 'chrome' }, { text: ', ctx: ', tone: 'plain' }, { text: 'ServiceContext', tone: 'alt' }, { text: ') -> ', tone: 'plain' }, { text: 'Iterator', tone: 'alt' }, { text: '[', tone: 'plain' }, { text: 'AnswerChunk', tone: 'alt' }, { text: ']:', tone: 'plain' }] },
-    { id: 'comment', tokens: [{ text: '# ', tone: 'plain' }, { text: 'guard:', tone: 'alt' }, { text: ' auth + rate-limit first — the cheap rejections before the expensive calls fan out', tone: 'plain' }] },
-    { id: 'api', indent: 1, tokens: [{ text: 'api = ', tone: 'plain' }, { text: 'service(', tone: 'alt' }, { text: '&quot;answer-api&quot;', tone: 'chrome' }, { text: ', llm=', tone: 'plain' }, { text: '&quot;qwen3-27b&quot;', tone: 'chrome' }, { text: ', stream=', tone: 'plain' }, { text: 'True', tone: 'alt' }, { text: ', cache=', tone: 'plain' }, { text: '&quot;warm&quot;', tone: 'chrome' }, { text: ', tag=', tone: 'plain' }, { text: '&quot;v2&quot;', tone: 'alt' }, { text: ')', tone: 'plain' }] },
-    { id: 'ctx', indent: 1, tokens: [{ text: 'ctx = ', tone: 'plain' }, { text: 'depends(', tone: 'alt' }, { text: '&quot;mart.orders&quot;', tone: 'chrome' }, { text: ', scopes=[', tone: 'plain' }, { text: '&quot;read:orders&quot;', tone: 'chrome' }, { text: ', ', tone: 'plain' }, { text: '&quot;read:customers&quot;', tone: 'plain' }, { text: '], ttl=', tone: 'plain' }, { text: '30', tone: 'alt' }, { text: ')', tone: 'plain' }] },
-    { id: 'model', indent: 1, tokens: [{ text: 'model = ', tone: 'plain' }, { text: 'depends(', tone: 'alt' }, { text: '&quot;ai.answer_v2&quot;', tone: 'chrome' }, { text: ', route=', tone: 'plain' }, { text: '&quot;eu-west&quot;', tone: 'chrome' }, { text: ', fallback=', tone: 'plain' }, { text: '&quot;answer-v1-lat&quot;', tone: 'plain' }, { text: ', shadow=', tone: 'plain' }, { text: 'True', tone: 'alt' }, { text: ')', tone: 'plain' }] },
-    { id: 'guard', indent: 1, tokens: [{ text: 'if ', tone: 'accent' }, { text: 'ctx.expired:', tone: 'plain' }, { text: ' raise ', tone: 'accent' }, { text: 'AuthError(', tone: 'alt' }, { text: '&quot;session expired&quot;', tone: 'chrome' }, { text: ', retry_after=', tone: 'plain' }, { text: '30', tone: 'alt' }, { text: ')', tone: 'plain' }, { text: '  # 401', tone: 'plain' }] },
-    { id: 'stream', indent: 1, tokens: [{ text: 'async for ', tone: 'accent' }, { text: 'chunk ', tone: 'plain' }, { text: 'in ', tone: 'plain' }, { text: 'llm.stream(prompt, ctx): ', tone: 'plain' }, { text: 'yield ', tone: 'plain' }, { text: 'AnswerChunk', tone: 'alt' }, { text: '(chunk.text, meta=ctx)', tone: 'plain' }] },
-    { id: 'footer', tokens: [{ text: '# ', tone: 'plain' }, { text: 'p95 412ms', tone: 'chrome' }, { text: ' · ', tone: 'plain' }, { text: '98.7% grounded', tone: 'chrome' }, { text: ' · tokens 1.2k in / 380 out · ', tone: 'plain' }, { text: '$0.0042', tone: 'chrome' }, { text: ' / answer · cache 86%', tone: 'plain' }] },
-  ]"
-  :highlight="{ row: 'ctx' }"
-  :schematic="[
-    { attach: 'api', tone: 'accent',
-      points: [[0.0287, 0.5699], [0.024, 0.5778], [0.0226, 0.5865], [0.0226, 0.611], [0.024, 0.6171], [0.028, 0.6224]] },
-    { attach: 'ctx', tone: 'accent',
-      points: [[0.0287, 0.6276], [0.024, 0.6355], [0.0226, 0.6442], [0.0226, 0.6687], [0.024, 0.6748], [0.028, 0.6801]] },
-    { attach: 'model', tone: 'accent',
-      points: [[0.0287, 0.6844], [0.024, 0.6923], [0.0226, 0.701], [0.0226, 0.7255], [0.024, 0.7316], [0.028, 0.7369]] },
-  ]"
+  title="to maintain"
+  title-accent="Harder"
+  accent-first
+  :title-text-length="877.6"
 />
 
-<AutoAdvance :duration-sec="4" />
+<AutoAdvance
+  :duration-sec="1.4"
+  :step-schedule-sec="[2.8, 4.2, 4.5, 5.9, 7.3, 8.0, 8.7, 10.1, 11.5, 12.9]"
+/>
 
 </div>
 

@@ -3,29 +3,26 @@ import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import type { Directive } from 'vue'
 import SchematicRows from '../SchematicRows.vue'
-import { schematicRowsLayout, type CodeRow, type SchematicLine } from './rows'
-
-/** The demo seed's shape: 8 rows, 3 brace strokes attached to the dependency rows. */
-const rows: CodeRow[] = [
-  { id: 'file', indent: 1, tokens: [{ text: 'answer_service.py', tone: 'plain' }] },
-  { id: 'imports', tokens: [{ text: 'from ', tone: 'accent' }, { text: 'mrk ', tone: 'plain' }, { text: 'import ', tone: 'accent' }, { text: 'service, depends', tone: 'plain' }] },
-  { id: 'signature', tokens: [{ text: 'def ', tone: 'accent' }, { text: 'answer(question: ', tone: 'plain' }, { text: 'str', tone: 'chrome' }, { text: ') → ', tone: 'plain' }, { text: 'str:', tone: 'chrome' }] },
-  { id: 'comment', tokens: [{ text: '# the AI application', tone: 'plain' }] },
-  { id: 'api', indent: 1, tokens: [{ text: 'api = ', tone: 'plain' }, { text: 'service(', tone: 'accent' }, { text: '"answer-api")', tone: 'alt' }] },
-  { id: 'ctx', indent: 1, tokens: [{ text: 'ctx = ', tone: 'plain' }, { text: 'depends(', tone: 'accent' }, { text: '"mart.orders")', tone: 'alt' }] },
-  { id: 'model', indent: 1, tokens: [{ text: 'model = ', tone: 'plain' }, { text: 'depends(', tone: 'accent' }, { text: '"ai.answer_v2")', tone: 'alt' }] },
-  { id: 'return', indent: 1, tokens: [{ text: 'return ', tone: 'accent' }, { text: 'model.ask(question, ctx)', tone: 'plain' }] },
-]
-const schematic: SchematicLine[] = [
-  { attach: 'api', tone: 'accent', points: [[0.0287, 0.5699], [0.024, 0.5778], [0.0226, 0.5865], [0.0226, 0.611], [0.024, 0.6171], [0.028, 0.6224]] },
-  { attach: 'ctx', tone: 'accent', points: [[0.0287, 0.6276], [0.024, 0.6355], [0.0226, 0.6442], [0.0226, 0.6687], [0.024, 0.6748], [0.028, 0.6801]] },
-  { attach: 'model', tone: 'accent', points: [[0.0287, 0.6844], [0.024, 0.6923], [0.0226, 0.701], [0.0226, 0.7255], [0.024, 0.7316], [0.028, 0.7369]] },
-]
+import {
+  CONNECTOR_RAIL,
+  HIGHLIGHT_BAND,
+  HIGHLIGHT_BANDS,
+  ROW_BASELINE,
+  ROW_EM_TO_INK,
+  ROW_FONT,
+  ROW_NUMBER_STYLE,
+  SCHEMATIC_ROWS_CALLOUTS,
+  SCHEMATIC_ROWS_ROWS,
+  TAB_TEXT,
+  TOKEN_COLORS,
+  TRAFFIC_DOTS,
+  rowClick,
+} from './rows'
 
 /** Slidev registers the v-click directive globally at runtime; the render tests stub it as a no-op. */
 function mountRows(props: Record<string, unknown> = {}) {
   return mount(SchematicRows, {
-    props: { rows, schematic, ...props },
+    props,
     global: { directives: { click: {} } },
   })
 }
@@ -38,50 +35,224 @@ const captureClick: Directive<HTMLElement, number> = {
 }
 function mountCapturing(props: Record<string, unknown> = {}) {
   return mount(SchematicRows, {
-    props: { rows, schematic, ...props },
+    props,
     global: { directives: { click: captureClick } },
   })
 }
 
-/** Evaluate the shipped .sf-rows-line-fill stroke-dashoffset declaration (nodeEdge.test.ts pattern). */
-function dashOffsetPx(css: string, drawn: number, len: number): number {
-  const rule = css.match(/\.sf-rows-line-fill[^{,]*\{[^}]*\}/)?.[0] ?? ''
-  const decl = rule.match(/stroke-dashoffset:\s*([^;]+);/)?.[1] ?? ''
-  expect(decl, `.sf-rows-line-fill must declare stroke-dashoffset; rule: "${rule}"`).toBeTruthy()
-  const expr = decl
-    .replaceAll('var(--sf-len)', `${len}px`)
-    .replaceAll('var(--sf-drawn)', `${drawn}px`)
-    .trim()
-  const calc = /^calc\(\s*([\d.]+)px\s*-\s*([\d.]+)px\s*\)$/.exec(expr)
-  if (calc) return Number(calc[1]) - Number(calc[2])
-  const bare = /^([\d.]+)px$/.exec(expr)
-  expect(bare, `unexpected stroke-dashoffset expression "${decl}"`).toBeTruthy()
-  return Number(bare![1])
+/** Collect all shipped styles (scoped + reduced-motion) as one CSS string. */
+function shippedCss(): string {
+  return Array.from(document.querySelectorAll('style'))
+    .map((tag) => tag.textContent ?? '')
+    .join('\n')
 }
 
-/** Pull the numeric value of a --sf-drawn custom property from a style attribute. */
-function drawnPx(style: string | undefined): number {
-  const match = /--sf-drawn:\s*([\d.]+)px/.exec(style ?? '')
-  expect(match, `--sf-drawn missing in "${style}"`).toBeTruthy()
-  return Number.parseFloat(match![1])
-}
+describe('SchematicRows component — title chrome', () => {
+  it('renders the measured two-tone title with the sheet ink extent pinned via textLength', () => {
+    const wrapper = mountRows({ title: 'to maintain', titleAccent: 'Harder' })
+    const title = wrapper.find('.sf-chrome-title')
 
-/** Pull the numeric value of a --sf-len custom property — the shipped draw distance. */
-function lenPx(style: string | undefined): number {
-  const match = /--sf-len:\s*([\d.]+)px/.exec(style ?? '')
-  expect(match, `--sf-len missing in "${style}"`).toBeTruthy()
-  return Number.parseFloat(match![1])
-}
+    expect(title.exists()).toBe(true)
+    expect(title.text()).toContain('Harder')
+    expect(title.text()).toContain('to maintain')
+    // Direction-2 condensation: the deck's mono runs wide at cap 78.4, so the
+    // measured 877.6px combined ink extent is pinned (SVG textLength + glyphs).
+    expect(title.html()).toContain('877.6')
+    expect(title.html()).toContain('spacingAndGlyphs')
+  })
+})
 
-describe('SchematicRows component', () => {
-  it('renders one div per row with its token spans, plus a dim base + one accent copy per schematic stroke', () => {
+describe('SchematicRows component — window chrome', () => {
+  it('pops the whole chrome group on click 1: the top rule, three dots, tab, path', () => {
+    const wrapper = mountCapturing()
+    const chrome = wrapper.find('.sf-rows-window')
+
+    expect(chrome.exists()).toBe(true)
+    expect(chrome.attributes('data-sfc-click')).toBe('1')
+    expect(chrome.findAll('rect').length).toBe(4) // 3 ambience plates + the top rule
+    expect(chrome.findAll('circle')).toHaveLength(3)
+  })
+
+  it('draws the traffic dots in macOS order with the sampled colors', () => {
     const wrapper = mountRows()
+    const dots = wrapper.findAll('.sf-rows-window circle')
 
-    expect(wrapper.find('.sf-rows').exists()).toBe(true)
-    expect(wrapper.findAll('.sf-rows-row')).toHaveLength(8)
-    expect(wrapper.findAll('.sf-rows-token')).toHaveLength(rows.reduce((n, r) => n + r.tokens.length, 0))
-    expect(wrapper.findAll('path.sf-rows-line-base')).toHaveLength(3)
-    expect(wrapper.findAll('path.sf-rows-line-fill')).toHaveLength(3)
+    expect(dots.map((d) => d.attributes('fill'))).toEqual(TRAFFIC_DOTS.map((d) => d.fill))
+    expect(dots[0].attributes('cx')).toBe(String(TRAFFIC_DOTS[0].cx))
+  })
+
+  it('renders the tab text at its measured position, uncondensed, with no underline', () => {
+    const wrapper = mountRows()
+    const tab = wrapper.findAll('.sf-rows-window text')[0]
+
+    expect(tab.text()).toBe(TAB_TEXT.text)
+    expect(tab.attributes('transform')).toContain(`translate(${TAB_TEXT.x} ${TAB_TEXT.baseline})`)
+    expect(tab.attributes('transform')).not.toContain('scale(')
+    expect(wrapper.findAll('.sf-rows-window rect')).toHaveLength(4) // plates + top rule — no underline (y360+ ink is descenders)
+  })
+
+  it('renders no path text — the sheet\'s right-aligned path is not visible in the settled frame', () => {
+    const wrapper = mountRows()
+    const texts = wrapper.findAll('.sf-rows-window text')
+
+    expect(texts).toHaveLength(1) // the tab only
+    expect(texts[0].text()).toBe(TAB_TEXT.text)
+  })
+})
+
+describe('SchematicRows component — band, rail, callouts', () => {
+  it('ships the two teal strips at the measured rows 4–5 extents, revealed on row 4\'s click (7)', () => {
+    const wrapper = mountCapturing()
+    const strips = wrapper.findAll('.sf-rows-band')
+
+    expect(strips).toHaveLength(2)
+    strips.forEach((strip, k) => {
+      expect(strip.attributes('data-sfc-click')).toBe('7')
+      expect(strip.attributes('x')).toBe(String(HIGHLIGHT_BAND.x))
+      expect(strip.attributes('y')).toBe(String(HIGHLIGHT_BANDS[k].y))
+      expect(strip.attributes('height')).toBe(String(HIGHLIGHT_BANDS[k].h))
+      expect(strip.attributes('width')).toBe(String(HIGHLIGHT_BAND.w))
+      expect(strip.attributes('fill')).toBe(HIGHLIGHT_BAND.fill)
+    })
+  })
+
+  it('draws the cyan rail top-down on click 6 via the normalized dashoffset', () => {
+    const wrapper = mountCapturing()
+    const rail = wrapper.find('.sf-rows-rail')
+
+    expect(rail.attributes('data-sfc-click')).toBe('6')
+    expect(rail.attributes('x1')).toBe(String(CONNECTOR_RAIL.x + CONNECTOR_RAIL.w / 2))
+    expect(rail.attributes('x2')).toBe(rail.attributes('x1'))
+    expect(rail.attributes('y2')).toBe(String(CONNECTOR_RAIL.y + CONNECTOR_RAIL.h))
+    expect(rail.attributes('stroke')).toBe(CONNECTOR_RAIL.fill)
+    expect(rail.attributes('pathLength')).toBe('1')
+
+    const css = shippedCss()
+    const railRule = css.match(/\.sf-rows-rail(?![\w-])[^{]*\{[^}]*\}/)?.[0] ?? ''
+    expect(railRule).toContain('stroke-dasharray: 1')
+    const hiddenRule = css.match(/\.sf-rows-rail\.slidev-vclick-hidden[^{]*\{[^}]*\}/)?.[0] ?? ''
+    expect(hiddenRule).toContain('stroke-dashoffset: 1')
+    expect(hiddenRule).toContain('transition: none')
+  })
+
+  it('renders the four measured callout rings with tails and keyed clicks', () => {
+    const wrapper = mountCapturing()
+    const groups = wrapper.findAll('.sf-rows-callout')
+
+    expect(groups).toHaveLength(4)
+    expect(groups.map((g) => g.attributes('data-sfc-click'))).toEqual(
+      SCHEMATIC_ROWS_CALLOUTS.map((c) => String(c.click)),
+    )
+
+    const rings = groups.map((g) => g.find('ellipse'))
+    rings.forEach((ring, i) => {
+      // Rings are hand-drawn STROKES in the measured tones (fill:none), not filled circles.
+      expect(ring.attributes('stroke')).toBe(SCHEMATIC_ROWS_CALLOUTS[i].ring.fill)
+      expect(ring.attributes('fill')).toBe('none')
+      expect(ring.attributes('transform')).toContain(`rotate(${SCHEMATIC_ROWS_CALLOUTS[i].ring.rot}`)
+    })
+
+    // Tails only where the spec has them (2 and 4)
+    expect(groups[0].find('polyline').exists()).toBe(false)
+    expect(groups[1].find('polyline').exists()).toBe(true)
+    expect(groups[2].find('polyline').exists()).toBe(false)
+    expect(groups[3].find('polyline').exists()).toBe(true)
+  })
+
+  it('types each callout label at its measured cap-matched font with advance-matched tracking', () => {
+    const wrapper = mountRows()
+    const labels = wrapper.findAll('.sf-rows-label')
+
+    expect(labels).toHaveLength(4)
+    labels.forEach((label, i) => {
+      const spec = SCHEMATIC_ROWS_CALLOUTS[i]
+      expect(label.text()).toBe(spec.label)
+      expect(label.attributes('x')).toBe(String(spec.ink.x))
+      // baseline = inkTop + cap; font = cap / 0.729; tracking = advance − 0.6·font
+      const font = spec.ink.cap / 0.729
+      expect(Number(label.attributes('y'))).toBeCloseTo(spec.ink.inkTop + spec.ink.cap, 4)
+      expect(Number(label.attributes('font-size'))).toBeCloseTo(font, 4)
+      expect(Number(label.attributes('letter-spacing'))).toBeCloseTo(spec.ink.advance - 0.6 * font, 4)
+      expect(label.attributes('fill')).toBe(spec.ink.fill)
+    })
+  })
+})
+
+describe('SchematicRows component — the listing', () => {
+  it('renders one uncondensed div per row at its measured x/ink-top with the gutter numbers on the shared baseline', () => {
+    const wrapper = mountRows()
+    const rows = wrapper.findAll('.sf-rows-row')
+
+    expect(rows).toHaveLength(7)
+    rows.forEach((row, i) => {
+      const spec = SCHEMATIC_ROWS_ROWS[i]
+      const style = row.attributes('style') ?? ''
+      expect(style).toContain(`left: ${spec.x}px`)
+      // px() prints the shortest 4-decimal form (no trailing zeros).
+      expect(style).toContain(`top: ${String(spec.inkTop - ROW_EM_TO_INK)}px`)
+      expect(style).toContain(`font-size: ${ROW_FONT}px`)
+      expect(style).toContain('scaleX(1)') // no condensation — the reference advance is the deck mono's 0.6em
+    })
+
+    const numbers = wrapper.findAll('.sf-rows-number')
+    expect(numbers).toHaveLength(7)
+    numbers.forEach((num, i) => {
+      expect(num.text()).toBe(String(i + 1))
+      expect(num.attributes('x')).toBe(String(ROW_NUMBER_STYLE.x))
+      expect(Number(num.attributes('y'))).toBeCloseTo(SCHEMATIC_ROWS_ROWS[i].inkTop + ROW_BASELINE, 4)
+    })
+  })
+
+  it('splits rows into per-character spans carrying the sampled token colors', () => {
+    const wrapper = mountRows()
+    const row1 = wrapper.findAll('.sf-rows-row')[0].findAll('.sf-rows-char')
+
+    // textContent (not text()): char spans holding spaces must be counted.
+    expect(row1.map((c) => c.element.textContent ?? '').join('')).toBe('from mrk import service, depends')
+    expect(row1[0].attributes('style')).toContain(TOKEN_COLORS.keyword) // 'f' of from
+    expect(row1[5].attributes('style')).toContain(TOKEN_COLORS.ident) // 'm' of mrk
+  })
+
+  it('carries the measured +2.1px/char tracking on string chars only (row 4 literals)', () => {
+    const wrapper = mountRows()
+    const row4 = wrapper.findAll('.sf-rows-row')[3].findAll('.sf-rows-char')
+
+    const tracked = row4.filter((c) => (c.attributes('style') ?? '').includes('letter-spacing'))
+    expect(tracked.map((c) => c.element.textContent ?? '').join('')).toBe('"answer-api"')
+    expect((tracked[0].attributes('style') ?? '')).toContain('2.1px')
+    expect(row4[0].attributes('style')).not.toContain('letter-spacing') // ident chars stay untracked
+  })
+
+  it('paces the typewriter per character: each row completes its ≈1.4s share', () => {
+    const wrapper = mountRows()
+    const row1 = wrapper.findAll('.sf-rows-row')[0]
+    const chars = row1.findAll('.sf-rows-char')
+
+    // Row 1 has 32 chars over 1400ms → ~43.75ms per char, indexed by --ci.
+    const style = chars[1].attributes('style') ?? ''
+    expect(style).toContain('--ci: 1')
+    expect(style).toMatch(/--cd: 43\.75ms/)
+
+    const css = shippedCss()
+    expect(css).toContain('animation-delay: calc(var(--ci) * var(--cd))')
+    // Hidden rows reset the animation so backward nav snaps and re-reveals replay.
+    const hidden = css.match(/\.sf-rows-row\.slidev-vclick-hidden \.sf-rows-char[^{]*\{[^}]*\}/)?.[0] ?? ''
+    expect(hidden).toContain('animation: none')
+    expect(hidden).toContain('opacity: 0')
+  })
+
+  it('fires the rail-aware ten-click schedule: rows on 3, 4, 5, 7, 8, 9, 10; band with row 4', () => {
+    const wrapper = mountCapturing()
+    const rowClicks = wrapper.findAll('.sf-rows-row').map((r) => r.attributes('data-sfc-click'))
+    const bandClick = wrapper.find('.sf-rows-band').attributes('data-sfc-click')
+    const railClick = wrapper.find('.sf-rows-rail').attributes('data-sfc-click')
+    const numberClicks = wrapper.findAll('.sf-rows-number').map((n) => n.attributes('data-sfc-click'))
+
+    expect(rowClicks).toEqual(SCHEMATIC_ROWS_ROWS.map((_, i) => String(rowClick(i))))
+    expect(rowClicks).toEqual(['3', '4', '5', '7', '8', '9', '10'])
+    expect(numberClicks).toEqual(rowClicks) // gutter numbers fade with their rows
+    expect(bandClick).toBe('7')
+    expect(railClick).toBe('6')
   })
 
   it('exposes the measured canvas and an accessible name', () => {
@@ -89,181 +260,26 @@ describe('SchematicRows component', () => {
     const svg = wrapper.find('svg')
 
     expect(svg.attributes('viewBox')).toBe('0 0 1920 1080')
-    expect(wrapper.find('.sf-rows').attributes('aria-label')).toBe('8-row schematic listing')
+    expect(wrapper.find('.sf-rows').attributes('aria-label')).toBe('7-row code listing with callout annotations')
   })
 
-  it('applies the tone system incl. the chrome-green constant and chrome-white plain', () => {
-    const wrapper = mountRows({ palette: { accent: '#2f95b9', accentAlt: '#f2ba1f' } })
-    // signature row: accent keyword, plain body, chrome annotation, plain, chrome annotation
-    const spans = wrapper.findAll('.sf-rows-row')[2].findAll('.sf-rows-token')
-
-    expect(spans[0].attributes('style')).toContain('#2f95b9') // accent → palette accent
-    expect(spans[1].attributes('style')).toContain('#f5f4f7') // plain → chrome white constant
-    expect(spans[2].attributes('style')).toContain('#66fb00') // chrome → terminal green constant
+  it('throws the layout RangeError for an empty scene instead of rendering blank', () => {
+    expect(() => mountRows({ data: { rows: [], callouts: [] } })).toThrow(RangeError)
   })
+})
 
-  it('draws alt tokens in accentAlt and schematic strokes in accent', () => {
-    const wrapper = mountRows({ palette: { accent: '#2f95b9', accentAlt: '#f2ba1f' } })
-    const altSpan = wrapper.findAll('.sf-rows-row')[4].findAll('.sf-rows-token')[2]
-    const fill = wrapper.findAll('path.sf-rows-line-fill')[0]
-    const base = wrapper.findAll('path.sf-rows-line-base')[0]
-
-    expect(altSpan.attributes('style')).toContain('#f2ba1f')
-    expect(fill.attributes('stroke')).toBe('#2f95b9') // accent-tone stroke
-    expect(base.attributes('stroke')).toBe('#40424e') // dim base = track
-  })
-
-  it('falls back alt tokens to accent when accentAlt is omitted', () => {
-    const wrapper = mountRows({ palette: { accent: '#2f95b9' } })
-    const altSpan = wrapper.findAll('.sf-rows-row')[4].findAll('.sf-rows-token')[2]
-
-    expect(altSpan.attributes('style')).toContain('#2f95b9')
-  })
-
-  it('binds one click per row in data order and attaches strokes to their row click', () => {
-    const wrapper = mountCapturing()
-    const rowClicks = wrapper.findAll('.sf-rows-row').map((r) => r.attributes('data-sfc-click'))
-    const strokeClicks = wrapper.findAll('path.sf-rows-line-fill').map((p) => p.attributes('data-sfc-click'))
-
-    expect(rowClicks).toEqual(['1', '2', '3', '4', '5', '6', '7', '8'])
-    // api/ctx/model sit at indices 4/5/6 → their strokes share clicks 5/6/7 — no stroke adds a click.
-    expect(strokeClicks).toEqual(['5', '6', '7'])
-  })
-
-  it('pre-sets each stroke to draw exactly its analytic polyline length', () => {
-    const wrapper = mountRows()
-    const layout = schematicRowsLayout({ rows, schematic })
-    const fills = wrapper.findAll('path.sf-rows-line-fill')
-
-    fills.forEach((fill, i) => {
-      // Style vars ship at the family's 4-decimal precision (sub-pixel).
-      expect(drawnPx(fill.attributes('style'))).toBeCloseTo(layout.schematic[i].length, 4)
-    })
-  })
-
-  it('covers [0, length] per stroke at full reveal — dashoffset ships the remaining phase', () => {
-    // Regression pattern (StepFlow grey notch / NodeEdge edges): a --sf-len dash
-    // at offset o paints [0, len − o]; each stroke's accent copy must reach the
-    // end of its own polyline at full reveal.
-    const wrapper = mountRows()
-    const fills = wrapper.findAll('path.sf-rows-line-fill')
-    const css = Array.from(document.querySelectorAll('style'))
-      .map((tag) => tag.textContent ?? '')
-      .join('\n')
-
-    fills.forEach((fill, i) => {
-      // Self-consistent at the shipped precision: dasharray = dashoffset base = len,
-      // so full reveal must paint [0, len] exactly — any wrong offset binding breaks it.
-      const len = lenPx(fill.attributes('style'))
-      expect(drawnPx(fill.attributes('style'))).toBe(len)
-      const unionEnd = len - dashOffsetPx(css, len, len)
-      expect(unionEnd, `stroke ${i} must paint [0, ${len}] at full reveal`).toBeCloseTo(len, 6)
-    })
-
-    // Backward-nav snap must survive any change to the revealed phase.
-    const hiddenRule = css.match(/\.sf-rows-line-fill\.slidev-vclick-hidden[^{]*\{[^}]*\}/)?.[0] ?? ''
-    expect(hiddenRule).toContain('stroke-dashoffset: var(--sf-len)')
-    expect(hiddenRule).toContain('transition: none')
-  })
-
-  it('carries the measured timings, hidden-state snap, and reduced-motion block in its rendered styles', () => {
+describe('SchematicRows component — motion stylesheet', () => {
+  it('ships the pop/fade/draw timings, the typewriter animation, and reduced-motion coverage', () => {
     mountRows()
+    const css = shippedCss()
 
-    const css = Array.from(document.querySelectorAll('style'))
-      .map((tag) => tag.textContent ?? '')
-      .join('\n')
-
-    expect(css).toContain('150ms') // row fade-and-rise
-    expect(css).toContain('300ms') // schematic draw
-    expect(css).toContain('translateY(4px)') // the measured 4px rise
-    const rowHidden = css.match(/\.sf-rows-row\.slidev-vclick-hidden[^{]*\{[^}]*\}/)?.[0] ?? ''
-    expect(rowHidden).toContain('transition: none')
-    expect(css).toContain('prefers-reduced-motion') // transitions disabled, instant state
-  })
-
-  it('renders the two-tone header: white title + chrome-green titleAccent tail', () => {
-    const wrapper = mountRows({ title: 'HARDER TO', titleAccent: 'MAINTAIN' })
-    const header = wrapper.find('.sf-chrome-title')
-
-    expect(header.text()).toContain('HARDER TO')
-    expect(header.text()).toContain('MAINTAIN')
-    expect(header.html()).toContain('#66fb00')
-  })
-
-  it('surfaces the layout RangeError for an unknown attach instead of rendering blank', () => {
-    expect(() => mountRows({ schematic: [{ attach: 'ghost', tone: 'accent' as const, points: [[0, 0], [1, 1]] }] })).toThrow(RangeError)
-  })
-})
-
-describe('SchematicRows highlight band', () => {
-  it("renders the band behind its row, sharing that row's click — no extra click", () => {
-    const wrapper = mountCapturing({ highlight: { row: 'ctx' } })
-    const band = wrapper.find('.sf-rows-band')
-
-    expect(band.exists()).toBe(true)
-    // ctx is row index 5 → click 6, the same v-click the row itself carries
-    expect(band.attributes('data-sfc-click')).toBe('6')
-    expect(wrapper.findAll('.sf-rows-row').map((r) => r.attributes('data-sfc-click'))).toEqual([
-      '1', '2', '3', '4', '5', '6', '7', '8',
-    ])
-    // painted before the rows → sits behind them
-    const html = wrapper.html()
-    expect(html.indexOf('sf-rows-band')).toBeGreaterThan(-1)
-    expect(html.indexOf('sf-rows-band')).toBeLessThan(html.indexOf('sf-rows-row'))
-  })
-
-  it("ships the measured rect at the component's px geometry", () => {
-    const wrapper = mountRows({ highlight: { row: 'ctx' } })
-    const style = wrapper.find('.sf-rows-band').attributes('style') ?? ''
-
-    expect(style).toContain('left: 50.88px') // 0.0265 × 1920
-    expect(style).toContain('top: 638.82px') // ctx row 653.4 + (27 − 56.16) / 2
-    expect(style).toContain('width: 1139.904px') // 0.5937 × 1920
-    expect(style).toContain('height: 56.16px') // 0.052 × 1080
-  })
-
-  it('fades with the row (150ms), snaps backward, and freezes under reduced motion', () => {
-    mountRows({ highlight: { row: 'ctx' } })
-
-    const css = Array.from(document.querySelectorAll('style'))
-      .map((tag) => tag.textContent ?? '')
-      .join('\n')
-    const bandRule = css.match(/\.sf-rows-band[^{,]*\{[^}]*\}/)?.[0] ?? ''
-    expect(bandRule).toContain('linear-gradient(90deg, #0a2830')
-    expect(bandRule).toContain('150ms')
-    const hiddenRule = css.match(/\.sf-rows-band\.slidev-vclick-hidden[^{]*\{[^}]*\}/)?.[0] ?? ''
-    expect(hiddenRule).toContain('transition: none')
+    expect(css).toContain('150ms') // chrome pop + band/callout fades
+    expect(css).toContain('300ms') // rail draw
+    expect(css).toContain('translateY(3px)') // the chrome pop rise
+    expect(css).toContain('sf-rows-type') // typewriter keyframes
     const reduced = css.slice(css.indexOf('prefers-reduced-motion'))
-    expect(reduced).toContain('.sf-rows-band')
-  })
-
-  it('surfaces a layout RangeError for a band on an unknown row instead of rendering blank', () => {
-    expect(() => mountRows({ highlight: { row: 'ghost' } })).toThrow(RangeError)
-  })
-
-  it('renders every token of a 100-char multi-tone row (the reworked slide seed shape)', () => {
-    const long: CodeRow[] = [
-      {
-        id: 'imports',
-        tokens: [
-          { text: 'from ', tone: 'accent' },
-          { text: 'dataclasses ', tone: 'plain' },
-          { text: 'import ', tone: 'accent' },
-          { text: 'dataclass, field', tone: 'plain' },
-          { text: '  # persisted answer', tone: 'chrome' },
-          { text: ' + citation spans, keyed by question hash', tone: 'plain' },
-        ],
-      },
-    ]
-    const wrapper = mountRows({ rows: long, schematic: [] })
-    const spans = wrapper.findAll('.sf-rows-token')
-
-    expect(spans).toHaveLength(6)
-    expect(wrapper.find('.sf-rows-row').text()).toBe(
-      'from dataclasses import dataclass, field  # persisted answer + citation spans, keyed by question hash',
-    )
-    expect(spans[4].attributes('style')).toContain('#66fb00') // chrome green constant
-    expect(spans[5].attributes('style')).toContain('#f5f4f7') // chrome white constant
+    expect(reduced).toContain('.sf-rows-window')
+    expect(reduced).toContain('.sf-rows-char')
+    expect(reduced).toContain('.sf-rows-rail')
   })
 })
-
