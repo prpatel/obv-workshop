@@ -205,7 +205,7 @@ const sideCards = computed(() => props.nodes.filter((n) => n.side === 'left' || 
           :y="node.icon ? layout.cards[node.side].cy + layout.cards[node.side].h * 0.2 : layout.cards[node.side].cy"
           text-anchor="middle"
           dominant-baseline="central"
-          :font-size="fmt(type.cardTitleSize)"
+          :font-size="fmt(type.cardTitleSize * (node.titleScale ?? 1))"
           :fill="cardTone(node.side)"
           font-weight="800"
           :textLength="fmt(layout.cards[node.side].w)"

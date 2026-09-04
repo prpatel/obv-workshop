@@ -240,6 +240,8 @@ export interface SpineNode {
   /** `'accent'` = cool card family; `'alt'` = spine accent (marker + label rows). */
   tone: 'accent' | 'alt'
   side: 'left' | 'right' | 'center'
+  /** Optional card-title scale override (1 = default); tunes glyph ink per card. */
+  titleScale?: number
 }
 
 export interface VerticalSpineData {
