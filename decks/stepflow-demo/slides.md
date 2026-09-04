@@ -132,7 +132,7 @@ canvasWidth: 1920
   ]"
 />
 
-<AutoAdvance />
+<AutoAdvance :duration-sec="4" />
 
 </div>
 
@@ -183,7 +183,7 @@ canvasWidth: 1920
   ]"
 />
 
-<AutoAdvance />
+<AutoAdvance :duration-sec="5" />
 
 </div>
 
@@ -219,7 +219,7 @@ canvasWidth: 1920
   ]"
 />
 
-<AutoAdvance />
+<AutoAdvance :duration-sec="5" />
 
 </div>
 
@@ -302,7 +302,7 @@ canvasWidth: 1920
   ]"
 />
 
-<AutoAdvance />
+<AutoAdvance :duration-sec="4" />
 
 </div>
 
@@ -343,7 +343,7 @@ canvasWidth: 1920
   ]"
 />
 
-<AutoAdvance />
+<AutoAdvance :duration-sec="5" />
 
 </div>
 
@@ -438,7 +438,7 @@ canvasWidth: 1920
   :y0-frac="0.384722"
 />
 
-<AutoAdvance />
+<AutoAdvance :duration-sec="8.7" />
 
 </div>
 
@@ -531,7 +531,7 @@ canvasWidth: 1920
   :x1-frac="0.759375"
 />
 
-<AutoAdvance />
+<AutoAdvance :duration-sec="7.5" />
 
 </div>
 
@@ -571,7 +571,7 @@ canvasWidth: 1920
   ]"
 />
 
-<AutoAdvance />
+<AutoAdvance :duration-sec="1.8" />
 
 </div>
 
@@ -650,7 +650,7 @@ canvasWidth: 1920
   ]"
 />
 
-<AutoAdvance />
+<AutoAdvance :duration-sec="1.4" />
 
 </div>
 

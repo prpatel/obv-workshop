@@ -56,7 +56,7 @@ decks/stepflow-demo/
 │  ├─ StackPanels.vue             # family built-in: measured panel mosaic (sweep band + pop panels)
 │  ├─ MilestoneLanes.vue          # family built-in: four-lane Gantt/milestone chart (offset bars + tick markers)
 │  ├─ HexCluster.vue              # family built-in: hexagon cluster (outline draw + content fade)
-│  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance
+│  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance + per-slide durationSec beats
 │  └─ stepflow/
 │     ├─ geometry.ts              # pure serpentine layout math (viewBox-relative)
 │     ├─ stair.ts                 # pure staircase layout math (uniform ramp + per-block lift overrides)
@@ -434,11 +434,37 @@ state reads.
 
 | Surface | Behavior |
 | ------- | -------- |
-| `?autoplay=N` URL param | Auto-starts the run on slide enter, evenly spaced across N seconds (`/2?autoplay=7` → the six clicks over 7 s, ≈1.17 s apart, first click one interval in). Bare `?autoplay` or an invalid value falls back to the 7 s demo default. |
-| `a` key | Toggles a run over the demo default of 7 seconds (no modifier held; `A` works too). |
+| `?autoplay=N` URL param | Auto-starts the run on slide enter, evenly spaced across N seconds (`/2?autoplay=7` → the six clicks over 7 s, ≈1.17 s apart, first click one interval in). Bare `?autoplay` or an invalid value falls back to the slide's own beat — its `durationSec` prop (the measured cadences below); 7 s where a slide sets none. |
+| `a` key | Toggles a run over the slide's own beat — the per-slide `durationSec` (7 s demo default where a slide sets none; no modifier held; `A` works too). |
 | Arrow keys / space / PageUp / PageDown | Cancel a running auto-advance — the native navigation still applies. |
 | Final click reached | The run stops cleanly; it never skips ahead to the next slide. |
 | Leaving the slide / unmount | All timers and key listeners are cleaned up; re-entering with `?autoplay` still in the URL replays the run. |
+
+### Per-slide pacing beats
+
+A slide passes `durationSec` to `<AutoAdvance />` and the runner spreads the
+slide's clicks evenly across it — pacing is set per slide from the fidelity
+reports' measured inter-click cadences (art_v4jVdTnp, art_iHm120ov) instead of
+the 7 s demo default. The runner has no per-click interval support (uniform
+spacing only), so a varied recorded rhythm is encoded as its mean cadence.
+
+| Slide | Family | Clicks | Measured cadence | `durationSec` | Spacing |
+| ----- | ------ | ------ | ---------------- | ------------- | ------- |
+| 3 | StairChain | 7 | 0.3–0.6 s/click (~300 ms block stagger early, 0.4–0.6 s late) | `4` | ≈0.57 s/click |
+| 4 | NodeEdge | 9 | 0.3–0.9 s/click, mean ≈0.55 s (wave-1 family band) | `5` | ≈0.56 s/click |
+| 5 | VerticalSpine | 4 | ~1.2–1.5 s between phases (marker 0.4 s → bottom rows 5.8 s) | `5` | 1.25 s/click |
+| 7 | SchematicRows | 8 | 0.3–0.5 s/row | `4` | 0.5 s/row |
+| 8 | TwoBarCompare | 3 | ≥1.5 s between bars | `5` | ≈1.67 s/click |
+| 10 | TileGrid | 6 | ≈1.45 s/tile (measured 27.32→28.77 s) | `8.7` | 1.45 s/tile |
+| 12 | SegmentTimeline | 3 | ≈2.5 s sweep per segment | `7.5` | 2.5 s/click |
+| 13 | StackPanels | 4 | 0.4–0.5 s burst cadence | `1.8` | 0.45 s/click |
+| 15 | HexCluster | 3 | 0.4–0.5 s/click | `1.4` | ≈0.47 s/click |
+
+Slides 2 (StepFlow, the endorsed calibration slide), 6 (HeroTile, single
+click), 9 (ColumnRow), 11 (RatioStrip), and 14 (MilestoneLanes) keep the 7 s
+default — the reports give them no measured inter-click cadence; their notes
+are within-click choreography, which is component-level work, not click
+pacing.
 
 ### Recording workflow
 
