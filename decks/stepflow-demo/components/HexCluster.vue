@@ -76,6 +76,7 @@ const TITLE_CAP_TOP = 49
 <template>
   <svg
     class="hexcluster"
+    :class="{ 'sf-hx-instant': instant }"
     :viewBox="`0 0 ${layout.viewBox.width} ${layout.viewBox.height}`"
     role="img"
     :aria-label="`${layout.plates.length}-plate hex mesh diagram`"
@@ -112,7 +113,6 @@ const TITLE_CAP_TOP = 49
       :key="plate.id"
       v-click="plateClick(i)"
       class="sf-hx-plate"
-      :class="{ 'sf-hx-instant': instant }"
     >
       <rect
         class="sf-hx-plate-rect"
@@ -195,8 +195,12 @@ const TITLE_CAP_TOP = 49
     fill 600ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.sf-hx-plate.sf-hx-instant .sf-hx-cell,
-.sf-hx-plate.sf-hx-instant .sf-hx-core {
+/* sf-hx-instant lives on the SVG root, NOT on the v-click groups: a reactive
+   :class on the same element as v-click re-patches the class attribute when
+   `instant` flips, wiping the directive's slidev-vclick-hidden class and
+   revealing the right plate a click early. */
+.sf-hx-instant .sf-hx-cell,
+.sf-hx-instant .sf-hx-core {
   transition: none;
 }
 
