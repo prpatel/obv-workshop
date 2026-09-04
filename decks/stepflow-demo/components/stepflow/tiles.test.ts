@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import TileGrid from '../TileGrid.vue'
-import { tileGridLayout, type Tile } from './tiles'
+import { hexPath, tileGridLayout, tileTrackLines, type Tile } from './tiles'
 
 /**
  * Slidev registers the v-click directive globally at runtime; the render tests
@@ -56,12 +56,12 @@ const GRID = {
 }
 
 const gridTiles: Tile[] = [
-  { id: 'extract', icon: 'database', label: 'EXTRACT' },
-  { id: 'transform', icon: 'cpu', label: 'TRANSFORM' },
-  { id: 'load', icon: 'boxes', label: 'LOAD' },
-  { id: 'orchestrate', icon: 'git-branch', label: 'ORCHESTRATE' },
-  { id: 'quality', icon: 'layers', label: 'QUALITY' },
-  { id: 'serve', icon: 'server', label: 'SERVE' },
+  { id: 'extract', icon: 'database', label: 'EXTRACT', mini: '01' },
+  { id: 'transform', icon: 'cpu', label: 'TRANSFORM', mini: '02' },
+  { id: 'load', icon: 'boxes', label: 'LOAD', mini: '03' },
+  { id: 'orchestrate', icon: 'git-branch', label: 'ORCHESTRATE', mini: '04' },
+  { id: 'quality', icon: 'layers', label: 'QUALITY', mini: '05' },
+  { id: 'serve', icon: 'server', label: 'SERVE', mini: '06' },
 ]
 
 /**
@@ -241,6 +241,41 @@ describe('tileGridLayout — flat-row arrangement (8 tiles, src 107–110s)', ()
   })
 })
 
+describe('hexPath — pointed left-right hexagon (t=33.0s anatomy)', () => {
+  it('draws left/right points at mid-height and flat top/bottom edges', () => {
+    // Half-width points, quarter-width top/bottom edges, exact centering.
+    expect(hexPath(100, 100, 40, 20)).toBe(
+      'M 80 100 L 90 90 L 110 90 L 120 100 L 110 110 L 90 110 Z',
+    )
+  })
+
+  it('rejects non-positive dimensions — never render blank', () => {
+    expect(() => hexPath(0, 0, 0, 10)).toThrow(RangeError)
+    expect(() => hexPath(0, 0, 10, -1)).toThrow(RangeError)
+  })
+})
+
+describe('tileTrackLines — per-row connector track behind the tiles', () => {
+  it('draws one line per occupied row through the tile centers with measured overhangs', () => {
+    const l = tileGridLayout({ tiles: gridTiles, ...GRID })
+    const lines = tileTrackLines(l.tiles)
+
+    expect(lines).toHaveLength(2)
+    // Row 0: track starts ~56px left of tile 0 (0.47 × 119.04) and runs ~84px
+    // past tile 2's right edge (0.70 × 119.04) — the t=33.0s reads.
+    expect(lines[0].x1).toBeCloseTo(375 - 0.47 * 119.04, 6)
+    expect(lines[0].x2).toBeCloseTo(1550.04 + 0.7 * 119.04, 6)
+    expect(lines[0].y).toBeCloseTo(415.49976 + 104.76 / 2, 6)
+    expect(lines[1].y).toBeCloseTo(752.99976 + 104.76 / 2, 6)
+  })
+
+  it('collapses a single-row arrangement to one line and handles empty input', () => {
+    const row = tileGridLayout({ tiles: rowTiles, ...ROW })
+    expect(tileTrackLines(row.tiles)).toHaveLength(1)
+    expect(tileTrackLines([])).toEqual([])
+  })
+})
+
 describe('tileGridLayout — validation (RangeError, never render blank)', () => {
   it('rejects an empty tile list and bad column counts', () => {
     expect(() => tileGridLayout({ tiles: [], ...GRID })).toThrow(RangeError)
@@ -289,46 +324,117 @@ describe('TileGrid component', () => {
     expect(clicks).toEqual([1, 2, 3, 4, 5, 6])
   })
 
-  it('applies the tone system: palette roles plus the measured status/plain constants', () => {
+  it('applies the tone system: measured hex core plus palette roles and status/plain constants', () => {
     const wrapper = mountTileGrid({
       tiles: matrixTiles,
       ...MATRIX,
       palette: { accentAlt: '#f7ba20', accentTertiary: '#1cd798' },
     })
-    const rects = wrapper.findAll('.sf-tg-rect')
+    const hexes = wrapper.findAll('.sf-tg-hex')
 
-    expect(rects[0].attributes('fill')).toBe('#f5f4f7') // plain → chrome white
-    expect(rects[1].attributes('fill')).toBe('#23d7ed') // accent → cyanOnBlack default
-    expect(rects[3].attributes('fill')).toBe('#f7ba20') // alt → accentAlt (amber)
-    expect(rects[4].attributes('fill')).toBe('#f7ba20') // enlarged alt cell
-    expect(rects[6].attributes('fill')).toBe('#e5413f') // status → measured red
-    expect(rects[8].attributes('fill')).toBe('#1cd798') // tertiary → teal
+    expect(hexes[0].attributes('fill')).toBe('#f5f4f7') // plain → chrome white
+    expect(hexes[1].attributes('fill')).toBe('#1ed0e8') // accent → measured hex core
+    expect(hexes[3].attributes('fill')).toBe('#f7ba20') // alt → accentAlt (amber)
+    expect(hexes[4].attributes('fill')).toBe('#f7ba20') // enlarged alt cell
+    expect(hexes[6].attributes('fill')).toBe('#e5413f') // status → measured red
+    expect(hexes[8].attributes('fill')).toBe('#1cd798') // tertiary → teal
   })
 
-  it('honors per-tile size overrides in the rendered rects', () => {
+  it('renders the hex core at the measured fraction of each tile box', () => {
     const wrapper = mountTileGrid({ tiles: matrixTiles, ...MATRIX })
-    const rects = wrapper.findAll('.sf-tg-rect')
+    const hexes = wrapper.findAll('.sf-tg-hex')
 
-    expect(Number(rects[0].attributes('width'))).toBeCloseTo(99.84, 6)
-    expect(Number(rects[0].attributes('height'))).toBeCloseTo(100.44, 6)
-    expect(Number(rects[4].attributes('width'))).toBeCloseTo(126, 6)
-    expect(Number(rects[4].attributes('height'))).toBeCloseTo(146.99988, 6)
+    // Tile 0: cx = 790.50048 + 99.84/2 = 840.42048, cy = 371.99952 + 100.44/2 = 422.21952;
+    // core w = 99.84 × 0.825 = 82.368, h = 100.44 × 0.93 = 93.4092.
+    expect(hexes[0].attributes('d')).toBe(hexPath(840.42048, 422.21952, 82.368, 93.4092))
+    // Enlarged alt cell: cx = 969.06048 + 63 = 1032.06048, cy = 578.27952 + 73.49994 = 651.77946.
+    expect(hexes[4].attributes('d')).toBe(hexPath(1032.06048, 651.77946, 126 * 0.825, 146.99988 * 0.93))
   })
 
-  it('renders the grid tiles with icons at scale 1.5 and white labels inside', () => {
+  it('draws a glow halo per tile (blurred copy, measured opacity) behind the core', () => {
+    const wrapper = mountTileGrid(props)
+    const halos = wrapper.findAll('.sf-tg-halo')
+
+    expect(halos).toHaveLength(6)
+    expect(halos[0].attributes('opacity')).toBe('0.6')
+    expect(halos[0].attributes('filter')).toMatch(/^url\(#.*\)$/)
+    // Same geometry as the core it glows for.
+    expect(halos[0].attributes('d')).toBe(wrapper.findAll('.sf-tg-hex')[0].attributes('d'))
+    // The filter def carries the measured blur in the shared id namespace.
+    const filter = wrapper.find('filter')
+    expect(filter.exists()).toBe(true)
+    expect(filter.find('feGaussianBlur').attributes('stdDeviation')).toBe('18')
+  })
+
+  it('draws the connector track behind the tiles (#353642, ~12px, through tile centers)', () => {
+    const wrapper = mountTileGrid(props)
+    const lines = wrapper.findAll('.sf-tg-track')
+
+    expect(lines).toHaveLength(2)
+    expect(lines[0].attributes('stroke')).toBe('#353642')
+    expect(Number(lines[0].attributes('stroke-width'))).toBeCloseTo(12, 6)
+    expect(Number(lines[0].attributes('y1'))).toBeCloseTo(467.87976, 6)
+    expect(Number(lines[0].attributes('x1'))).toBeCloseTo(319.0512, 6)
+    expect(Number(lines[0].attributes('x2'))).toBeCloseTo(1633.368, 6)
+  })
+
+  it('marks the first tile with the lit-vertex sheen on the track', () => {
+    const wrapper = mountTileGrid(props)
+    const sheens = wrapper.findAll('.sf-tg-sheen')
+
+    expect(sheens).toHaveLength(1)
+    expect(sheens[0].attributes('stroke')).toBe('#a0ecfb')
+    // Dash ends 16px left of tile 0's hex point (cx − w/2 = 385.416).
+    expect(Number(sheens[0].attributes('x2'))).toBeCloseTo(385.416 - 16, 6)
+    expect(Number(sheens[0].attributes('x1'))).toBeCloseTo(385.416 - 16 - 50, 6)
+    expect(Number(sheens[0].attributes('y1'))).toBeCloseTo(467.87976, 6)
+  })
+
+  it('honors per-tile size overrides in the rendered hexes', () => {
+    const wrapper = mountTileGrid({ tiles: matrixTiles, ...MATRIX })
+    const hexes = wrapper.findAll('.sf-tg-hex')
+
+    // The enlarged alt cell (126 × 146.99988 box) renders a proportionally
+    // larger hexagon than its default-sized siblings (99.84 × 100.44).
+    const w = (d: string): number => {
+      const xs = d.match(/-?[\d.]+/g)?.filter((_, i) => i % 2 === 0).map(Number) ?? []
+      return Math.max(...xs) - Math.min(...xs)
+    }
+    // hexPath rounds vertices to 2 decimals, so read the width at that precision.
+    expect(w(hexes[4].attributes('d'))).toBeCloseTo(126 * 0.825, 1)
+    expect(w(hexes[0].attributes('d'))).toBeCloseTo(99.84 * 0.825, 1)
+  })
+
+  it('renders the grid tiles with ~40px near-black icons centered in the hexes', () => {
     const wrapper = mountTileGrid(props)
     const icons = wrapper.findAll('.sf-tg-icon')
-    const labels = wrapper.findAll('.sf-tg-label')
 
     expect(icons).toHaveLength(6)
-    // No accentTertiary override → the icon falls back to accent (cyanOnBlack).
-    expect(icons[0].attributes('stroke')).toBe('#23d7ed')
-    // Tile 0: cx = 375 + 119.04/2 = 434.52 → translate x = 434.52 − 18 = 416.52, scale 1.5.
-    expect(icons[0].attributes('transform')).toContain('416.52')
-    expect(icons[0].attributes('transform')).toContain('scale(1.5)')
+    // Measured t=33.0s: near-black strokes on the cyan hex (the wave-1 teal
+    // read rendered sub-visible contrast).
+    expect(icons[0].attributes('stroke')).toBe('#000000')
+    // Tile 0: hex center (434.52, 467.87976), size 40 → translate (414.52, 447.8798),
+    // scale 40/24 = 1.6667 → rendered stroke 2 × 1.6667 ≈ 3.3px.
+    expect(icons[0].attributes('transform')).toContain('414.52')
+    expect(icons[0].attributes('transform')).toContain('447.8798')
+    expect(icons[0].attributes('transform')).toContain('scale(1.6667)')
+  })
+
+  it('renders the below-tile double label rows: cyan mini over white label', () => {
+    const wrapper = mountTileGrid(props)
+    const minis = wrapper.findAll('.sf-tg-mini')
+    const labels = wrapper.findAll('.sf-tg-label')
+
+    expect(minis).toHaveLength(6)
     expect(labels).toHaveLength(6)
+    expect(minis[0].text()).toBe('01')
+    expect(minis[0].attributes('fill')).toBe('#20d0e8')
+    // Both rows centered under the hex, measured offsets below the box bottom.
+    expect(Number(minis[0].attributes('y'))).toBeCloseTo(415.49976 + 104.76 + 25.5, 6)
     expect(labels[0].text()).toBe('EXTRACT')
-    expect(labels[0].attributes('fill')).toBe('#ffffff')
+    expect(labels[0].attributes('fill')).toBe('#a6a8ae')
+    expect(Number(labels[0].attributes('y'))).toBeCloseTo(415.49976 + 104.76 + 55.5, 6)
+    expect(Number(labels[0].attributes('font-size'))).toBeCloseTo(16, 6)
   })
 
   it('renders the fallback icon and warns on an unknown icon key', () => {

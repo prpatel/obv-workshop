@@ -413,13 +413,17 @@ canvasWidth: 1920
 ---
 
 <!--
-  TileGrid demo (research §3.5, src 25–35s): six cyan tiles (6.2%w × 9.7%h,
+  TileGrid demo (research §3.5, src 25–35s; wave-2 fidelity rework, report
+  art_iHm120ov §TileGrid): six pointed hexagonal tiles (6.2%w × 9.7%h boxes,
   pitch 27.5%w × 31.25%h) on the black canvas, built row-major with six native
-  v-clicks — one per tile. Measured cyanOnBlack tiles carry small teal icons
-  (accentTertiary) and white mono labels; the two-tone header follows the
-  family chrome convention. The matrix (src 57–60s) and flat-row (107–110s)
-  variants are seed-data arrangements of the same contract, covered in tests.
-  AutoAdvance is renderless deck-level wiring (`a` key, ?autoplay=N on the URL).
+  v-clicks — one per tile. Measured anatomy: saturated #1ed0e8 hex cores with
+  a soft glow halo, a ~12px #353642 connector track through tile centers, a
+  #a0ecfb sheen at the first tile's lit vertex, ~40px near-black icons, and
+  below-tile double label rows (cyan mini over the white label, both ~16px).
+  The two-tone header follows the family chrome convention. The matrix
+  (src 57–60s) and flat-row (107–110s) variants are seed-data arrangements of
+  the same contract, covered in tests. AutoAdvance is renderless deck-level
+  wiring (`a` key, ?autoplay=N on the URL).
 -->
 
 <div class="sf-demo-stage">
@@ -428,12 +432,12 @@ canvasWidth: 1920
   title="DATA"
   title-accent="TOOLING"
   :tiles="[
-    { id: 'extract', icon: 'database', label: 'EXTRACT' },
-    { id: 'transform', icon: 'cpu', label: 'TRANSFORM' },
-    { id: 'load', icon: 'boxes', label: 'LOAD' },
-    { id: 'orchestrate', icon: 'git-branch', label: 'ORCHESTRATE' },
-    { id: 'quality', icon: 'layers', label: 'QUALITY' },
-    { id: 'serve', icon: 'server', label: 'SERVE' },
+    { id: 'extract', icon: 'database', label: 'EXTRACT', mini: '01' },
+    { id: 'transform', icon: 'cpu', label: 'TRANSFORM', mini: '02' },
+    { id: 'load', icon: 'boxes', label: 'LOAD', mini: '03' },
+    { id: 'orchestrate', icon: 'git-branch', label: 'ORCHESTRATE', mini: '04' },
+    { id: 'quality', icon: 'layers', label: 'QUALITY', mini: '05' },
+    { id: 'serve', icon: 'server', label: 'SERVE', mini: '06' },
   ]"
   :cols="3"
   :tile-w-frac="0.062"
