@@ -288,6 +288,8 @@ function fmt(n: number): string {
           dominant-baseline="central"
           :font-size="type.labelSize"
           :fill="LABEL_COLOR"
+          :textLength="bar.labelLength ?? undefined"
+          :lengthAdjust="bar.labelLength != null ? 'spacingAndGlyphs' : undefined"
         >{{ bar.label }}</text>
         <text
           v-if="bar.sub"

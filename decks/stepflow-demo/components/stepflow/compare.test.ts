@@ -17,6 +17,7 @@ import {
   DATA_TEXT_Y_FRACS,
   LABEL_COLOR,
   LABEL_INSET_X_FRAC,
+  LABEL_TEXT_LENGTHS,
   LEGEND_CHIP_COLORS,
   LEGEND_CHIP_H,
   LEGEND_CHIP_W,
@@ -137,6 +138,9 @@ describe('measured constants — hand-computed to 1e-6', () => {
     expect(MARK_BOX).toEqual({ x: 324, y: 791, w: 52, h: 46 })
     // On-bar labels: locked mission ink value (frame median #060203).
     expect(LABEL_COLOR).toBe('#0a0a0a')
+    // Measured label ink extents (ref x352–912 / x352–948, +4px bearings):
+    // the deck's mono runs ~4.8% wider than the recording's condensed face.
+    expect(LABEL_TEXT_LENGTHS).toEqual([564, 600])
     // Legend: three 15×16 chips on the 28px pitch + gray caps text at x368.
     expect(LEGEND_CHIP_XS).toEqual([259, 287, 315])
     expect(LEGEND_CHIP_COLORS).toEqual(['#fc5b55', '#fbb72f', '#26c53f'])
@@ -210,6 +214,19 @@ describe('twoBarCompareLayout — resolved geometry', () => {
     expect(l.bars[0].labelX).toBeCloseTo((214 * 1.5) + 28, 6)
     expect(l.bars[0].labelY).toBeCloseTo(616.5 + 37.5, 6)
     expect(l.bars[1].labelY).toBeCloseTo(873 + 37.5, 6)
+    // Measured textLength pins ride the two measured bars; others stay natural.
+    expect(l.bars.map((b) => b.labelLength)).toEqual([564, 600])
+    const unmeasured = twoBarCompareLayout({
+      bars: [
+        { id: 'a', wFrac: 0.2, tone: 'accent' },
+        { id: 'b', wFrac: 0.3, tone: 'alt' },
+        { id: 'c', wFrac: 0.4, tone: 'accent' },
+      ],
+      xFrac: 0.1,
+      barHFrac: 0.05,
+      yFracs: [0.2, 0.5, 0.8],
+    })
+    expect(unmeasured.bars.every((b) => b.labelLength === null)).toBe(true)
     // Sub note: aligned with the bar's left edge, one gap under its bottom.
     const withSub = twoBarCompareLayout({ bars: [{ ...bars[0], sub: 'S' }, bars[1]] })
     expect(withSub.bars[0].subX).toBeCloseTo(321, 6)
@@ -406,6 +423,10 @@ describe('TwoBarCompare component', () => {
       expect(label.attributes('fill')).toBe('#0a0a0a')
       expect(Number(label.attributes('font-size'))).toBe(32)
     })
+    // Measured extents pin the condensed-face tails (ref ink x352–912/x352–948).
+    expect(labels[0].attributes('textLength')).toBe('564')
+    expect(labels[1].attributes('textLength')).toBe('600')
+    labels.forEach((label) => expect(label.attributes('lengthAdjust')).toBe('spacingAndGlyphs'))
     expect(labels[0].text()).toBe('EVERY CUSTOMER COMES BACK TWICE')
     expect(labels[1].text()).toBe('THIS BACKFILLS THE SAME DAY TWICE')
   })

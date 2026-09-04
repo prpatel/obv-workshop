@@ -200,6 +200,17 @@ export const SIDE_RAILS = [
   { x: 1682, y: 861, w: 5, h: 100, fill: '#0c0b0f' },
 ] as const
 
+/**
+ * Measured on-bar label ink extents (settled ref frame @1080: red bar
+ * x352–912, amber bar x352–948, +4px side-bearing allowance). The deck's
+ * mono face runs ~4.8% wider than the recording's condensed face at 32px,
+ * so each label <text> pins textLength to its measured extent — same
+ * mechanism as TitleChrome.titleTextLength (PR #42). Applied only on the
+ * measured default composition (no geometry overrides); null = natural
+ * width (other bar counts or explicit overrides).
+ */
+export const LABEL_TEXT_LENGTHS: Array<number | null> = [564, 600]
+
 /** Resolved px geometry for one bar and its derived chip/label anchors. */
 export interface BarLayout {
   id: string
@@ -217,6 +228,8 @@ export interface BarLayout {
   /** On-bar label anchor (left-inset, vertically centered), px. */
   labelX: number
   labelY: number
+  /** Measured ink-extent pin (textLength) for the label; null = natural width. */
+  labelLength: number | null
   /** Under-bar note anchor (aligned with the bar's left edge), px. */
   subX: number
   subY: number
@@ -301,6 +314,11 @@ export function twoBarCompareLayout(data: TwoBarCompareData, viewBox: Canvas = {
     throw new RangeError(`barHFrac (${barHFrac}) must be positive`)
   }
 
+  // The measured label-extent pins describe the measured two-bar
+  // composition; explicit geometry overrides step off the measurement.
+  const measuredComposition =
+    data.xFrac === undefined && data.barHFrac === undefined && data.yFracs === undefined
+
   const bars: BarLayout[] = data.bars.map((bar, i) => {
     requireFrac(`bar "${bar.id}" wFrac`, bar.wFrac)
     requireFrac(`bar "${bar.id}" yFrac`, yFracs[i])
@@ -338,6 +356,7 @@ export function twoBarCompareLayout(data: TwoBarCompareData, viewBox: Canvas = {
       chip,
       labelX: (xFrac + LABEL_INSET_X_FRAC) * viewBox.width,
       labelY: y + h / 2,
+      labelLength: measuredComposition ? LABEL_TEXT_LENGTHS[i] ?? null : null,
       subX: x,
       subY: y + h + SUB_GAP_Y_FRAC * viewBox.height,
     }
