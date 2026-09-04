@@ -673,29 +673,23 @@ canvasWidth: 1920
 ---
 
 <!--
-  Demo slide: each click pops one hexagon outline in (~60ms) and fades in its
-  inner content (three v-clicks, owned by the component). Geometry ships the
-  recording's SETTLED state — the V re-flows to a single row after its build-up
-  (fidelity rework: centers 24.8/47.5/70.3%w, cy 0.603·h, span 13.4–81.7%w).
-  Node data is inline so MCP write-back and hand edits follow the same path;
-  captions carry '\n' row breaks rendered as multi-row cell text. AutoAdvance
-  is renderless deck-level wiring (see the StepFlow demo slide for the
-  ?autoplay=N / a-key contract).
+  Demo slide: exact-trace composition (sheet art_4A7yguGJ) — two bordered
+  cluster plates on the black canvas, each with a faint flat-top honeycomb web
+  and an in-panel label. Click 1 builds the left plate (INGESTION), click 2
+  the right (NODE) with its pre-build core, click 3 dims every bright web
+  stroke to the ~6–10%-white settled contract (the 5.9–6.6s transition).
+  Header strings verified from the hx-h1/h2/h3 crops: white 'DATA' + green
+  'MESH DATA GRID' on the measured ≈x916 axis.
 -->
 
 <div class="sf-hex-stage">
 
 <HexCluster
-  title="MODERN DATA STACK"
-  titleAccent="█"
-  legend="01"
-  arrangement="row"
-  :geometry="{ centerXFrac: 0.475, pitchXFrac: 0.2275, topFrac: 0.603 }"
-  :palette="{ accent: '#349aea', accentTertiary: '#23d498' }"
-  :nodes="[
-    { id: 'sources', title: 'SOURCES', caption: 'streams, lakes\n& warehouses', icon: 'database' },
-    { id: 'models', title: 'TRANSFORM', caption: 'sql models\ncompiled in git', icon: 'braces' },
-    { id: 'agents', title: 'AI AGENTS', caption: 'agents act on\ntrusted data', icon: 'bot', tone: 'tertiary' },
+  title="DATA"
+  titleAccent="MESH DATA GRID"
+  :plates="[
+    { id: 'left', label: 'INGESTION', tone: 'cyan' },
+    { id: 'right', label: 'NODE', tone: 'blue' },
   ]"
 />
 

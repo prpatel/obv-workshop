@@ -1,116 +1,76 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { hexLayout, type HexCell, type HexNodeData, type HexOptions, type HexArrangement } from './stepflow/hex'
-import { resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
-import { iconPath, ICON_FALLBACK } from './stepflow/icons'
+import { computed, inject, ref, watch, type InjectionKey, type Ref } from 'vue'
+import type { ClicksContext } from '@slidev/client/constants'
+
+/**
+ * Mirrors `injectionClicksContext` from @slidev/client/constants — the same
+ * branded string, restated locally. The runtime import is a build hazard:
+ * the subpath resolves to constants.ts, which the production bundler cannot
+ * load; the type comes in type-only (erased) and the string is the protocol.
+ */
+const injectionClicksContext = '$$slidev-clicks-context' as unknown as InjectionKey<Ref<ClicksContext>>
 import TitleChrome from './stepflow/TitleChrome.vue'
+import { hexClusterLayout, HEX_COLORS, type HexClusterOptions, type HexPlateData } from './stepflow/hex'
 
 const props = withDefaults(defineProps<{
-  /** One entry per cell; content travels with the slide. */
-  nodes: HexNodeData[]
-  /** Partial palette merged over the measured `cyanOnBlack` preset. */
-  palette?: StepFlowPaletteOverride
+  /** One plate per entry; the measured composition holds exactly two. */
+  plates: HexPlateData[]
   /** Optional geometry overrides; defaults are the measured fractions. */
-  geometry?: HexOptions
-  /** 'v' honeycomb (default, the recording's shape) or a single 'row'. */
-  arrangement?: HexArrangement
-  /** Mono header line, e.g. 'THE MODERN DATA STACK'. */
+  geometry?: HexClusterOptions
+  /** White lead line, e.g. 'DATA'. */
   title?: string
-  /** Optional header tail rendered in chrome-green (the recordings' two-tone header). */
+  /** Header tail rendered in chrome-green (two-tone chrome convention). */
   titleAccent?: string
-  /** Short amber legend line rendered above the center column's top vertex (the v5 recording's legend glyphs). */
-  legend?: string
-}>(), { palette: () => ({}), arrangement: 'v' })
+}>(), { plates: () => [] })
 
-const p = computed(() => resolvePalette(props.palette))
-const layout = computed(() => hexLayout(props.nodes.length, props.arrangement, props.geometry))
+const layout = computed(() => hexClusterLayout(props.geometry))
 
-// House type scale, height fractions. Header cap ≈ 0.082·h (the recordings'
-// chrome is a design element — wave-1 cause #4); inner text rows ≈ 34px at 1080
-// (the v5 recording's glyph rows).
-const type = computed(() => {
-  const h = layout.value.viewBox.height
-  return { titleSize: 0.0315 * h, captionSize: 0.0315 * h, legendSize: 0.0315 * h }
+// Live Slidev click state — the same context the v-click directive reads,
+// provided per slide. Outside Slidev (tests, static renders) it's undefined
+// and every element renders settled: geometry is complete, only animation hides.
+const clicksCtx = inject(injectionClicksContext, undefined)
+const clicks = computed(() => clicksCtx?.value.current ?? Number.POSITIVE_INFINITY)
+
+// Backward navigation snaps instantly (locked decision): when the last click
+// step went backward, the next state change suppresses all transitions.
+const instant = ref(true)
+watch(clicks, (next, prev) => {
+  instant.value = next < prev
 })
 
-// Inner content placement, in hexagon-radius units (measured: the v5 icon center
-// sits ≈ 0.55R above the cell center with tone-colored text rows below it).
-const ICON_SIZE_FRAC = 0.6
-const ICON_CENTER_FRAC = -0.55
-const TITLE_BASELINE_FRAC = 0.32
-const CAPTION_PITCH_FRAC = 0.21
+/**
+ * Choreography (sheet §3 + this session's frame walk): the left plate, its
+ * web, and the INGESTION label arrive together on click 1; the right plate,
+ * web, NODE label, and the pre-build core on click 2; click 3 runs the dim —
+ * every bright web stroke and the core settle to the ~6–10%-white contract
+ * over ~600ms (the 5.9–6.6s transition). The plate rects and labels persist.
+ */
+const DIM_CLICK = 3
 
-// Bottom chrome rule (measured: 67.8%w × ~6px at y 0.894–0.900·h, centered on
-// the cluster axis — the report's "y1023–1028" pixels at native 1144 height).
-const RULE_WIDTH_FRAC = 0.678
-const RULE_Y_FRAC = 0.8944
-const RULE_HEIGHT_FRAC = 0.00556
+const dimmed = computed(() => clicks.value >= DIM_CLICK)
 
-// Legend glyphs sit just above the center cell's top vertex (measured gap 71/1144).
-const LEGEND_GAP_FRAC = 0.062
-
-const ICON_BOX = 24
-function iconTransform(cell: HexCell): string {
-  const size = ICON_SIZE_FRAC * layout.value.hexR
-  const s = size / ICON_BOX
-  const cy = cell.cy + ICON_CENTER_FRAC * layout.value.hexR
-  return `translate(${fmt(cell.cx - size / 2)} ${fmt(cy - size / 2)}) scale(${fmt(s)})`
+function plateClick(index: number): number {
+  return Math.min(index + 1, DIM_CLICK)
 }
 
-function titleBaseline(cell: HexCell): number {
-  return cell.cy + TITLE_BASELINE_FRAC * layout.value.hexR
+// Tone-colored contract lookups — the measured constants in hex.ts.
+function labelColor(tone: HexPlateData['tone']): string {
+  return tone === 'cyan' ? HEX_COLORS.label.cyan : HEX_COLORS.label.blue
 }
 
-function captionBaseline(cell: HexCell, row: number): number {
-  return cell.cy + (TITLE_BASELINE_FRAC + CAPTION_PITCH_FRAC * (row + 1)) * layout.value.hexR
+function webStroke(plateId: string, tone: HexPlateData['tone']): string {
+  return dimmed.value
+    ? plateId === 'left' ? HEX_COLORS.settledStroke.left : HEX_COLORS.settledStroke.right
+    : tone === 'cyan' ? HEX_COLORS.brightStroke.left : HEX_COLORS.brightStroke.right
 }
 
-// Captions may carry '\n' breaks — each becomes one rendered row (the v5 cells
-// hold multi-row tone-colored text, not a single caption line).
-function captionRows(node: HexNodeData): string[] {
-  return node.caption.split('\n')
-}
+const coreFill = computed(() => (dimmed.value ? HEX_COLORS.plateFill : HEX_COLORS.brightStroke.right))
 
-// The legend anchors above the middle column: the cell closest to the cluster
-// axis (the center hex of the settled row, the bottom cell of the V).
-const legendCell = computed(() => {
-  const axis = layout.value.axisX
-  return layout.value.cells.reduce((a, b) =>
-    Math.abs(b.cx - axis) < Math.abs(a.cx - axis) ? b : a,
-  )
-})
-
-const legendBaseline = computed(
-  () => legendCell.value.cy - layout.value.hexR - LEGEND_GAP_FRAC * layout.value.viewBox.height,
-)
-
-function fmt(n: number): string {
-  return String(parseFloat(n.toFixed(4)))
-}
-
-// Unknown key renders the visible fallback (never undefined into v-html) and
-// names the bad key in dev so the author fixes the string.
-function resolveIcon(key: string): string {
-  const path = iconPath(key)
-  if (!path && import.meta.env?.DEV) {
-    console.warn(`[HexCluster] unknown icon key "${key}" — rendering the fallback icon`)
-  }
-  return path ?? ICON_FALLBACK
-}
-
-// 'tertiary' tone consumes the optional accentTertiary field (deep-merged like
-// every palette field); omitted, it falls back to the accent — the documented
-// resolvePalette contract. The v5 cells carry tone-colored text (blue cells →
-// blue rows, teal-green cell → green rows); no gray inside the outlines.
-function toneColor(node: HexNodeData): string {
-  return node.tone === 'tertiary' ? (p.value.accentTertiary ?? p.value.accent) : p.value.accent
-}
-
-// Title chrome lives in the shared TitleChrome component (titleAccent
-// convention, deck README). The legend glyphs are the v5 recording's amber
-// (measured #ebb92a) — likewise a constant.
-const HEADER_FILL = '#ffffff'
-const LEGEND_AMBER = '#ebb92a'
+// The title chrome centers on the measured header axis (≈ x916 — Direction-2
+// foundation note), independent of the plate composition.
+const TITLE_AXIS_X = 916
+const TITLE_CAP_HEIGHT = 78
+const TITLE_CAP_TOP = 49
 </script>
 
 <template>
@@ -118,106 +78,84 @@ const LEGEND_AMBER = '#ebb92a'
     class="hexcluster"
     :viewBox="`0 0 ${layout.viewBox.width} ${layout.viewBox.height}`"
     role="img"
-    :aria-label="`${nodes.length}-hex diagram`"
+    :aria-label="`${layout.plates.length}-plate hex mesh diagram`"
   >
-    <!-- Chrome (header + bottom rule) centers on the cluster axis — the v5
-         recording's header spans x 14.8–80.8%w, its rule x 13.7–81.5%w, both
-         centered at ≈ 47.6%w. -->
-    <!-- Shared title chrome: centered two-tone title on the cluster axis
-         (HexCluster Title row: the sheet reads cap ≈72–86 in the band y45–145;
-         the measured green glyph core is y49–126 → cap 78, matching the
-         wave-1 line, centered on the measured ≈47.6%w axis). -->
+    <!-- Shared title chrome: centered two-tone title on the measured axis —
+         the sheet reads cap 78 in the band y49–127 (Direction-2 foundation). -->
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
-      :cap-height="78"
-      :cap-top="49"
-      :center-x="layout.axisX"
+      :cap-height="TITLE_CAP_HEIGHT"
+      :cap-top="TITLE_CAP_TOP"
+      :center-x="TITLE_AXIS_X"
     />
 
+    <!-- The dim beat: an invisible third click anchor. The slide carries only
+         two visible v-clicks (plate builds), but the sheet's trace runs the
+         5.9–6.6s dim as its own beat — this zero-size rect consumes click 3
+         so the ?clicks=3 deep link lands on the settled state. -->
     <rect
-      class="sf-hex-rule"
-      :x="layout.axisX - (layout.viewBox.width * RULE_WIDTH_FRAC) / 2"
-      :y="layout.viewBox.height * RULE_Y_FRAC"
-      :width="layout.viewBox.width * RULE_WIDTH_FRAC"
-      :height="layout.viewBox.height * RULE_HEIGHT_FRAC"
-      :fill="HEADER_FILL"
+      v-click="3"
+      class="sf-hx-dim-beat"
+      aria-hidden="true"
+      x="0"
+      y="0"
+      width="0"
+      height="0"
+      fill="none"
     />
 
-    <text
-      v-if="legend"
-      class="legend"
-      :x="layout.axisX"
-      :y="legendBaseline"
-      text-anchor="middle"
-      :font-size="type.legendSize"
-      :fill="LEGEND_AMBER"
-      letter-spacing="0.06em"
-    >{{ legend }}</text>
-
-    <!-- One cell per node, never nested v-clicks: the outline pop and the inner
-         content fade arrive together on click i + 1 (the two-phase pattern). -->
-    <template v-for="(node, i) in nodes" :key="node.id">
-      <!-- Dim base outline: always visible. -->
-      <path
-        class="sf-hex-base"
-        :d="layout.cells[i].path"
-        fill="none"
-        :stroke="p.track"
+    <!-- One group per cluster plate: dim-fill rect, faint web, in-panel label.
+         Nothing overflows the plate bounds, and the right third stays empty. -->
+    <g
+      v-for="(plate, i) in layout.plates"
+      :key="plate.id"
+      v-click="plateClick(i)"
+      class="sf-hx-plate"
+      :class="{ 'sf-hx-instant': instant }"
+    >
+      <rect
+        class="sf-hx-plate-rect"
+        :x="plate.x"
+        :y="plate.y"
+        :width="plate.width"
+        :height="plate.height"
+        :rx="plate.rx"
+        :fill="HEX_COLORS.plateFill"
+        :stroke="plate.id === 'left' ? HEX_COLORS.plateStroke.left : HEX_COLORS.plateStroke.right"
         :stroke-width="layout.strokeWidth"
-        stroke-linejoin="round"
       />
 
-      <!--
-        Reveal binding (StepFlow pattern, spike art_7Q2OtXCm): the accent copy
-        pops in on its click — the v5 recording lands ~72% of final in one frame
-        and settles ~50ms (60fps walk): a pop, not a stroke draw, so the
-        dash-array mechanics are gone. Hidden = fully transparent +
-        transition:none (backward nav snaps).
-      -->
+      <!-- Web cells: bright mid-sequence tones settle to the dim contract on
+           the final click (stroke transition, no dash mechanics). -->
       <path
-        v-click="i + 1"
-        class="sf-hex-fill"
-        :d="layout.cells[i].path"
+        v-for="(cell, k) in plate.cells"
+        :key="`${plate.id}-cell-${k}`"
+        class="sf-hx-cell"
+        :d="cell.path"
         fill="none"
-        :stroke="p.accent"
+        :stroke="webStroke(plate.id, plate.data.tone)"
         :stroke-width="layout.strokeWidth"
-        stroke-linejoin="round"
       />
 
-      <g v-click="i + 1" class="sf-hex-content">
-        <g
-          class="icon"
-          :transform="iconTransform(layout.cells[i])"
-          fill="none"
-          :stroke="toneColor(node)"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          v-html="resolveIcon(node.icon)"
-        />
-        <text
-          class="title"
-          :x="layout.cells[i].cx"
-          :y="titleBaseline(layout.cells[i])"
-          text-anchor="middle"
-          :font-size="type.titleSize"
-          :fill="toneColor(node)"
-          letter-spacing="0.06em"
-        >{{ node.title }}</text>
-        <text
-          v-for="(row, r) in captionRows(node)"
-          :key="`${node.id}-row-${r}`"
-          class="caption"
-          :x="layout.cells[i].cx"
-          :y="captionBaseline(layout.cells[i], r)"
-          text-anchor="middle"
-          :font-size="type.captionSize"
-          :fill="toneColor(node)"
-          fill-opacity="0.78"
-        >{{ row }}</text>
-      </g>
-    </template>
+      <!-- The pre-build core: one filled cell, bright until the dim. -->
+      <path
+        v-if="plate.id === 'right'"
+        class="sf-hx-core"
+        :d="layout.cells[layout.cells.length - 1].path"
+        :fill="coreFill"
+      />
+
+      <text
+        class="sf-hx-label"
+        :x="plate.label.cx"
+        :y="plate.label.baseline"
+        text-anchor="middle"
+        :font-size="plate.label.capHeight / 0.752"
+        letter-spacing="0.045em"
+        :fill="labelColor(plate.data.tone)"
+      >{{ plate.data.label }}</text>
+    </g>
   </svg>
 </template>
 
@@ -229,46 +167,52 @@ const LEGEND_AMBER = '#ebb92a'
 }
 
 .hexcluster text {
-  /* Open question #1 (font family): mono stack until the face is confirmed. */
+  /* Mono stack until the face is confirmed (deck convention). */
   font-family: var(--sf-font-mono, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace);
 }
 
 /*
- * Measured motion (StepFlow §9 pattern). The v5 outline is a POP, not a draw:
- * it lands ~72% of final in one frame and settles ~50ms (60fps walk, wave-1
- * report §6) — 60ms with cubic-bezier(0, 0, 0, 1) puts ≈ 0.72 on the first
- * frame. Transition is taken from the destination state: forward reveal runs
- * opacity 0→1 + scale 0.72→1, the hidden state's transition:none makes
- * backward nav instant — the locked decision, zero JS. Scoped selectors
- * (0,2,0 + attribute) beat Slidev's built-in
- * .slidev-vclick-target { transition: all .1s ease } — no source-order reliance.
+ * Direction-2 systemic note: the mono face renders titles ~15–18% wider than
+ * the recordings' condensed face at the same cap height; this sheet's Title
+ * row measures the green tail at 726px of ink (x673–1398) where uncondensed
+ * mono renders 944px. Negative tracking, family-local via :deep (scoped
+ * selectors can't reach the child chrome; the shared TitleChrome stays
+ * untouched for the parallel family PRs).
  */
-.sf-hex-fill {
-  opacity: 1;
-  transform-box: fill-box;
-  transform-origin: center;
-  transition:
-    opacity 60ms cubic-bezier(0, 0, 0, 1),
-    transform 60ms cubic-bezier(0, 0, 0, 1);
+.hexcluster :deep(.sf-chrome-title) {
+  letter-spacing: -0.09em;
 }
 
-.sf-hex-fill.slidev-vclick-hidden {
-  opacity: 0;
-  transform: scale(0.72);
+/*
+ * The dim is the recording's 5.9–6.6s transition: web strokes and the core
+ * settle over ~600ms when the final click lands. Hidden plates wait fully
+ * transparent + transition:none (backward nav snaps — locked decision).
+ */
+.sf-hx-cell,
+.sf-hx-core {
+  transition:
+    stroke 600ms cubic-bezier(0.4, 0, 0.2, 1),
+    fill 600ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sf-hx-plate.sf-hx-instant .sf-hx-cell,
+.sf-hx-plate.sf-hx-instant .sf-hx-core {
   transition: none;
 }
 
-.sf-hex-content {
+.sf-hx-plate {
   transition: opacity 150ms ease-out;
 }
 
-.sf-hex-content.slidev-vclick-hidden {
+.sf-hx-plate.slidev-vclick-hidden {
+  opacity: 0;
   transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sf-hex-fill,
-  .sf-hex-content {
+  .sf-hx-cell,
+  .sf-hx-core,
+  .sf-hx-plate {
     transition: none;
   }
 }
