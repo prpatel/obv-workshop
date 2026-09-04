@@ -194,3 +194,76 @@ describe('SchematicRows component', () => {
     expect(() => mountRows({ schematic: [{ attach: 'ghost', tone: 'accent' as const, points: [[0, 0], [1, 1]] }] })).toThrow(RangeError)
   })
 })
+
+describe('SchematicRows highlight band', () => {
+  it("renders the band behind its row, sharing that row's click — no extra click", () => {
+    const wrapper = mountCapturing({ highlight: { row: 'ctx' } })
+    const band = wrapper.find('.sf-rows-band')
+
+    expect(band.exists()).toBe(true)
+    // ctx is row index 5 → click 6, the same v-click the row itself carries
+    expect(band.attributes('data-sfc-click')).toBe('6')
+    expect(wrapper.findAll('.sf-rows-row').map((r) => r.attributes('data-sfc-click'))).toEqual([
+      '1', '2', '3', '4', '5', '6', '7', '8',
+    ])
+    // painted before the rows → sits behind them
+    const html = wrapper.html()
+    expect(html.indexOf('sf-rows-band')).toBeGreaterThan(-1)
+    expect(html.indexOf('sf-rows-band')).toBeLessThan(html.indexOf('sf-rows-row'))
+  })
+
+  it("ships the measured rect at the component's px geometry", () => {
+    const wrapper = mountRows({ highlight: { row: 'ctx' } })
+    const style = wrapper.find('.sf-rows-band').attributes('style') ?? ''
+
+    expect(style).toContain('left: 50.88px') // 0.0265 × 1920
+    expect(style).toContain('top: 638.82px') // ctx row 653.4 + (27 − 56.16) / 2
+    expect(style).toContain('width: 1139.904px') // 0.5937 × 1920
+    expect(style).toContain('height: 56.16px') // 0.052 × 1080
+  })
+
+  it('fades with the row (150ms), snaps backward, and freezes under reduced motion', () => {
+    mountRows({ highlight: { row: 'ctx' } })
+
+    const css = Array.from(document.querySelectorAll('style'))
+      .map((tag) => tag.textContent ?? '')
+      .join('\n')
+    const bandRule = css.match(/\.sf-rows-band[^{,]*\{[^}]*\}/)?.[0] ?? ''
+    expect(bandRule).toContain('linear-gradient(90deg, #0a2830')
+    expect(bandRule).toContain('150ms')
+    const hiddenRule = css.match(/\.sf-rows-band\.slidev-vclick-hidden[^{]*\{[^}]*\}/)?.[0] ?? ''
+    expect(hiddenRule).toContain('transition: none')
+    const reduced = css.slice(css.indexOf('prefers-reduced-motion'))
+    expect(reduced).toContain('.sf-rows-band')
+  })
+
+  it('surfaces a layout RangeError for a band on an unknown row instead of rendering blank', () => {
+    expect(() => mountRows({ highlight: { row: 'ghost' } })).toThrow(RangeError)
+  })
+
+  it('renders every token of a 100-char multi-tone row (the reworked slide seed shape)', () => {
+    const long: CodeRow[] = [
+      {
+        id: 'imports',
+        tokens: [
+          { text: 'from ', tone: 'accent' },
+          { text: 'dataclasses ', tone: 'plain' },
+          { text: 'import ', tone: 'accent' },
+          { text: 'dataclass, field', tone: 'plain' },
+          { text: '  # persisted answer', tone: 'chrome' },
+          { text: ' + citation spans, keyed by question hash', tone: 'plain' },
+        ],
+      },
+    ]
+    const wrapper = mountRows({ rows: long, schematic: [] })
+    const spans = wrapper.findAll('.sf-rows-token')
+
+    expect(spans).toHaveLength(6)
+    expect(wrapper.find('.sf-rows-row').text()).toBe(
+      'from dataclasses import dataclass, field  # persisted answer + citation spans, keyed by question hash',
+    )
+    expect(spans[4].attributes('style')).toContain('#66fb00') // chrome green constant
+    expect(spans[5].attributes('style')).toContain('#f5f4f7') // chrome white constant
+  })
+})
+

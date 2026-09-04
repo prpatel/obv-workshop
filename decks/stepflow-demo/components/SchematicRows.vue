@@ -4,6 +4,7 @@ import {
   schematicRowsLayout,
   ROW_FONT_FRAC,
   type CodeRow,
+  type HighlightSpec,
   type RowTokenTone,
   type SchematicLine,
   type SchematicLineTone,
@@ -21,10 +22,12 @@ const props = withDefaults(defineProps<{
   title?: string
   /** Header tail rendered in chrome green after `title` (two-tone chrome convention). */
   titleAccent?: string
+  /** Optional dim band behind one row (the recording's "current line"); shares that row's click. */
+  highlight?: HighlightSpec
 }>(), { schematic: () => [], palette: () => ({}) })
 
 const p = computed(() => resolvePalette(props.palette))
-const layout = computed(() => schematicRowsLayout({ rows: props.rows, schematic: props.schematic }))
+const layout = computed(() => schematicRowsLayout({ rows: props.rows, schematic: props.schematic, highlight: props.highlight }))
 
 // Token tone colors. `accent`/`alt` come from the palette; `plain` is chrome
 // white (measured #f5f4f7) and `chrome` is the recordings' terminal green —
@@ -115,6 +118,20 @@ function px(n: number): string {
       />
     </svg>
 
+    <!--
+      The dim "current line" band (wave-1 ref t=14.1): painted before the rows
+      so it sits behind them, it fades in on its attached row's click with the
+      same 150ms row fade and the same instant backward snap. Measured rect:
+      59%w × ~56px at 1080 starting at 2.65%w, the #0a2830 → #000020 → #002000
+      gradient trio.
+    -->
+    <div
+      v-if="layout.highlight"
+      v-click="layout.highlight.atIndex + 1"
+      class="sf-rows-band"
+      :style="{ left: px(layout.highlight.x), top: px(layout.highlight.y), width: px(layout.highlight.width), height: px(layout.highlight.height) }"
+    />
+
     <!-- One div per row: its tokens arrive together on click i + 1 — one
          click per row (the recording's auto-run re-paced, locked deviation:
          no typewriter is built). The rise is 4px, the fade 150ms. -->
@@ -180,6 +197,18 @@ function px(n: number): string {
   transition: none;
 }
 
+/* The band: fade-only reveal (no rise), same 150ms as the rows. Scoped
+   (0,2,0) selectors beat Slidev's built-in .slidev-vclick-target. */
+.sf-rows-band {
+  position: absolute;
+  background: linear-gradient(90deg, #0a2830, #000020 55%, #002000);
+  transition: opacity 150ms ease-out;
+}
+
+.sf-rows-band.slidev-vclick-hidden {
+  transition: none;
+}
+
 .sf-rows-line-fill {
   stroke-dasharray: var(--sf-len);
   /* Dash phase: a --sf-len dash at offset o paints the span [0, len − o], so
@@ -199,6 +228,7 @@ function px(n: number): string {
 
 @media (prefers-reduced-motion: reduce) {
   .sf-rows-row,
+  .sf-rows-band,
   .sf-rows-line-fill {
     transition: none;
   }

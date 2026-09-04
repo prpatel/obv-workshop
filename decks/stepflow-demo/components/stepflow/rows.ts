@@ -2,11 +2,12 @@
  * SchematicRows data contract + pure layout math (diagram-family spec, SchematicRows).
  *
  * A terminal-style token listing: mono rows of colored tokens with an optional
- * embedded thin-line schematic. Rows render as HTML — token `<span>`s inside
- * v-click'd row divs, one click per row (SVG text makes per-token coloring
- * awkward); schematic lines are SVG polylines drawn with the StepFlow
- * dim-base + stacked accent-copy dashoffset draw, each within its attached
- * row's click. Pure and SSR-safe: no DOM access, no mutation of the inputs.
+ * embedded thin-line schematic and an optional dim highlight band behind one
+ * row. Rows render as HTML — token `<span>`s inside v-click'd row divs, one
+ * click per row (SVG text makes per-token coloring awkward); schematic lines
+ * are SVG polylines drawn with the StepFlow dim-base + stacked accent-copy
+ * dashoffset draw, each within its attached row's click; the band fades in on
+ * its row's click. Pure and SSR-safe: no DOM access, no mutation of the inputs.
  *
  * Measured from the v6 recording (research art_0AzKGXnD §F5, re-measured this
  * session against the settled frame at t≈13.5s): 8 body rows at a ~5.8%h
@@ -16,6 +17,12 @@
  * built. Tone roles map to palette fields, except `plain` (chrome white
  * #f5f4f7) and `chrome` (terminal green #66fb00) — both constants of the tone
  * convention, resolved in the component, never palette fields.
+ *
+ * Wave-1 fidelity rework (report art_v4jVdTnp §5): the demo seed grows to ten
+ * 60–110-char rows spanning ~94% of the canvas width with token tones weighted
+ * white > green > amber > blue (measured t=14.1 masses 42,920 / 14,008 / 8,419
+ * / 3,210 px), and the band prop carries the recording's one dim highlight
+ * band behind a middle row.
  */
 
 import { polylineLength, polylinePath } from './paths'
@@ -42,6 +49,20 @@ export interface CodeRow {
 export type SchematicLineTone = 'accent' | 'plain'
 
 /**
+ * One dim-tinted highlight band behind a row — the recording's "current line"
+ * (wave-1 ref t=14.1). The band shares its row's click: same 150ms fade,
+ * instant backward snap.
+ */
+export interface HighlightSpec {
+  /** Id of the row (`CodeRow.id`) the band sits behind; the band shares its click. */
+  row: string
+  /** Band rect as canvas fractions — defaults are the measured t=14.1 band. */
+  xFrac?: number
+  wFrac?: number
+  hFrac?: number
+}
+
+/**
  * A thin polyline of the embedded schematic, as canvas fractions. It draws on
  * its attached row's click — `attach` names the row id; when omitted, lines
  * distribute in order over the LAST rows of the listing (the measured
@@ -59,6 +80,8 @@ export interface SchematicLine {
 export interface SchematicRowsData {
   rows: CodeRow[]
   schematic?: SchematicLine[]
+  /** Optional dim band behind one row (the recording's "current line"). */
+  highlight?: HighlightSpec
 }
 
 export interface Canvas {
@@ -72,6 +95,11 @@ export const FIRST_ROW_Y_FRAC = 0.315 // first body row top ≈ y360 of 1144
 export const LEFT_FRAC = 0.065 // code margin ≈ x132 of 2038
 export const INDENT_FRAC = 0.041 // one indent step ≈ 83px of 2038
 export const ROW_FONT_FRAC = 0.025 // mono glyph size ≈ 27px at 1080
+
+/** Measured highlight band, wave-1 ref t=14.1 (x 54/2038, w 1210/2038, h 59/1144). */
+export const BAND_X_FRAC = 0.0265
+export const BAND_W_FRAC = 0.5937
+export const BAND_H_FRAC = 0.052
 
 /** Resolved px geometry for one row, ready to render. */
 export interface RowLayout {
@@ -94,10 +122,52 @@ export interface LineLayout {
   atIndex: number
 }
 
+/** Resolved px geometry for the highlight band, ready to render. */
+export interface HighlightLayout {
+  x: number
+  y: number
+  width: number
+  height: number
+  /** 0-based index of the row whose v-click carries the band's fade. */
+  atIndex: number
+}
+
 export interface SchematicRowsLayout {
   rows: RowLayout[]
   schematic: LineLayout[]
+  /** Resolved band rect, or null when no `highlight` was given. */
+  highlight: HighlightLayout | null
   viewBox: Canvas
+}
+
+/**
+ * Resolve the highlight band rect: centered on the attached row's glyph box
+ * (glyph height = ROW_FONT_FRAC × height), x/width/height from the measured
+ * t=14.1 defaults unless overridden. Unknown row ids and out-of-range fracs
+ * throw RangeError — the same contract as schematic `attach`.
+ */
+function resolveHighlight(spec: HighlightSpec, rows: RowLayout[], viewBox: Canvas): HighlightLayout {
+  const atIndex = rows.findIndex((row) => row.id === spec.row)
+  if (atIndex === -1) {
+    throw new RangeError(`highlight band references unknown row "${spec.row}"`)
+  }
+  const xFrac = spec.xFrac ?? BAND_X_FRAC
+  const wFrac = spec.wFrac ?? BAND_W_FRAC
+  const hFrac = spec.hFrac ?? BAND_H_FRAC
+  for (const [name, value] of [['x', xFrac], ['w', wFrac], ['h', hFrac]] as const) {
+    if (!(value >= 0 && value <= 1)) {
+      throw new RangeError(`highlight band ${name}Frac (${value}) is outside the [0, 1] canvas-fraction range`)
+    }
+  }
+  const glyphHeight = ROW_FONT_FRAC * viewBox.height
+  const height = hFrac * viewBox.height
+  return {
+    x: xFrac * viewBox.width,
+    y: rows[atIndex].y + (glyphHeight - height) / 2,
+    width: wFrac * viewBox.width,
+    height,
+    atIndex,
+  }
 }
 
 /**
@@ -161,5 +231,7 @@ export function schematicRowsLayout(data: SchematicRowsData, viewBox: Canvas = {
     return { d: polylinePath(pts), length: polylineLength(pts), tone: line.tone, atIndex }
   })
 
-  return { rows, schematic: schematicLayout, viewBox }
+  const highlight = data.highlight ? resolveHighlight(data.highlight, rows, viewBox) : null
+
+  return { rows, schematic: schematicLayout, highlight, viewBox }
 }
