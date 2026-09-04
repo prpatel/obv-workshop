@@ -339,7 +339,10 @@ function fmt(n: number): string {
  *
  * The annotation GROUP flips state instantly; its children own the fades.
  * The static layers fade together on the click; the two on-bar labels fade
- * later on the recording's measured windows (2800–2983ms / 7467–7667ms).
+ * later on the recording's measured windows (2800–2983ms / 7467–7667ms) —
+ * intra-click CSS delays, not clicks (the sheet locks ?clicks=3 with the
+ * labels visible in the settled state), so AutoAdvance's stepScheduleMs
+ * does not apply here and there are no hand-rolled timers.
  */
 .sf-tbc-bar {
   transition: opacity 150ms ease-out;
@@ -369,11 +372,16 @@ function fmt(n: number): string {
 }
 
 .sf-tbc-label {
+  /* Label 1: fade window 2800–2983ms after the annotation click (delay +
+   * duration) — the composition settles first, the label arrives late. */
   transition: opacity 183ms ease-out;
+  transition-delay: 2800ms;
 }
 
 .sf-tbc-label-2 {
+  /* Label 2: fade window 7467–7667ms after the annotation click. */
   transition-duration: 200ms;
+  transition-delay: 7467ms;
 }
 
 .sf-tbc-annot.slidev-vclick-hidden .sf-tbc-annot-core,

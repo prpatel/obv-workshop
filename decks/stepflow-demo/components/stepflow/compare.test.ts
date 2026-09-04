@@ -545,8 +545,10 @@ describe('TwoBarCompare component', () => {
       .join('\n')
 
     expect(css).toContain('150ms') // bar pop + static annotation fade (§9 scale)
-    expect(css).toContain('183ms') // label 1 fade: 2800–2983ms window
-    expect(css).toContain('200ms') // label 2 fade: 7467–7667ms window
+    expect(css).toContain('183ms') // label 1 fade duration: window 2800–2983ms
+    expect(css).toContain('2800ms') // label 1 delay — settles first, arrives late
+    expect(css).toContain('200ms') // label 2 fade duration: window 7467–7667ms
+    expect(css).toContain('7467ms') // label 2 delay
     // The annotation group flips instantly; its children own the fades.
     expect(css).toContain('.sf-tbc-annot.slidev-vclick-hidden .sf-tbc-annot-core')
     expect(css).toContain('.sf-tbc-annot.slidev-vclick-hidden .sf-tbc-label')
