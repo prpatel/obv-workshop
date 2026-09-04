@@ -698,18 +698,19 @@ canvasWidth: 1920
 ---
 
 <!--
-  Demo slide: MilestoneLanes — a four-lane Gantt/milestone chart (src
-  174–181s, research art_2kSBGNmJ §3.4). Two-phase choreography (fidelity
-  report art_iHm120ov §MilestoneLanes): each bar pops WIDE on its pop click
-  (clicks 1, 3, 5, 7 — a sweep anchored at the tick rail spanning to the
-  bar's final right edge), then re-proportions to its measured seed width on
-  the next click (2, 4, 6, 8); the closing beat (click 9) spreads the amber
-  tick markers and lands the footer row. Measured text chrome: the header
-  label row above lane 1 and the footer row with its teal chip glyph are
-  reproduced from ref frame t=180.1s. Bar offsets and sizes are DATA: lanes
-  1-2 red (alt), 3-4 amber (accent) under the statusAmber preset verbatim.
-  AutoAdvance is renderless deck-level wiring: the `a` key toggles a
-  hands-free run and `?autoplay=N` in the URL starts one on slide enter.
+  Demo slide: MilestoneLanes — a four-lane Gantt/milestone chart rebuilt to
+  the exact-trace sheet (art_kYBddwt9; true settled frame = clip 6600ms).
+  Bars are measured DATA at non-uniform lane tops (y525/597/694/766 at 1080)
+  with the measured fills #ED4342 (alt) / #F9BB21 (accent); milestone
+  diamonds (45°-rotated squares with radial glows) sit on the marker column
+  at (347,551) and (347,719); the long bars carry near-black captions.
+  Choreography (sheet §5): bar 2 sweeps its full rail then re-proportions
+  (clicks 1-2), bar 1 pops at final width (3-4), bar 4 grows ease-out (5-6),
+  bar 3 expands center-out (7-8), the footer fades last (9). Lanes are
+  listed in reveal order; lane tops are explicit yFrac. AutoAdvance pins the
+  sheet's measured beat schedule (stepScheduleSec, PR #43's shared
+  mechanism); the `a` key toggles a hands-free run and `?autoplay=N` in the
+  URL starts one on slide enter.
 -->
 
 <div class="sf-demo-stage">
@@ -717,22 +718,28 @@ canvasWidth: 1920
 <MilestoneLanes
   title="DATA"
   title-accent="ROADMAP"
+  :title-text-length="798"
   header-label="WHERE THE WORK GOES"
   header-icon="database"
   footer-label="YOUR JUDGEMENT DECIDES THE DESIGN"
   footer-icon="map-pin"
+  :diamonds="[
+    { id: 'streaming-milestone', centerXFrac: 347 / 1920, centerYFrac: 551 / 1080, tone: 'alt', click: 1 },
+    { id: 'quality-milestone-outer', centerXFrac: 347 / 1920, centerYFrac: 719 / 1080, tone: 'accent', click: 4 },
+    { id: 'quality-milestone-inner', centerXFrac: 347 / 1920, centerYFrac: 719 / 1080, tone: 'accent', click: 8, inner: true },
+  ]"
   :lanes="[
-    { id: 'streaming', label: 'STREAMING', bars: [{ xFrac: 0.634, wFrac: 0.202, tone: 'alt' }] },
-    { id: 'pipeline', label: 'PIPELINE', bars: [{ xFrac: 0.219, wFrac: 0.18, tone: 'alt', hFrac: 0.0333333 }] },
-    { id: 'quality', label: 'QUALITY', bars: [{ xFrac: 0.68, wFrac: 0.156, tone: 'accent' }] },
-    { id: 'lakehouse', label: 'LAKEHOUSE', bars: [{ xFrac: 0.219, wFrac: 0.522, tone: 'accent', hFrac: 0.0333333 }] },
+    { id: 'pipeline', yFrac: 597 / 1080, bars: [{ xFrac: 420 / 1920, wFrac: 343 / 1920, hFrac: 35 / 1080, tone: 'alt', reveal: 'sweep', sweepToFrac: 1511 / 1920 }] },
+    { id: 'streaming', label: 'STREAMING', labelClick: 1, yFrac: 525 / 1080, bars: [{ xFrac: 1218 / 1920, wFrac: 386 / 1920, hFrac: 50 / 1080, tone: 'alt', reveal: 'pop', text: 'HARDER TO THE ASSISTANT', textLength: 292 }] },
+    { id: 'lakehouse', yFrac: 766 / 1080, bars: [{ xFrac: 420 / 1920, wFrac: 1003 / 1920, hFrac: 36 / 1080, tone: 'accent', reveal: 'grow' }] },
+    { id: 'quality', label: 'QUALITY LANE', yFrac: 694 / 1080, bars: [{ xFrac: 1307 / 1920, wFrac: 297 / 1920, hFrac: 51 / 1080, tone: 'accent', reveal: 'center', text: 'HARDER TO REPLACE', textLength: 240 }] },
   ]"
   :y0-frac="0.4861111"
   :lane-pitch-frac="0.0694444"
-  :bar-h-frac="0.0486111"
+  :bar-h-frac="0.0462963"
 />
 
-<AutoAdvance />
+<AutoAdvance :step-schedule-sec="[0.2, 0.616, 1.116, 2.25, 2.683, 3.0, 3.4, 3.48, 3.8]" />
 
 </div>
 
