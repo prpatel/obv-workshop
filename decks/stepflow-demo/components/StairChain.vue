@@ -40,7 +40,7 @@ const type = computed(() => {
   const height = layout.value.viewBox.height
   return {
     headerSize: 34 * (height / 848),
-    labelSize: 0.033 * height,
+    labelSize: 0.037 * height,
     captionSize: 0.022 * height,
     calloutSize: 0.055 * height,
     captionGap: 0.028 * height,
@@ -53,8 +53,9 @@ const type = computed(() => {
     shadowHeightFrac: 0.42, // × block height
     shadowOffsetXFrac: 0.01, // × width — just past the block's right edge
     shadowOffsetYFrac: 0.01, // × height
-    ambienceRXFrac: 0.085, // × width
-    ambienceRYFrac: 0.1, // × height
+    ambienceRXFrac: 0.095, // × width
+    ambienceRYFrac: 0.115, // × height
+    ambienceDXFrac: 0.2, // × block width — toward the block's left edge (ref ambience x1709–1881 around block x1748–1906)
   }
 })
 
@@ -92,8 +93,8 @@ function blockFill(step: StairStep, palette: StepFlowPalette): string {
          the cyan ones (measured classes, wave-1 report §1). -->
     <defs>
       <radialGradient id="sf-stair-teal-ambience">
-        <stop offset="0" :stop-color="AMBIENCE_TEAL" stop-opacity="0.34" />
-        <stop offset="0.3" :stop-color="AMBIENCE_TEAL" stop-opacity="0.26" />
+        <stop offset="0" :stop-color="AMBIENCE_TEAL" stop-opacity="0.5" />
+        <stop offset="0.45" :stop-color="AMBIENCE_TEAL" stop-opacity="0.32" />
         <stop offset="1" :stop-color="AMBIENCE_TEAL" stop-opacity="0" />
       </radialGradient>
     </defs>
@@ -110,7 +111,7 @@ function blockFill(step: StairStep, palette: StepFlowPalette): string {
       <ellipse
         v-if="step.tone === 'tertiary'"
         class="sf-ambience"
-        :cx="layout.blocks[i].x + layout.blocks[i].w / 2"
+        :cx="layout.blocks[i].x + layout.blocks[i].w / 2 - layout.blocks[i].w * type.ambienceDXFrac"
         :cy="layout.blocks[i].y + layout.blocks[i].h / 2"
         :rx="type.ambienceRXFrac * layout.viewBox.width"
         :ry="type.ambienceRYFrac * layout.viewBox.height"
@@ -144,6 +145,7 @@ function blockFill(step: StairStep, palette: StepFlowPalette): string {
         dominant-baseline="central"
         :font-size="type.labelSize"
         :fill="LABEL_FILL"
+        font-weight="700"
         letter-spacing="0.06em"
       >{{ step.title }}</text>
       <text

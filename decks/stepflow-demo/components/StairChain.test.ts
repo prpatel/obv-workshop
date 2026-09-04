@@ -118,10 +118,12 @@ describe('StairChain', () => {
   it('sizes the in-block labels inside the recording\'s 28–40px glyph band', () => {
     const wrapper = mountStairChain({ steps, callout })
 
-    // 0.033 × 1080 = 35.64px on the default canvas — centered, white, mono.
+    // 0.037 × 1080 = 39.96px on the default canvas — top of the measured
+    // band, bold, centered, white, mono (ref strokes are 4–5px).
     const sizes = wrapper.findAll('.sf-label').map((t) => Number(t.attributes('font-size')))
     expect(sizes).toHaveLength(6)
-    sizes.forEach((size) => expect(size).toBeCloseTo(35.64, 6))
+    sizes.forEach((size) => expect(size).toBeCloseTo(39.96, 6))
+    expect(wrapper.find('.sf-label').attributes('font-weight')).toBe('700')
 
     const label = wrapper.find('.sf-label')
     const block = wrapper.find('.sf-block')
@@ -197,7 +199,9 @@ describe('StairChain', () => {
       expect(Number(shadow.attributes('height'))).toBeLessThan(Number(block.attributes('height')))
     })
 
-    // Cyan blocks: a teal ambience feather centered on the block.
+    // Cyan blocks: a teal ambience feather offset toward the block's left
+    // edge (0.2 × block width, per the ref ambience x1709–1881 around
+    // block x1748–1906).
     const ambiences = wrapper.findAll('.sf-ambience')
     expect(ambiences).toHaveLength(3)
     groups.slice(3).forEach((group) => {
@@ -205,7 +209,7 @@ describe('StairChain', () => {
       const block = group.find('.sf-block')
       const ambienceCx = Number(ambience.attributes('cx'))
       const blockCenter = Number(block.attributes('x')) + Number(block.attributes('width')) / 2
-      expect(ambienceCx).toBeCloseTo(blockCenter, 6)
+      expect(ambienceCx).toBeCloseTo(blockCenter - Number(block.attributes('width')) * 0.2, 6)
       expect(ambience.attributes('fill')).toBe('url(#sf-stair-teal-ambience)')
     })
 
