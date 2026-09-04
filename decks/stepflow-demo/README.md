@@ -739,3 +739,36 @@ glow-inclusive band, the same correction PR #37 applied to StairChain and
 HexCluster, and the mono face needs the explicit extent to match the
 recordings' condensed title width.
 
+
+## VerticalSpine + HeroTile measured note (exact-trace rework)
+
+Supplements the slide 5/6 authoring notes with the measured rebuild from the
+exact-trace sheet (art_mkVNxsft §3/§4). VerticalSpine: the center axis is the
+vertical rhythm itself — the traced ring/bar/splayed-legs glyph (`V7_MARKER_GLYPH`
+in `icons.ts`, shared with the HeroTile cutout) on slot 1, `DATA ENGINEERS` in
+the spine-accent orange folded into the glyph's click (`withPrevious`), then
+the outlined asymmetric cards (cyan 130×103.9 with two bars + two drop studs,
+blue 135.5×55.5 with four piercing verticals), gray footer lines, and the
+closing axis chrome: `#bd521e` stub, `#b35526` axis rule (4.7px core,
+x464.3–1361.7), and the `#403f48` bottom rule (x192.1–1633.9, 5.7 thick)
+fading last. There is no drawn center spine line and no flanking diamonds.
+
+HeroTile: the `#f85721` tile is 227px square centered at (914, 700.5) with a
+≈55px corner radius, the traced glyph renders as a black cutout at its
+measured ≈95×107.5 box, and the halo is a radial gradient that plateaus at
+0.30 opacity to 0.703R before dying at r ≈ 161.5px.
+
+Both headers use TitleChrome's token mode: the slide passes one entry per
+measured ink run (`x`/`width`/`capHeight`/`capTop`), each rendered as its own
+textLength-condensed text — VerticalSpine's green `SQL` first at cap 84 on
+its own baseline with the white tail fitted from its 52.9px x-height band,
+and HeroTile's `APIs, cloud systems, AI` as four runs with the green `AI`
+tail at the shared cap-70.8 baseline. Token mode absorbs the deck mono's
+wider advance per run (the same condensation problem `titleTextLength`
+solves for single-run headers), so the two mechanisms coexist: `titleTextLength`
+for centered two-tone titles, tokens for measured multi-run headers.
+
+Fidelity vs the settled reference frames at 1920×1080: VerticalSpine
+SSIM 0.8843 → 0.9093 (MAD 10.38 → 7.63), HeroTile SSIM 0.9400 → 0.9602
+(MAD 6.10 → 4.19).
+
