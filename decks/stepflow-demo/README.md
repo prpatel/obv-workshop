@@ -40,7 +40,7 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (8) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (2) · SegmentTimeline (3) · StackPanels (4) · MilestoneLanes (5) · HexCluster (3)
+├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (10) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (2) · SegmentTimeline (3) · StackPanels (4) · MilestoneLanes (5) · HexCluster (3)
 ├─ components/
 │  ├─ StepFlow.vue                # the serpentine flow diagram (auto-imported by Slidev)
 │  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
@@ -399,6 +399,20 @@ re-paced to one click per row — no typewriter is built. Layout constants: row
 pitch 5.8%h, first row 31.5%h, code margin 6.5%w, indent step 4.1%w, mono size
 2.5%h — all re-measured from the settled v6 frame.
 
+The optional **highlight band** (`highlight: { row, xFrac?, wFrac?, hFrac? }`)
+is the recording's dim "current line": a `#0a2830 → #000020 → #002000`
+gradient rect behind one row (measured t=14.1 defaults: 59.37%w × 5.2%h
+starting at 2.65%w), centered on that row's glyph box and fading in on the
+attached row's click with the shared 150ms fade and instant backward snap.
+Unknown row ids and out-of-range fractions throw `RangeError`, like every
+geometry input.
+
+The demo slide's seed (slide 7) is re-transcribed for the wave-1 fidelity
+rework (report art_v4jVdTnp §5): ten 60–110-char rows reaching ~94% of the
+canvas width, token tones weighted white > green > amber > blue to the
+measured t=14.1 masses (42,920 / 14,008 / 8,419 / 3,210 px). Typography is
+unchanged — the deficit was data, not glyphs.
+
 #### HexCluster — hexagon cluster (v5)
 
 One cell per node; each click draws one cell's full outline (stroke-draw, the
@@ -456,7 +470,7 @@ spacing only), so a varied recorded rhythm is encoded as its mean cadence.
 | 3 | StairChain | 7 | 0.3–0.6 s/click (~300 ms block stagger early, 0.4–0.6 s late) | `4` | ≈0.57 s/click |
 | 4 | NodeEdge | 9 | 0.3–0.9 s/click, mean ≈0.55 s (wave-1 family band) | `5` | ≈0.56 s/click |
 | 5 | VerticalSpine | 4 | ~1.2–1.5 s between phases (marker 0.4 s → bottom rows 5.8 s) | `5` | 1.25 s/click |
-| 7 | SchematicRows | 8 | 0.3–0.5 s/row | `4` | 0.5 s/row |
+| 7 | SchematicRows | 10 | 0.3–0.5 s/row | `4` | 0.4 s/row |
 | 8 | TwoBarCompare | 3 | ≥1.5 s between bars | `5` | ≈1.67 s/click |
 | 10 | TileGrid | 6 | ≈1.45 s/tile (measured 27.32→28.77 s) | `8.7` | 1.45 s/tile |
 | 12 | SegmentTimeline | 3 | node pop ≈140ms, then ≈2.4s fill sweep per segment (measured 10–90% over 2.55s) | `7.5` | 2.5 s/click |
