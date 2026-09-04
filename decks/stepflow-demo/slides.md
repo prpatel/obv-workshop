@@ -498,16 +498,16 @@ canvasWidth: 1920
 ---
 
 <!--
-  Demo slide: SegmentTimeline — one proportional bar sweeping left→right in
-  two contiguous tone-coded segments (clicks 1-2), then all lettering —
-  segment labels, milestone ticks with their labels, and the right-side chip —
-  fades in together (click 3). Segment shares are the source recording's
-  measured canvas-width fractions (research art_2kSBGNmJ §3.1, src 211–222s);
-  the layout normalizes them to fill the measured bar span exactly. Tick x
-  positions are authored data; tick lines, labels, and the chip position are
-  derived from the bar. AutoAdvance is renderless deck-level wiring: the `a`
-  key toggles a hands-free run and `?autoplay=N` in the URL starts one on
-  slide enter.
+  Demo slide: SegmentTimeline — a thin dim track at the node axis with bright
+  segment fills sweeping between glowing nodes (one click per segment: the
+  node pops ~140ms while its fill starts a gradual ~2.4s sweep, then its
+  tick + two-row white label block fades in after a beat — sweep-then-pop).
+  Segment shares and track geometry are the source recording's measured
+  canvas fractions (art_iHm120ov §SegmentTimeline, ref frame t=220.5 of the
+  1920×1080 read, src 211–222s); nodes derive from the fills they cap, so
+  ticks and labels can never drift. AutoAdvance is renderless deck-level
+  wiring: the `a` key toggles a hands-free run and `?autoplay=N` in the URL
+  starts one on slide enter.
 -->
 
 <div class="sf-demo-stage">
@@ -516,19 +516,10 @@ canvasWidth: 1920
   title="MIGRATION"
   title-accent="TIMELINE"
   :segments="[
-    { id: 'batch', tone: 'accent', label: 'BATCH', wFrac: 0.3640625 },
-    { id: 'stream', tone: 'alt', label: 'STREAMING', wFrac: 0.23125 },
+    { id: 'batch', tone: 'accent', label: 'BATCH', sublabel: 'nightly warehouse exports', wFrac: 227 / 1920 },
+    { id: 'stream', tone: 'tertiary', label: 'STREAMING', sublabel: 'change-data-capture feed', wFrac: 400 / 1920 },
+    { id: 'cutover', tone: 'alt', label: 'CUTOVER', sublabel: 'dual-write drain-down', wFrac: 480 / 1920 },
   ]"
-  :ticks="[
-    { xFrac: 0.265625, label: 'KICKOFF' },
-    { xFrac: 0.49921875, label: 'CUTOVER' },
-    { xFrac: 0.7328125, label: 'DONE' },
-  ]"
-  chip="FY25"
-  :y-frac="0.4125"
-  :h-frac="0.09444444444444444"
-  :x0-frac="0.1625"
-  :x1-frac="0.759375"
 />
 
 <AutoAdvance :duration-sec="7.5" />

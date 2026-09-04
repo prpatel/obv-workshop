@@ -4,27 +4,37 @@ import { mount } from '@vue/test-utils'
 import type { DirectiveBinding } from 'vue'
 import SegmentTimeline from '../SegmentTimeline.vue'
 import {
-  CHIP_GAP_FRAC,
-  CHIP_H_FRAC,
-  CHIP_W_FRAC,
-  TICK_GAP_FRAC,
-  TICK_LABEL_GAP_FRAC,
+  FILL_GAP_FRAC,
+  FILL_PAST_FRAC,
+  LABEL_BASELINE_FRAC,
+  LABEL_SIZE,
+  LABEL_WHITE,
+  LEAD_INSET_FRAC,
+  LEAD_W_FRAC,
+  LEAD_WHITE,
+  NODE_BLUE,
+  NODE_CYAN,
+  NODE_R_FRAC,
+  NODE_RED,
+  SUBLABEL_BASELINE_FRAC,
+  SUBLABEL_SIZE,
   TICK_LEN_FRAC,
+  TICK_STROKE,
+  TRACK_DIM,
   segmentTimelineLayout,
+  type SegmentTimelineData,
   type TimelineSegment,
-  type TimelineTick,
 } from './timeline'
 
 /**
  * Slidev registers the v-click directive globally at runtime; the render tests
  * stub it. The recording stub captures each binding value so the click
- * choreography itself is asserted (3 clicks: blue sweep, orange sweep, then
- * the labels layer); sweep rendering is dogfooded against the dev server.
+ * choreography itself is asserted (one click per segment: the node group pops
+ * while its fill starts sweeping — sweep-then-pop); sweep rendering is
+ * dogfooded against the dev server.
  */
 type SegmentTimelineProps = {
   segments: TimelineSegment[]
-  ticks?: TimelineTick[]
-  chip?: string
   yFrac?: number
   hFrac?: number
   x0Frac?: number
@@ -56,21 +66,27 @@ function mountRecordingClicks(props: SegmentTimelineProps) {
 }
 
 /**
- * The demo seed mirrors the slide data: the measured composition of the source
- * video's 211–222s timeline (research art_2kSBGNmJ §3.1). Segment shares are
- * the measured canvas-width fractions 466/1280 and 296/1280; the bar spans
- * x208–972, y297–365 of the 1280×720 frame.
+ * The demo seed mirrors the slide data: the measured composition of the
+ * source's 211–222s timeline at ref frame t=220.5 (art_iHm120ov
+ * §SegmentTimeline). Shares are the measured canvas-width fractions
+ * 227/1920 blue + 400/1920 cyan + 480/1920 red; track geometry comes from the
+ * component's measured defaults.
  */
 const segments: TimelineSegment[] = [
-  { id: 'batch', tone: 'accent', label: 'BATCH', wFrac: 0.3640625 },
-  { id: 'stream', tone: 'alt', label: 'STREAMING', wFrac: 0.23125 },
+  { id: 'batch', tone: 'accent', label: 'BATCH', sublabel: 'nightly warehouse exports', wFrac: 227 / 1920 },
+  { id: 'stream', tone: 'tertiary', label: 'STREAMING', sublabel: 'change-data-capture feed', wFrac: 400 / 1920 },
+  { id: 'cutover', tone: 'alt', label: 'CUTOVER', sublabel: 'dual-write drain-down', wFrac: 480 / 1920 },
 ]
-const ticks: TimelineTick[] = [
-  { xFrac: 0.265625, label: 'KICKOFF' },
-  { xFrac: 0.49921875, label: 'CUTOVER' },
-  { xFrac: 0.7328125, label: 'DONE' },
-]
-const data = { segments, ticks, chip: 'FY25', yFrac: 0.4125, hFrac: 0.09444444444444444, x0Frac: 0.1625, x1Frac: 0.759375 }
+const data = { segments, title: 'MIGRATION', titleAccent: 'TIMELINE' }
+
+/** Measured track geometry as an explicit SegmentTimelineData (the component's defaults). */
+const geo: SegmentTimelineData = {
+  segments,
+  yFrac: 490 / 1080,
+  hFrac: 12 / 1080,
+  x0Frac: 306 / 1920,
+  x1Frac: 1653 / 1920,
+}
 
 /** Pull the numeric value of a --seg-w custom property from a style attribute. */
 function segWidthPx(style: string | undefined): number {
@@ -79,261 +95,285 @@ function segWidthPx(style: string | undefined): number {
   return Number.parseFloat(match![1])
 }
 
-function shippedCss(): string {
-  return Array.from(document.querySelectorAll('style'))
-    .map((tag) => tag.textContent ?? '')
-    .join('\n')
-}
-
-describe('measured fractions — source px over the 1280×720 frame', () => {
-  it('tick geometry: 95px lines hanging 2px below the bar, labels 58px below', () => {
-    expect(TICK_LEN_FRAC).toBeCloseTo(0.131944444444444, 6) // 95/720
-    expect(TICK_GAP_FRAC).toBeCloseTo(0.002777777777777, 6) // 2/720
-    expect(TICK_LABEL_GAP_FRAC).toBeCloseTo(0.080555555555555, 6) // 58/720
+describe('measured constants — ref frame t=220.5 over the 1920×1080 read', () => {
+  it('node, fill-overshoot, gap, and lead geometry in canvas fractions', () => {
+    expect(NODE_R_FRAC).toBeCloseTo(50 / 1080, 6) // ~100px discs
+    expect(FILL_PAST_FRAC).toBeCloseTo(30 / 1920, 6) // fill ends 30px past its node center
+    expect(FILL_GAP_FRAC).toBeCloseTo(20 / 1920, 6) // x540→560, x960→980 gaps
+    expect(LEAD_W_FRAC).toBeCloseTo(134 / 1920, 6) // white lead x1509–1641
+    expect(LEAD_INSET_FRAC).toBeCloseTo(12 / 1920, 6) // inset from the track's right end
   })
 
-  it('chip geometry: 89×22px chip hung 34px right of the bar end', () => {
-    expect(CHIP_W_FRAC).toBeCloseTo(0.06953125, 6) // 89/1280
-    expect(CHIP_H_FRAC).toBeCloseTo(0.030555555555555, 6) // 22/720
-    expect(CHIP_GAP_FRAC).toBeCloseTo(0.0265625, 6) // 34/1280
+  it('tick and label-block geometry in canvas fractions', () => {
+    expect(TICK_LEN_FRAC).toBeCloseTo(157 / 1080, 6) // track bottom y502 → y659
+    expect(LABEL_BASELINE_FRAC).toBeCloseTo(729 / 1080, 6) // big row glyphs y703–729
+    expect(SUBLABEL_BASELINE_FRAC).toBeCloseTo(779 / 1080, 6) // small row glyphs y763–779
+    expect(LABEL_SIZE).toBe(36)
+    expect(SUBLABEL_SIZE).toBe(22)
+    expect(TICK_STROKE).toBe(2) // measured 2px ticks
+  })
+
+  it('measured palette: blue / cyan / red trio, dim track, chrome whites', () => {
+    expect(NODE_BLUE).toBe('#3699fa')
+    expect(NODE_CYAN).toBe('#1ed0e8')
+    expect(NODE_RED).toBe('#f75720')
+    expect(TRACK_DIM).toBe('#001010')
+    expect(LEAD_WHITE).toBe('#f5f4f7')
+    expect(LABEL_WHITE).toBe('#f0f0f0')
   })
 })
 
-describe('segmentTimelineLayout — hand-computed measured geometry', () => {
-  it('resolves the measured bar rect at the 1920×1080 canvas', () => {
-    const l = segmentTimelineLayout(data)
-    // x0 208/1280 × 1920 = 312; span (972−208)/1280 × 1920 = 1146;
-    // y 297/720 × 1080 = 445.5; height 68/720 × 1080 = 102.
-    expect(l.bar.x).toBeCloseTo(312, 6)
-    expect(l.bar.y).toBeCloseTo(445.5, 6)
-    expect(l.bar.width).toBeCloseTo(1146, 6)
-    expect(l.bar.height).toBeCloseTo(102, 6)
-    expect(l.viewBox).toEqual({ width: 1920, height: 1080 })
+describe('segmentTimelineLayout', () => {
+  it('track rect spans the measured band: x306–1653, y490–502', () => {
+    const layout = segmentTimelineLayout(geo)
+    expect(layout.track.x).toBeCloseTo(306, 1)
+    expect(layout.track.y).toBeCloseTo(490, 1)
+    expect(layout.track.width).toBeCloseTo(1347, 1)
+    expect(layout.track.height).toBeCloseTo(12, 1)
   })
 
-  it('normalizes the measured shares to fill the span exactly, contiguous', () => {
-    const l = segmentTimelineLayout(data)
-    // Blue share 466/762 of the 1146px span: 267018/381 = 700.8346456692913.
-    expect(l.segments[0].x).toBeCloseTo(312, 6)
-    expect(l.segments[0].width).toBeCloseTo(700.8346456692913, 6)
-    // Orange continues the bar: starts where blue ends, fills to the end.
-    expect(l.segments[1].x).toBeCloseTo(1012.8346456692913, 6)
-    expect(l.segments[1].width).toBeCloseTo(445.1653543307087, 6)
-    expect(l.segments[1].x + l.segments[1].width).toBeCloseTo(312 + 1146, 6)
-    // Label centers ride each segment's midpoint at the bar's vertical center.
-    expect(l.segments[0].labelCx).toBeCloseTo(312 + 700.8346456692913 / 2, 6)
-    expect(l.segments[1].labelCx).toBeCloseTo(1012.8346456692913 + 445.1653543307087 / 2, 6)
-    for (const seg of l.segments) {
-      expect(seg.labelCy).toBeCloseTo(445.5 + 51, 6)
+  it('white lead caps the track right end at its measured width and inset', () => {
+    const layout = segmentTimelineLayout(geo)
+    expect(layout.lead.width).toBeCloseTo(134, 1)
+    expect(layout.lead.x + layout.lead.width).toBeCloseTo(1653 - 12, 1) // 12px inset from x1653
+    expect(layout.lead.y).toBeCloseTo(490, 1)
+    expect(layout.lead.height).toBeCloseTo(12, 1)
+  })
+
+  it('fills run between the nodes with measured gaps, each capped 30px past its node center', () => {
+    const layout = segmentTimelineLayout(geo)
+    expect(layout.segments).toHaveLength(3)
+
+    // Fill 1 starts at the track's left end.
+    expect(layout.segments[0]!.x).toBeCloseTo(306, 1)
+    // Consecutive fills are separated by the measured 20px gap.
+    for (let i = 1; i < layout.segments.length; i++) {
+      expect(layout.segments[i]!.x).toBeCloseTo(layout.segments[i - 1]!.x + layout.segments[i - 1]!.width + 20, 1)
+    }
+    // The last fill stops one gap short of the lead.
+    const last = layout.segments[layout.segments.length - 1]!
+    expect(last.x + last.width).toBeCloseTo(layout.lead.x - 20, 1)
+    // Node i sits 30px inside fill i's right end, on the track axis.
+    for (const seg of layout.segments) {
+      expect(seg.nodeCx).toBeCloseTo(seg.x + seg.width - 30, 1)
+      expect(seg.nodeCy).toBeCloseTo(496, 1) // track center
+      expect(seg.nodeR).toBeCloseTo(50, 1)
+      expect(seg.glowR).toBeCloseTo(85, 1) // disc + 35px halo reach
+    }
+    // Node 1 lands on the measured x510.
+    expect(layout.segments[0]!.nodeCx).toBeCloseTo(510, 1)
+  })
+
+  it('ticks hang from the track bottom to the measured y659, labels centered under the nodes', () => {
+    const layout = segmentTimelineLayout(geo)
+    for (const seg of layout.segments) {
+      expect(seg.tickX).toBe(seg.nodeCx)
+      expect(seg.tickY0).toBeCloseTo(502, 1)
+      expect(seg.tickY0 + seg.tickLen).toBeCloseTo(659, 1)
+      expect(seg.labelCx).toBe(seg.nodeCx)
+      expect(seg.labelBaseline).toBeCloseTo(729, 1)
+      expect(seg.sublabelBaseline).toBeCloseTo(779, 1)
     }
   })
 
-  it('splits equal shares when no wFrac is authored', () => {
-    const l = segmentTimelineLayout({ ...data, segments: [{ id: 'a', tone: 'accent' }, { id: 'b', tone: 'alt' }] })
-    expect(l.segments[0].width).toBeCloseTo(573, 6)
-    expect(l.segments[1].width).toBeCloseTo(573, 6)
-    expect(l.segments[1].x).toBeCloseTo(885, 6)
+  it('normalizes shares over the fillable span (left of the lead, minus gaps)', () => {
+    const layout = segmentTimelineLayout(geo)
+    const widths = layout.segments.map((seg) => seg.width)
+    // Fill 3 is the widest, fill 1 the narrowest (measured ratio ~227:400:480).
+    expect(widths[2]!).toBeGreaterThan(widths[1]!)
+    expect(widths[1]!).toBeGreaterThan(widths[0]!)
+    // Shares fill the fillable span exactly: first fill's left edge through the last fill's right edge.
+    expect(layout.segments[0]!.x).toBeCloseTo(306, 1)
+    const last = layout.segments[layout.segments.length - 1]!
+    expect(last.x + last.width).toBeCloseTo(layout.lead.x - 20, 1)
   })
 
-  it('mixes authored shares with equal-share defaults ({2}, {} → 2:1)', () => {
-    const l = segmentTimelineLayout({ ...data, segments: [{ id: 'a', tone: 'accent', wFrac: 2 }, { id: 'b', tone: 'alt' }] })
-    expect(l.segments[0].width).toBeCloseTo(764, 6)
-    expect(l.segments[1].width).toBeCloseTo(382, 6)
+  it('splits equal shares when wFrac is omitted', () => {
+    const layout = segmentTimelineLayout({
+      ...geo,
+      segments: [
+        { id: 'a', tone: 'accent' },
+        { id: 'b', tone: 'tertiary' },
+        { id: 'c', tone: 'alt' },
+      ],
+    })
+    const widths = layout.segments.map((seg) => seg.width)
+    expect(widths[0]).toBeCloseTo(widths[1]!, 6)
+    expect(widths[1]).toBeCloseTo(widths[2]!, 6)
   })
 
-  it('resolves the measured tick geometry below the bar', () => {
-    const l = segmentTimelineLayout(data)
-    // Tick x: 340/639/938 over 1280 → ×1.5 onto 1920.
-    expect(l.ticks.map((t) => t.x)).toEqual([510, 958.5, 1407])
-    // Lines start 2px (×1.5 = 3px) below the bar bottom (547.5) → 550.5.
-    for (const tick of l.ticks) {
-      expect(tick.y0).toBeCloseTo(550.5, 6)
-      expect(tick.len).toBeCloseTo(142.5, 6) // 95px × 1.5
-      // Baseline: tick end 693 + glyph gap 58px × 1.5 = 780.
-      expect(tick.labelBaseline).toBeCloseTo(780, 6)
-      expect(tick.labelX).toBe(tick.x)
-    }
+  it('weights shares 2:1 for mixed {2, omitted} wFracs', () => {
+    const layout = segmentTimelineLayout({
+      ...geo,
+      segments: [
+        { id: 'a', tone: 'accent', wFrac: 2 },
+        { id: 'b', tone: 'tertiary' },
+      ],
+    })
+    expect(layout.segments[1]!.width / layout.segments[0]!.width).toBeCloseTo(0.5, 6)
   })
 
-  it('derives the right-side chip from the bar end, vertically centered', () => {
-    const l = segmentTimelineLayout(data)
-    // Bar end 1458 + 34px gap × 1.5 = 1509; bar center 496.5 − half of 33 = 480.
-    expect(l.chip).toBeDefined()
-    expect(l.chip!.x).toBeCloseTo(1509, 6)
-    expect(l.chip!.y).toBeCloseTo(480, 6)
-    expect(l.chip!.width).toBeCloseTo(133.5, 6) // 89px × 1.5
-    expect(l.chip!.height).toBeCloseTo(33, 6) // 22px × 1.5
-    expect(l.chip!.text).toBe('FY25')
+  it('scales all geometry with a custom viewBox (SSR-safe fractions)', () => {
+    const layout = segmentTimelineLayout(geo, { width: 960, height: 540 })
+    expect(layout.track.x).toBeCloseTo(153, 1)
+    expect(layout.track.y).toBeCloseTo(245, 1)
+    expect(layout.track.height).toBeCloseTo(6, 1)
+    expect(layout.segments[0]!.nodeR).toBeCloseTo(25, 1)
+    expect(layout.segments[0]!.labelBaseline).toBeCloseTo(364.5, 1)
   })
 
-  it('omits the chip when no text is authored', () => {
-    const l = segmentTimelineLayout({ ...data, chip: undefined })
-    expect(l.chip).toBeUndefined()
+  it('is deterministic — identical inputs produce identical layouts', () => {
+    expect(segmentTimelineLayout(geo)).toEqual(segmentTimelineLayout(geo))
   })
 
-  it('scales with a custom viewBox (the 960×540 half canvas)', () => {
-    const l = segmentTimelineLayout(data, { width: 960, height: 540 })
-    expect(l.bar.x).toBeCloseTo(156, 6)
-    expect(l.bar.y).toBeCloseTo(222.75, 6)
-    expect(l.bar.width).toBeCloseTo(573, 6)
-    expect(l.bar.height).toBeCloseTo(51, 6)
-    expect(l.segments[0].width).toBeCloseTo(350.4173228346457, 6)
-    expect(l.segments[1].x).toBeCloseTo(506.4173228346457, 6)
-    expect(l.ticks.map((t) => t.x)).toEqual([255, 479.25, 703.5])
-    expect(l.ticks[0].y0).toBeCloseTo(275.25, 6)
-    expect(l.ticks[0].len).toBeCloseTo(71.25, 6)
-    expect(l.ticks[0].labelBaseline).toBeCloseTo(390, 6)
-    expect(l.chip!.x).toBeCloseTo(754.5, 6)
-    expect(l.chip!.y).toBeCloseTo(240, 6)
-    expect(l.chip!.width).toBeCloseTo(66.75, 6)
-    expect(l.chip!.height).toBeCloseTo(16.5, 6)
-  })
-
-  it('validates composition errors with RangeError instead of rendering blank', () => {
-    expect(() => segmentTimelineLayout({ ...data, segments: [] })).toThrow(RangeError)
-    expect(() => segmentTimelineLayout({ ...data, segments: [{ id: 'x', tone: 'purple' as never }] })).toThrow(RangeError)
-    expect(() => segmentTimelineLayout({ ...data, segments: [{ id: 'x', tone: 'accent', wFrac: 0 }] })).toThrow(RangeError)
-    expect(() => segmentTimelineLayout({ ...data, segments: [{ id: 'x', tone: 'accent', wFrac: -1 }] })).toThrow(RangeError)
-    expect(() => segmentTimelineLayout({ ...data, segments: [{ id: 'x', tone: 'accent', wFrac: Number.NaN }] })).toThrow(RangeError)
-    expect(() => segmentTimelineLayout({ ...data, x0Frac: 0.8 })).toThrow(RangeError)
-    expect(() => segmentTimelineLayout({ ...data, x0Frac: 12.0 })).toThrow(RangeError)
-    expect(() => segmentTimelineLayout({ ...data, hFrac: 0, yFrac: 0.5 })).toThrow(RangeError)
-    expect(() => segmentTimelineLayout({ ...data, yFrac: 0.5, hFrac: 0.6 })).toThrow(RangeError)
-    expect(() => segmentTimelineLayout({ ...data, ticks: [{ xFrac: -0.1, label: 'X' }] })).toThrow(RangeError)
-  })
-
-  it('is deterministic for the same inputs', () => {
-    expect(JSON.stringify(segmentTimelineLayout(data)))
-      .toBe(JSON.stringify(segmentTimelineLayout(data)))
+  it('rejects invalid compositions with RangeError instead of rendering blank', () => {
+    expect(() => segmentTimelineLayout({ ...geo, segments: [] })).toThrow(RangeError)
+    expect(() => segmentTimelineLayout({ ...geo, segments: [{ id: 'x', tone: 'purple' as never }] })).toThrow(RangeError)
+    expect(() => segmentTimelineLayout({ ...geo, segments: [{ id: 'x', tone: 'accent', wFrac: 0 }] })).toThrow(RangeError)
+    expect(() => segmentTimelineLayout({ ...geo, segments: [{ id: 'x', tone: 'accent', wFrac: -1 }] })).toThrow(RangeError)
+    expect(() => segmentTimelineLayout({ ...geo, x0Frac: 0.9, x1Frac: 0.2 })).toThrow(RangeError)
+    expect(() => segmentTimelineLayout({ ...geo, yFrac: 0.99 })).toThrow(RangeError)
   })
 })
 
 describe('SegmentTimeline component', () => {
-  it('owns 3 clicks: one per segment sweep, then the labels layer', () => {
+  it('spends exactly one click per segment — node pop + fill sweep together, no extra labels click', () => {
     const { clicks } = mountRecordingClicks(data)
-
-    expect(clicks).toHaveLength(3)
-    expect(clicks).toEqual([1, 2, 3])
+    // 3 segments × (fill rect + node group) = 6 bindings; sorted: two per click.
+    expect([...clicks].sort((a, b) => a - b)).toEqual([1, 1, 2, 2, 3, 3])
+    expect(new Set(clicks)).toEqual(new Set([1, 2, 3]))
   })
 
-  it('mounts no labels layer (and spends no click) when nothing is labeled', () => {
-    const { clicks, wrapper } = mountRecordingClicks({
-      segments: [{ id: 'a', tone: 'accent' }],
-      ticks: [],
-      yFrac: 0.4125, hFrac: 0.09444444444444444, x0Frac: 0.1625, x1Frac: 0.759375,
-    })
-
-    expect(clicks).toEqual([1])
-    expect(wrapper.find('.sf-tl-labels').exists()).toBe(false)
-  })
-
-  it('a single labeled tick still takes the final labels click', () => {
-    const { clicks } = mountRecordingClicks({
-      segments: [{ id: 'a', tone: 'accent' }],
-      ticks: [{ xFrac: 0.5, label: 'MID' }],
-      yFrac: 0.4125, hFrac: 0.09444444444444444, x0Frac: 0.1625, x1Frac: 0.759375,
-    })
-
-    expect(clicks).toEqual([1, 2])
-  })
-
-  it('renders one sweep rect per segment over the measured canvas with an accessible name', () => {
+  it('renders an accessible SVG with the segment count in its label', () => {
     const wrapper = mountTimeline(data)
-
-    expect(wrapper.find('svg.segment-timeline').exists()).toBe(true)
-    expect(wrapper.findAll('rect.sf-tl-seg')).toHaveLength(2)
-    expect(wrapper.find('.sf-tl-labels').exists()).toBe(true)
-
-    const svg = wrapper.find('svg.segment-timeline')
-    expect(svg.attributes('viewBox')).toBe('0 0 1920 1080')
+    const svg = wrapper.find('svg')
     expect(svg.attributes('role')).toBe('img')
-    expect(svg.attributes('aria-label')).toBe('2-segment timeline diagram')
+    expect(svg.attributes('aria-label')).toBe('3-segment timeline diagram')
+    expect(svg.attributes('viewBox')).toBe('0 0 1920 1080')
   })
 
-  it('pre-sets each sweep rect to its normalized share of the measured bar', () => {
+  it('renders the thin dim track and the bright white lead, always visible', () => {
     const wrapper = mountTimeline(data)
-    const rects = wrapper.findAll('rect.sf-tl-seg')
+    const track = wrapper.find('rect.sf-tl-track')
+    const lead = wrapper.find('rect.sf-tl-lead')
+    expect(track.attributes('fill')).toBe('#001010')
+    expect(track.attributes('y')).toBe('490')
+    expect(track.attributes('height')).toBe('12')
+    expect(lead.attributes('fill')).toBe('#f5f4f7')
+    expect(Number(lead.attributes('width'))).toBeCloseTo(134, 0)
+  })
 
-    // Style strings carry the component's 4-decimal formatting; the
-    // authoritative 1e-6 geometry lives in the layout tests above.
-    expect(segWidthPx(rects[0].attributes('style'))).toBeCloseTo(700.8346, 4)
-    expect(segWidthPx(rects[1].attributes('style'))).toBeCloseTo(445.1654, 4)
-    // Measured bar band: y 445.5, height 102; segments anchored left→right
-    // (attributes bind the raw layout floats — precision is asserted above).
-    expect(Number.parseFloat(rects[0].attributes('x') ?? '')).toBeCloseTo(312, 6)
-    expect(Number.parseFloat(rects[1].attributes('x') ?? '')).toBeCloseTo(1012.8346456692913, 6)
-    for (const rect of rects) {
-      expect(rect.attributes('y')).toBe('445.5')
-      expect(rect.attributes('height')).toBe('102')
+  it('renders three fill rects pre-set to their sweep widths in the track band', () => {
+    const wrapper = mountTimeline(data)
+    const fills = wrapper.findAll('rect.sf-tl-seg')
+    expect(fills).toHaveLength(3)
+    const widths = fills.map((fill) => segWidthPx(fill.attributes('style')))
+    expect(widths[0]!).toBeGreaterThan(0)
+    expect(widths[2]!).toBeGreaterThan(widths[1]!)
+    for (const fill of fills) {
+      expect(fill.attributes('y')).toBe('490')
+      expect(fill.attributes('height')).toBe('12')
     }
+    // First fill starts at the measured track left edge.
+    expect(Number(fills[0]!.attributes('x'))).toBeCloseTo(306, 0)
   })
 
-  it('paints the palette tokens as-is: chainBlue accent, orangeSpine accentAlt', () => {
+  it('tints each segment with its node color: measured blue / cyan / red', () => {
     const wrapper = mountTimeline(data)
-    const rects = wrapper.findAll('rect.sf-tl-seg')
-
-    expect(rects[0].attributes('fill')).toBe('#349aea') // chainBlue.accent
-    expect(rects[1].attributes('fill')).toBe('#f85721') // orangeSpine.accent
+    const fills = wrapper.findAll('rect.sf-tl-seg')
+    expect(fills[0]!.attributes('fill')).toBe('#3699fa')
+    expect(fills[1]!.attributes('fill')).toBe('#1ed0e8')
+    expect(fills[2]!.attributes('fill')).toBe('#f75720')
   })
 
-  it('lets a palette override re-tint either tone (accent and accentAlt)', () => {
-    const wrapper = mountTimeline({ ...data, palette: { accent: '#111111', accentAlt: '#222222' } })
-    const rects = wrapper.findAll('rect.sf-tl-seg')
-
-    expect(rects[0].attributes('fill')).toBe('#111111')
-    expect(rects[1].attributes('fill')).toBe('#222222')
-  })
-
-  it('renders the tick elements and their labels beneath the bar', () => {
+  it('renders one glowing node per segment: disc in the node color inside a radial-gradient halo', () => {
     const wrapper = mountTimeline(data)
+    const groups = wrapper.findAll('g.sf-tl-node')
+    expect(groups).toHaveLength(3)
 
-    const lines = wrapper.findAll('line.sf-tl-tick')
-    expect(lines).toHaveLength(3)
-    // Chrome-white ticks at the measured stroke.
-    for (const line of lines) {
-      expect(line.attributes('stroke')).toBe('#f5f4f7')
-      expect(line.attributes('stroke-width')).toBe('3')
-    }
-    expect(lines[0].attributes('x1')).toBe('510')
-    expect(lines[0].attributes('y1')).toBe('550.5')
-    expect(lines[0].attributes('y2')).toBe('693')
+    const gradients = wrapper.findAll('radialGradient')
+    expect(gradients).toHaveLength(3)
+    const glowColors = gradients.map((grad) => grad.findAll('stop')[0]!.attributes('stop-color'))
+    expect(glowColors).toEqual(['#3699fa', '#1ed0e8', '#f75720'])
 
-    const labels = wrapper.findAll('text.sf-tl-tick-label').map((t) => t.text())
-    expect(labels).toEqual(['KICKOFF', 'CUTOVER', 'DONE'])
+    groups.forEach((group, i) => {
+      const disc = group.find('circle.disc')
+      const glow = group.find('circle.glow')
+      expect(disc!.attributes('fill')).toBe(glowColors[i])
+      expect(Number(disc!.attributes('r'))).toBeCloseTo(50, 0)
+      // Halo extends 35px past the disc: measured 149–182px footprint.
+      expect(Number(glow!.attributes('r'))).toBeCloseTo(85, 0)
+    })
   })
 
-  it('renders segment labels centered inside their segments and the right-side chip', () => {
+  it('renders 2px node-colored ticks dropping from the track bottom toward the labels', () => {
     const wrapper = mountTimeline(data)
-
-    const segLabels = wrapper.findAll('text.sf-tl-seg-label').map((t) => t.text())
-    expect(segLabels).toEqual(['BATCH', 'STREAMING'])
-
-    const chip = wrapper.find('.sf-tl-chip')
-    expect(chip.find('rect').attributes('x')).toBe('1509')
-    expect(chip.text()).toBe('FY25')
+    const groups = wrapper.findAll('g.sf-tl-node')
+    groups.forEach((group, i) => {
+      const tick = group.find('line.sf-tl-tick')
+      expect(tick!.attributes('stroke')).toBe(['#3699fa', '#1ed0e8', '#f75720'][i])
+      expect(tick!.attributes('stroke-width')).toBe('2')
+      expect(tick!.attributes('y1')).toBe('502')
+      expect(Number(tick!.attributes('y2'))).toBeCloseTo(659, 0)
+    })
   })
 
-  it('carries the sweep transition and hidden-state snap in its rendered styles', () => {
+  it('renders the two-row white label block centered under each node', () => {
+    const wrapper = mountTimeline(data)
+    const groups = wrapper.findAll('g.sf-tl-node')
+    groups.forEach((group) => {
+      const label = group.find('text.sf-tl-label')
+      const sublabel = group.find('text.sf-tl-sublabel')
+      expect(label!.attributes('fill')).toBe('#f0f0f0')
+      expect(label!.attributes('font-size')).toBe('36')
+      expect(label!.attributes('text-anchor')).toBe('middle')
+      expect(sublabel!.attributes('fill')).toBe('#f0f0f0')
+      expect(sublabel!.attributes('font-size')).toBe('22')
+      expect(Number(label!.attributes('y'))).toBeCloseTo(729, 0)
+      expect(Number(sublabel!.attributes('y'))).toBeCloseTo(779, 0)
+      expect(Number(label!.attributes('x'))).toBe(Number(group.find('circle.disc')!.attributes('cx')))
+    })
+    expect(groups[0]!.find('text.sf-tl-label')!.text()).toBe('BATCH')
+  })
+
+  it('re-tints fills, discs, and glow together through a palette override', () => {
+    const wrapper = mountTimeline({ ...data, palette: { accent: '#ff1122' } })
+    expect(wrapper.find('rect.sf-tl-seg').attributes('fill')).toBe('#ff1122')
+    expect(wrapper.find('circle.disc').attributes('fill')).toBe('#ff1122')
+    expect(wrapper.findAll('radialGradient')[0]!.findAll('stop')[0]!.attributes('stop-color')).toBe('#ff1122')
+  })
+
+  it('sweeps the fill as a gradual ~2.4s width transition and snaps backward', () => {
     mountTimeline(data)
-    const css = shippedCss()
+    const css = Array.from(document.querySelectorAll('style')).map((tag) => tag.textContent ?? '').join('\n')
 
-    // Revealed destination state: the width sweep from the CSS var.
-    const sweepRule = css.match(/\.sf-tl-seg[^{,]*\{[^}]*\}/)?.[0] ?? ''
-    expect(sweepRule).toContain('width: var(--seg-w)')
-    expect(sweepRule).toContain('width 300ms')
-    // Hidden state: width 0 + transition:none — backward nav snaps instantly.
-    const hiddenRule = css.match(/\.sf-tl-seg\.slidev-vclick-hidden[^{]*\{[^}]*\}/)?.[0] ?? ''
-    expect(hiddenRule).toContain('width: 0')
-    expect(hiddenRule).toContain('transition: none')
+    expect(css).toContain('transition: width 2400ms')
+    const hidden = css.match(/\.sf-tl-seg\.slidev-vclick-hidden[\s\S]*?\}/)?.[0] ?? ''
+    expect(hidden).toContain('width: 0')
+    expect(hidden).toContain('transition: none')
   })
 
-  it('ships a reduced-motion block that freezes the sweeps and fades', () => {
+  it('pops the node in ~140ms and fades its labels in after a beat', () => {
     mountTimeline(data)
-    const css = shippedCss()
-    const reduced = css.match(/@media \(prefers-reduced-motion: reduce\)[\s\S]*?\}/)?.[0] ?? ''
+    const css = Array.from(document.querySelectorAll('style')).map((tag) => tag.textContent ?? '').join('\n')
+
+    expect(css).toContain('transition: transform 140ms')
+    const hiddenDisc = css.match(/\.sf-tl-node\.slidev-vclick-hidden \.disc[\s\S]*?\}/)?.[0] ?? ''
+    expect(hiddenDisc).toContain('transform: scale(0.6)')
+    expect(hiddenDisc).toContain('transition: none')
+    const labels = css.match(/\.sf-tl-tick[\s\S]*?\.sf-tl-sublabel[\s\S]*?\}/)?.[0] ?? ''
+    expect(labels).toContain('transition: opacity 250ms')
+    expect(labels).toContain('transition-delay: 120ms')
+  })
+
+  it('ships a reduced-motion block that freezes the sweeps, pops, and fades', () => {
+    mountTimeline(data)
+    const css = Array.from(document.querySelectorAll('style')).map((tag) => tag.textContent ?? '').join('\n')
+    const reduced = css.match(/@media \(prefers-reduced-motion: reduce\)[\s\S]{0,400}/)?.[0] ?? ''
 
     expect(reduced).toContain('.sf-tl-seg')
-    expect(reduced).toContain('.sf-tl-labels')
+    expect(reduced).toContain('.sf-tl-node')
+    expect(reduced).toContain('.disc')
     expect(reduced).toContain('transition: none')
   })
 
