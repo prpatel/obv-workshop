@@ -41,23 +41,23 @@ function mountRecordingClicks(props: StairChainProps) {
   return { wrapper, clicks }
 }
 
-// The demo seed mirrors the v1 recording (THE DATA ENGINEERING LIFECYCLE):
-// uniform ascent except the measured rises of the recording's silhouette —
-// the RETRY block dips below TRANSFORM (see stair.test.ts for the math) — plus
-// the recording's two-tone split (blocks 1–3 blue, 4–6 cyan, frame t=7.9,
-// wave-1 report art_v4jVdTnp §1) carried through per-step `tone` roles and
-// the slide's measured palette override.
+// The demo seed mirrors the reference (THE DATA ENGINEERING LIFECYCLE): the
+// geometry lives in stair.ts's measured rhythm now, so the seed carries only
+// content + the two-tone split (blocks 1–3 blue, 4–6 cyan, sheet §1) through
+// per-step `tone` roles and the slide's measured palette override.
 const steps: StairStep[] = [
-  { id: 'ingest', title: '01', caption: 'SOURCE SYSTEMS', lift: 0 },
-  { id: 'transform', title: '02', caption: 'CLEAN + MODEL', lift: 0.0603 },
-  { id: 'retry', title: '03', caption: 'EXPECT FAILURE', lift: 0.0227 },
-  { id: 'quality', title: '04', tone: 'tertiary', caption: 'TESTS GATE DEPLOYS', lift: 0.1346 },
-  { id: 'serve', title: '05', tone: 'tertiary', caption: 'DASHBOARDS + APIS', lift: 0.2028 },
-  { id: 'govern', title: '06', tone: 'tertiary', caption: 'LINEAGE + ACCESS', lift: 0.271 },
+  { id: 'ingest', title: '01', caption: 'SOURCE SYSTEMS' },
+  { id: 'transform', title: '02', caption: 'CLEAN + MODEL' },
+  { id: 'retry', title: '03', caption: 'EXPECT FAILURE' },
+  { id: 'quality', title: '04', tone: 'tertiary', caption: 'TESTS GATE DEPLOYS' },
+  { id: 'serve', title: '05', tone: 'tertiary', caption: 'DASHBOARDS + APIS' },
+  { id: 'govern', title: '06', tone: 'tertiary', caption: 'LINEAGE + ACCESS' },
 ]
-// The measured two-tone palette the demo slide passes (report §1 medians).
-const demoPalette = { accent: '#3599fb', accentTertiary: '#1fd0ea' }
-const callout: StairCallout = { text: '= 3×', xFrac: 0.026, yFrac: 0.528 }
+// The measured two-tone palette the demo slide passes (sheet §1 medians), plus
+// the callout amber pinned to the frame's #f4ba23 (chainBlue's #f7ba20 is the
+// generic family accent).
+const demoPalette = { accent: '#3599fb', accentTertiary: '#1fd0ea', accentAlt: '#f4ba23' }
+const callout: StairCallout = { text: '3×', xFrac: 51 / 1920, yFrac: 568 / 1080, textLengthFrac: 85 / 1920 }
 
 function shippedCss(): string {
   return Array.from(document.querySelectorAll('style'))
@@ -97,74 +97,106 @@ describe('StairChain', () => {
     expect(svg.attributes('aria-label')).toBe('6-step staircase diagram')
   })
 
-  it('renders in-block labels and captions below the blocks', () => {
-    const wrapper = mountStairChain({ steps, callout })
-
-    const labels = wrapper.findAll('.sf-label').map((t) => t.text())
-    expect(labels).toEqual(['01', '02', '03', '04', '05', '06'])
-
-    const captions = wrapper.findAll('.sf-caption').map((t) => t.text())
-    expect(captions[0]).toBe('SOURCE SYSTEMS')
-
-    // Captions sit below their block: caption baseline > block bottom.
-    const first = wrapper.findAll('.sf-step')[0]
-    const blockY = Number(first.find('.sf-block').attributes('y'))
-    const blockH = Number(first.find('.sf-block').attributes('height'))
-    const captionY = Number(first.find('.sf-caption').attributes('y'))
-    expect(captionY).toBeGreaterThan(blockY + blockH)
-    expect(wrapper.find('.sf-callout').text()).toBe('= 3×')
-  })
-
-  it('sizes the in-block labels inside the recording\'s 28–40px glyph band', () => {
-    const wrapper = mountStairChain({ steps, callout })
-
-    // 0.037 × 1080 = 39.96px on the default canvas — top of the measured
-    // band, bold, centered, white, mono (ref strokes are 4–5px).
-    const sizes = wrapper.findAll('.sf-label').map((t) => Number(t.attributes('font-size')))
-    expect(sizes).toHaveLength(6)
-    sizes.forEach((size) => expect(size).toBeCloseTo(39.96, 6))
-    expect(wrapper.find('.sf-label').attributes('font-weight')).toBe('700')
-
-    const label = wrapper.find('.sf-label')
-    const block = wrapper.find('.sf-block')
-    const labelCx = Number(label.attributes('x'))
-    const blockCenter = Number(block.attributes('x')) + Number(block.attributes('width')) / 2
-    expect(labelCx).toBeCloseTo(blockCenter, 6)
-    expect(label.attributes('fill')).toBe('#ffffff')
-    expect(label.attributes('text-anchor')).toBe('middle')
-  })
-
-  it('lift overrides reach the rendered rects — the RETRY dip is visible in geometry', () => {
+  it('renders circles at the measured rhythm — block 3 dips below block 2', () => {
     const wrapper = mountStairChain({ steps, callout })
     const blocks = wrapper.findAll('.sf-block')
 
-    // TRANSFORM (k=1, lift 0.0603): bottom 903.96 − 65.124 = 838.836 → top 690.876.
-    expect(Number(blocks[1].attributes('y'))).toBeCloseTo(690.876, 6)
-    // RETRY (k=2, lift 0.0227): bottom 903.96 − 24.516 = 879.444 → top 731.484 —
-    // numerically LOWER on screen than its left neighbor: the dip.
-    expect(Number(blocks[2].attributes('y'))).toBeCloseTo(731.484, 6)
-    expect(Number(blocks[2].attributes('y'))).toBeGreaterThan(Number(blocks[1].attributes('y')))
+    // ⌀146 circles: rx = ry = w/2 (the settled frame's corner arcs pin the
+    // radius at half the bbox side — not the old 10.8px rounded square).
+    const x0 = Number(blocks[0].attributes('x'))
+    const y0 = Number(blocks[0].attributes('y'))
+    expect(x0).toBeCloseTo(63, 6)
+    expect(y0).toBeCloseTo(758, 6)
+    expect(Number(blocks[0].attributes('rx'))).toBeCloseTo(73, 6)
+    expect(Number(blocks[0].attributes('ry'))).toBeCloseTo(73, 6)
+
+    // Measured lefts 63/395/719/1036/1351/1619, tops 758/693/734/612/538/465.
+    const lefts = blocks.map((b) => Number(b.attributes('x')))
+    const tops = blocks.map((b) => Number(b.attributes('y')))
+    ;[63, 395, 719, 1036, 1351, 1619].forEach((left, i) => expect(lefts[i]).toBeCloseTo(left, 6))
+    ;[758, 693, 734, 612, 538, 465].forEach((top, i) => expect(tops[i]).toBeCloseTo(top, 6))
+    // The dip: block 3 sits numerically lower on screen than block 2.
+    expect(tops[2]).toBeGreaterThan(tops[1])
   })
 
-  it('ships the chainBlue palette: blue blocks + captions, amber callout', () => {
+  it('punches the step numbers out of the fills in near-black at the measured caps', () => {
+    const wrapper = mountStairChain({ steps, callout, palette: demoPalette })
+    const punches = wrapper.findAll('.sf-punch')
+
+    expect(punches).toHaveLength(6)
+    expect(punches.map((t) => t.text())).toEqual(['01', '02', '03', '04', '05', '06'])
+
+    const first = punches[0]
+    // Cap 40 → font 40/0.752; condensed to the measured 69px ink width;
+    // centered on the circle; baseline 758 + 0.49·146 + 20.
+    expect(Number(first.attributes('font-size'))).toBeCloseTo(40 / 0.752, 6)
+    expect(Number(first.attributes('textLength'))).toBeCloseTo(69, 6)
+    expect(first.attributes('lengthAdjust')).toBe('spacingAndGlyphs')
+    expect(Number(first.attributes('x'))).toBeCloseTo(63 + 73, 6)
+    expect(Number(first.attributes('y'))).toBeCloseTo(758 + 0.49 * 146 + 20, 6)
+    expect(first.attributes('fill')).toBe('#041628')
+
+    // Cyan blocks punch in the cyan-side near-black.
+    expect(punches[3].attributes('fill')).toBe('#011e23')
+    // Per-block measured caps vary (42/66/56/66/66/59 native bands).
+    expect(Number(punches[1].attributes('font-size'))).toBeCloseTo(62 / 0.752, 6)
+    expect(Number(punches[2].attributes('font-size'))).toBeCloseTo(53 / 0.752, 6)
+    expect(Number(punches[3].attributes('textLength'))).toBeCloseTo(50, 6)
+  })
+
+  it('renders two-tone left-aligned captions below the blocks', () => {
+    const wrapper = mountStairChain({ steps, callout, palette: demoPalette })
+    const captions = wrapper.findAll('.sf-caption')
+
+    expect(captions[0].text()).toBe('SOURCE SYSTEMS')
+    expect(captions[0].attributes('fill')).toBe('#356eae')
+    expect(captions[3].attributes('fill')).toBe('#37c2d4')
+
+    const first = wrapper.findAll('.sf-step')[0]
+    const blockY = Number(first.find('.sf-block').attributes('y'))
+    const blockH = Number(first.find('.sf-block').attributes('height'))
+    const captionY = Number(captions[0].attributes('y'))
+    // Baseline 40px below the block's bottom edge (measured +23px native top
+    // + 19–20px cap band).
+    expect(captionY).toBeCloseTo(blockY + blockH + 0.037 * 1080, 6)
+    // Left-aligned ~2px left of the block's left edge, condensed advance.
+    expect(Number(captions[0].attributes('x'))).toBeCloseTo(63 - 2, 6)
+    expect(Number(captions[0].attributes('textLength'))).toBeCloseTo('SOURCE SYSTEMS'.length * 10.5, 6)
+    expect(captions[0].attributes('text-anchor')).toBe('start')
+    expect(wrapper.find('.sf-callout').text()).toBe('3×')
+  })
+
+  it('renders the amber 3× callout at the measured box', () => {
+    const wrapper = mountStairChain({ steps, callout, palette: demoPalette })
+    const calloutEl = wrapper.find('.sf-callout')
+
+    expect(Number(calloutEl.attributes('x'))).toBeCloseTo(51, 6)
+    expect(Number(calloutEl.attributes('y'))).toBeCloseTo(568, 6)
+    expect(Number(calloutEl.attributes('font-size'))).toBeCloseTo(0.0557 * 1080, 6)
+    expect(Number(calloutEl.attributes('textLength'))).toBeCloseTo(85, 6)
+    expect(calloutEl.attributes('fill')).toBe('#f4ba23')
+  })
+
+  it('ships the chainBlue palette: blue blocks, amber callout, family-constant inks', () => {
     const wrapper = mountStairChain({ steps, callout })
 
     expect(wrapper.find('.sf-block').attributes('fill')).toBe(chainBlue.accent) // #349aea
-    expect(wrapper.find('.sf-caption').attributes('fill')).toBe(chainBlue.accent)
     expect(wrapper.find('.sf-callout').attributes('fill')).toBe(chainBlue.accentAlt) // #f7ba20
-    // In-block labels are white chrome, not palette.
-    expect(wrapper.find('.sf-label').attributes('fill')).toBe('#ffffff')
+    // Punches and captions are family constants, not palette roles.
+    expect(wrapper.find('.sf-punch').attributes('fill')).toBe('#041628')
+    expect(wrapper.find('.sf-caption').attributes('fill')).toBe('#356eae')
   })
 
-  it('reflects a palette override over chainBlue while keeping the amber callout', () => {
+  it('reflects a palette override on the blocks while inks stay family-constant', () => {
     const wrapper = mountStairChain({ steps, callout, palette: { accent: '#ff0000' } })
     const html = wrapper.html()
 
-    expect(html).toContain('#ff0000') // override reaches blocks + captions
+    expect(html).toContain('#ff0000') // override reaches blocks
+    expect(html).toContain('#356eae') // caption ink stays the measured dim blue
     expect(html).toContain('#f7ba20') // chainBlue.accentAlt still colors the callout
   })
 
-  it('splits the two-tone palette: blocks 1–3 blue, blocks 4–6 cyan (ref t=7.9)', () => {
+  it('splits the two-tone palette: blocks 1–3 blue, blocks 4–6 cyan (sheet §1)', () => {
     const wrapper = mountStairChain({ steps, callout, palette: demoPalette })
     const fills = wrapper.findAll('.sf-block').map((b) => b.attributes('fill'))
 
@@ -181,50 +213,47 @@ describe('StairChain', () => {
     expect(fills).toEqual(Array(6).fill('#ff0000'))
   })
 
-  it('draws the measured ambient layer beside blue blocks and around cyan blocks', () => {
+  it('draws slate wedges beside blocks 1–5 (blue and cyan alike) and none beside block 6', () => {
+    const wrapper = mountStairChain({ steps, callout, palette: demoPalette })
+    const groups = wrapper.findAll('.sf-step')
+    const wedges = wrapper.findAll('.sf-wedge')
+
+    expect(wedges).toHaveLength(5)
+    groups.slice(0, 5).forEach((group, i) => {
+      const wedge = group.find('.sf-wedge')
+      const block = group.find('.sf-block')
+      const blockRight = Number(block.attributes('x')) + Number(block.attributes('width'))
+      // Starts 0.05 block sizes past the right edge, fill #353743, blurred.
+      expect(Number(wedge.attributes('x'))).toBeCloseTo(blockRight + Number(block.attributes('width')) * 0.05, 6)
+      expect(wedge.attributes('fill')).toBe('#353743')
+      expect(wedge.attributes('filter')).toBe('url(#sf-stair-wedge-blur)')
+      // Shorter than the block — a band, not an offset copy.
+      expect(Number(wedge.attributes('height'))).toBeLessThan(Number(block.attributes('height')))
+      expect(i).toBeLessThan(5)
+    })
+    // Block 6: no wedge — the band would overflow the canvas edge.
+    expect(groups[5].find('.sf-wedge').exists()).toBe(false)
+  })
+
+  it('marks the dip block for the down-then-up choreography', () => {
     const wrapper = mountStairChain({ steps, callout, palette: demoPalette })
     const groups = wrapper.findAll('.sf-step')
 
-    // Blue blocks: a slate shadow mass offset right of the block's right edge.
-    const shadows = wrapper.findAll('.sf-shadow')
-    expect(shadows).toHaveLength(3)
-    groups.slice(0, 3).forEach((group) => {
-      const shadow = group.find('.sf-shadow')
-      const block = group.find('.sf-block')
-      const shadowX = Number(shadow.attributes('x'))
-      const blockRight = Number(block.attributes('x')) + Number(block.attributes('width'))
-      expect(shadowX).toBeGreaterThan(blockRight)
-      expect(shadow.attributes('fill')).toBe('#363946')
-      // Shorter than the block — a shadow mass, not an offset copy.
-      expect(Number(shadow.attributes('height'))).toBeLessThan(Number(block.attributes('height')))
-    })
-
-    // Cyan blocks: a teal ambience feather offset toward the block's left
-    // edge (0.2 × block width, per the ref ambience x1709–1881 around
-    // block x1748–1906).
-    const ambiences = wrapper.findAll('.sf-ambience')
-    expect(ambiences).toHaveLength(3)
-    groups.slice(3).forEach((group) => {
-      const ambience = group.find('.sf-ambience')
-      const block = group.find('.sf-block')
-      const ambienceCx = Number(ambience.attributes('cx'))
-      const blockCenter = Number(block.attributes('x')) + Number(block.attributes('width')) / 2
-      expect(ambienceCx).toBeCloseTo(blockCenter - Number(block.attributes('width')) * 0.2, 6)
-      expect(ambience.attributes('fill')).toBe('url(#sf-stair-teal-ambience)')
-    })
-
-    // No cross-leak: blue blocks never carry the ambience, cyan never the slate.
-    groups.slice(0, 3).forEach((group) => expect(group.find('.sf-ambience').exists()).toBe(false))
-    groups.slice(3).forEach((group) => expect(group.find('.sf-shadow').exists()).toBe(false))
+    // Block 3 (index 2) dips 41px below block 2 — the only dip site.
+    expect(groups[2].classes()).toContain('sf-dip')
+    expect(groups[1].classes()).not.toContain('sf-dip')
+    expect(groups[3].classes()).not.toContain('sf-dip')
+    expect(groups[2].attributes('style')).toContain('41px')
   })
 
   it('carries the measured timing constants and reduced-motion block in its styles', () => {
     mountStairChain({ steps, callout })
 
     const css = shippedCss()
-    expect(css).toContain('80ms') // block fade/scale rise (≈66ms settle, report §1)
-    expect(css).not.toContain('180ms')
-    expect(css).toContain('150ms') // callout fade
+    expect(css).toContain('450ms') // stagger in the measured 400–500ms band
+    expect(css).toContain('250ms') // callout fade
+    expect(css).toContain('sf-stair-dip') // down-then-up keyframes for block 3
+    expect(css).not.toContain('80ms')
     expect(css).toContain('prefers-reduced-motion') // transitions disabled, instant state
   })
 
