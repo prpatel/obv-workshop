@@ -1,18 +1,25 @@
 /**
  * RatioStrip data contract + pure layout math (Wave-2 addendum, spec
- * art_3VsrSvLm; measured blueprint art_2kSBGNmJ §3.3 — source video 95–101s).
+ * art_3VsrSvLm; fidelity rework per report art_iHm120ov §RatioStrip — source
+ * video 95–101s, settled frame t=99.1s read at 1920×1080).
  *
- * One proportional band that builds at initial segment proportions (click 1,
- * all segments growing rightward in parallel) and then re-proportions to the
- * settled measured widths (click 2) — a live re-flow. Both clicks are
- * state-driven width transitions on revealed-state classes; this module only
- * computes the two width states and the re-proportion spans between them.
+ * One proportional band with a two-phase build: click 1 pops the band at
+ * initial segment proportions; click 2 re-flows the teal region to its
+ * settled share in three bursts ~470ms apart (measured 99.10 / 99.57 /
+ * 99.83s); click 3 fades in the mint chip and the tone-colored caption row.
+ * All clicks are state-driven transitions on revealed-state classes; this
+ * module computes the width states, the re-flow burst waypoints, and the
+ * re-proportion spans between them.
  *
- * Measured on the 1280×720 source frame: band x184–1099 (14.4–85.9%w, 71.5%w
- * wide), y370–528 (21.9%h tall); settled shares red 146px / salmon 92px /
- * teal 696px of the 915px band (16% / 10% / 76%). The teal region carries a
- * mint label chip 80px wide at its left edge and a darker-teal sub-band 298px
- * wide right-aligned; a caption row of small glyphs sits below (y557).
+ * Measured (t=99.1s, 1920×1080): band x276–1648 (14.4–85.9%w), y554–791
+ * (238px tall); the red segment x276–609 (334px = 17.4%w) is a red→salmon
+ * gradient #ec423f→#f98c8c — the "salmon segment" earlier research read as
+ * a separate amber block is this gradient's tail; the teal region x604–1647
+ * is a single bright left-to-right gradient #76eec5→#1fd898 (no dark
+ * sub-band — that earlier read was a misread tone); the mint chip x605–700
+ * (95px) sits at the region's left edge; the caption row of small glyphs
+ * sits at y837–857. Above the band: a dark panel plate y331–440 (x234–1685)
+ * and a white heading row (~y465–490).
  *
  * Pure and SSR-safe: no DOM access, no mutation of the inputs.
  */
@@ -33,7 +40,7 @@ export interface StripSegment {
    */
   wFrac: number
   /**
-   * Final width fraction after the re-proportion (click 2). Defaults to
+   * Settled width fraction after the click-2 re-flow (burst 3). Defaults to
    * `wFrac` — a segment without one holds its width through the re-flow.
    */
   wFracFinal?: number
@@ -64,14 +71,54 @@ export const BAND_X1_FRAC = 1099 / 1280 // 0.85859375
 /** Caption-row baseline (measured glyph row at y557 of the 720px source height). */
 export const CAPTION_Y_FRAC = 557 / 720 // 0.773611
 
+/** Measured panel plate above the band (t=99.1s): y331–440, x234–1685. */
+export const PLATE_X0_FRAC = 234 / 1920
+export const PLATE_X1_FRAC = 1685 / 1920
+export const PLATE_Y_FRAC = 331 / 1080
+export const PLATE_H_FRAC = 109 / 1080
+
+/** White heading row above the band (t=99.1s): glyph baseline at y490. */
+export const HEADING_Y_FRAC = 490 / 1080
+
 /**
- * Measured internals of the teal region (settled frame, §3.3): a mint label
- * chip 80px wide at the region's LEFT edge and a darker-teal sub-band 298px
- * wide RIGHT-aligned — both full band height, as fractions of the 696px
- * region. Rendered on `tertiary` segments only.
+ * Measured internals of the teal region (settled frame t=99.1s): the mint
+ * label chip 95px wide at the region's LEFT edge, full band height, as a
+ * fraction of the 1043px region. Rendered on `tertiary` segments only.
  */
-export const CHIP_WFRAC = 80 / 696 // 0.114943
-export const SUBBAND_WFRAC = 298 / 696 // 0.428161
+export const CHIP_WFRAC = 95 / 1043 // 0.0910834
+
+/** Measured teal gradient (t=99.1s): bright-mint left edge → the teal token. */
+export const TEAL_GRADIENT_START = '#76eec5'
+
+/** Measured red-segment gradient tail (t=99.1s): accentAlt red → salmon. */
+export const RED_GRADIENT_END = '#f98c8c'
+
+/**
+ * Three-burst teal re-flow (click 2), measured at 99.10 / 99.57 / 99.83s —
+ * ~470ms between bursts. BURST_WFRACS are the teal region's intermediate
+ * band shares at bursts 1–2 (re-paced waypoints [I]; burst 3 is the
+ * segment's settled width). BURST_DELAYS_MS pace the stacked burst rects.
+ */
+export const BURST_WFRACS: readonly [number, number] = [0.35, 0.55]
+export const BURST_DELAYS_MS: readonly [number, number, number] = [0, 470, 730]
+
+/**
+ * Stepped px widths for the three-burst re-flow: the two burst waypoints
+ * (clamped to the final width) then the settled width — monotonically
+ * increasing, last equals `finalW`.
+ */
+export function tealBurstWidths(bandW: number, finalW: number): [number, number, number] {
+  if (!(bandW > 0)) {
+    throw new RangeError(`band width ${bandW} must be positive`)
+  }
+  if (!(finalW > 0)) {
+    throw new RangeError(`final width ${finalW} must be positive`)
+  }
+  const [b1, b2] = BURST_WFRACS
+  const w1 = Math.min(b1 * bandW, finalW)
+  const w2 = Math.max(w1, Math.min(b2 * bandW, finalW))
+  return [w1, w2, finalW]
+}
 
 /** Resolved px geometry for one segment, ready to render. */
 export interface StripSegmentLayout {
@@ -91,6 +138,8 @@ export interface StripSegmentLayout {
 
 export interface RatioStripLayout {
   band: { x: number; y: number; w: number; h: number }
+  /** Measured panel plate above the band (static chrome layer). */
+  plate: { x: number; y: number; w: number; h: number }
   segments: StripSegmentLayout[]
   /** Caption-row baseline in viewBox units. */
   captionY: number
@@ -157,6 +206,12 @@ export function ratioStripLayout(data: RatioStripData, viewBox: Canvas = { width
 
   return {
     band: { x: bandX, y: data.yFrac * viewBox.height, w: bandW, h: data.hFrac * viewBox.height },
+    plate: {
+      x: PLATE_X0_FRAC * viewBox.width,
+      y: PLATE_Y_FRAC * viewBox.height,
+      w: (PLATE_X1_FRAC - PLATE_X0_FRAC) * viewBox.width,
+      h: PLATE_H_FRAC * viewBox.height,
+    },
     segments,
     captionY: CAPTION_Y_FRAC * viewBox.height,
     viewBox,
