@@ -26,6 +26,9 @@ import {
   LANE_Y0_FRAC,
   TICK_H_FRAC,
   TICK_X_FRAC,
+  WASH_BAND_H_FACTOR,
+  WASH_CORE_H_FACTOR,
+  WASH_RIGHT_INSET_FRAC,
   milestoneLanesLayout,
   type Lane,
 } from './lanes'
@@ -124,6 +127,12 @@ describe('measured constants — hand-computed to 1e-6', () => {
     expect(BOX_Y_FRAC).toBeCloseTo(377 / 1080, 6)
     expect(BOX_W_FRAC).toBeCloseTo(1371 / 1920, 6)
     expect(BOX_H_FRAC).toBeCloseTo(577 / 1080, 6)
+  })
+
+  it('ambience washes: band 1.6× bar height, core 0.7×, inset 38px at 1920 (ref t=180.1s)', () => {
+    expect(WASH_BAND_H_FACTOR).toBeCloseTo(1.6, 6)
+    expect(WASH_CORE_H_FACTOR).toBeCloseTo(0.7, 6)
+    expect(WASH_RIGHT_INSET_FRAC).toBeCloseTo(38 / 1920, 6)
   })
 })
 
@@ -443,6 +452,49 @@ describe('MilestoneLanes component', () => {
     expect(header.html()).toContain('#66fb00')
   })
 
+  it('renders the dim ambience layer: plate across the chart field, tone washes per lane', () => {
+    const wrapper = mountLanes()
+    const ambience = wrapper.find('g.sf-ml-ambience')
+
+    expect(ambience.exists()).toBe(true)
+    expect(ambience.attributes('aria-hidden')).toBe('true')
+    // Plate: the measured container box filled with the ref's neutral dim tone.
+    const plate = wrapper.find('rect.sf-ml-plate')
+    expect(plate.attributes('fill')).toBe('#0f0e11')
+    expect(Number(plate.attributes('x'))).toBeCloseTo(281, 6)
+    expect(Number(plate.attributes('width'))).toBeCloseTo(1371, 6)
+    // One band + one core per lane, from the label rail (x410) to 38px short
+    // of the frame's right edge (281 + 1371 − 410 − 38 = 1204 wide).
+    const bands = wrapper.findAll('rect.sf-ml-wash')
+    const cores = wrapper.findAll('rect.sf-ml-wash-core')
+    expect(bands).toHaveLength(4)
+    expect(cores).toHaveLength(4)
+    for (const rect of [...bands, ...cores]) {
+      expect(Number(rect.attributes('x'))).toBeCloseTo(410, 6)
+      expect(Number(rect.attributes('width'))).toBeCloseTo(1204, 6)
+    }
+    // Heights are factors of the lane's own bar height (tall 52.5 / short 36).
+    expect(Number(bands[0].attributes('height'))).toBeCloseTo(1.6 * 52.5, 6)
+    expect(Number(bands[1].attributes('height'))).toBeCloseTo(1.6 * 36, 6)
+    expect(Number(cores[0].attributes('height'))).toBeCloseTo(0.7 * 52.5, 6)
+    // Vertically centered on the bar: lane 1 bar center 551.25.
+    expect(Number(bands[0].attributes('y'))).toBeCloseTo(551.25 - 1.6 * 52.5 / 2, 6)
+    expect(Number(cores[0].attributes('y'))).toBeCloseTo(551.25 - 0.7 * 52.5 / 2, 6)
+    // Washes take their lane's bar tone via the shared barColor mapping.
+    expect(bands[0].attributes('fill')).toBe('#e5413f')
+    expect(bands[1].attributes('fill')).toBe('#e5413f')
+    expect(bands[2].attributes('fill')).toBe('#f7ba20')
+    expect(bands[3].attributes('fill')).toBe('#f7ba20')
+    expect(bands[0].attributes('fill-opacity')).toBe('0.115')
+    expect(cores[0].attributes('fill-opacity')).toBe('0.13')
+  })
+
+  it('binds no v-click on the ambience layer — static chrome like the frame', () => {
+    mountLanes({ footerLabel: 'YOUR JUDGEMENT DECIDES THE DESIGN' })
+    // Still exactly the 10 choreographed bindings (4 bars, 4 labels, 2 groups).
+    expect(clickBindings).toHaveLength(10)
+    expect(clickBindings.every((b) => b.tag !== 'g' || b.value === 9)).toBe(true)
+  })
   it('surfaces the layout RangeError instead of rendering blank', () => {
     expect(() => mountLanes({ lanes: [{ id: 'x', bars: [{ xFrac: 0.9, wFrac: 0.5, tone: 'accent' }] }] })).toThrow(RangeError)
   })
