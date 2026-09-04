@@ -40,7 +40,7 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (10) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (2) · SegmentTimeline (3) · StackPanels (4) · MilestoneLanes (5) · HexCluster (3)
+├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (10) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (3) · SegmentTimeline (3) · StackPanels (4) · MilestoneLanes (5) · HexCluster (3)
 ├─ components/
 │  ├─ StepFlow.vue                # the serpentine flow diagram (auto-imported by Slidev)
 │  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
@@ -51,7 +51,7 @@ decks/stepflow-demo/
 │  ├─ TwoBarCompare.vue           # family built-in: two left-anchored comparison bars (icon chips + annotation click)
 │  ├─ ColumnRow.vue               # family built-in: tone-coded column row (rising columns + label rows)
 │  ├─ TileGrid.vue                # family built-in: hex-tile grid with glow, connector track, and label rows (row-major build)
-│  ├─ RatioStrip.vue              # family built-in: proportional band with a live re-proportion (wave 2)
+│  ├─ RatioStrip.vue              # family built-in: proportional band, two-phase pop + three-burst teal re-flow (wave 2)
 │  ├─ SegmentTimeline.vue         # family built-in: thin track, bright fills between glowing nodes (sweep-then-pop)
 │  ├─ StackPanels.vue             # family built-in: measured panel mosaic (sweep band + pop panels)
 │  ├─ MilestoneLanes.vue          # family built-in: four-lane Gantt/milestone chart (offset bars + tick markers)
@@ -179,7 +179,7 @@ inline on the demo slides; data order is the click order for every family.
 | `TwoBarCompare` | `compare.ts` — `CompareBar[]` + `TwoBarCompareData` (bars/xFrac/barHFrac/yFracs) | 3 — bar 1, bar 2, then one shared annotation click for labels/chips | `statusAmber` (the component's family default) | 8          | —           |
 | `ColumnRow`     | `columns.ts` — `ColumnRowData` (columns + `yFrac`/`hFrac` + optional `labelRows`) | 5 columns left→right, then the label rows | `cyanOnBlack` base + token mix (`orangeSpine`/`statusAmber` accents, `accentTertiary` teal) | 9          | —           |
 | `TileGrid`      | `tiles.ts` — `TileGridData` (tiles/cols + tile & pitch fracs; per-tile `tone`/`wFrac`/`hFrac`/`mini` overrides) | 6 — one per tile, row-major | `cyanOnBlack` (measured hex core `#1ed0e8` + matrix/row tones via `accentAlt`/`accentTertiary` + status/plain constants) | 10         | `cpu` · `boxes` · `layers` (candidates; fallback covers a wrong guess) |
-| `RatioStrip`    | `strip.ts` — `RatioStripData` (segments + `yFrac`/`hFrac` + optional caption) | 2 — build at initial proportions, then re-proportion + captions | `statusAmber` + `accentTertiary` recording base — hue decision in the notes below | 11         | —           |
+| `RatioStrip`    | `strip.ts` — `RatioStripData` (segments + `yFrac`/`hFrac` + optional heading/caption) | 3 — band pop at initial proportions, three-burst teal re-flow, then chip + tone-colored caption row | measured gradients on the `accentAlt`/`accentTertiary` tokens — hue decisions in the notes below | 11         | —           |
 | `SegmentTimeline` | `timeline.ts` — `TimelineSegment[]` (`tone` is `'accent'`/`'tertiary'`/`'alt'`, optional proportional `wFrac`, optional `label`/`sublabel`) | 3 — one per segment: node pop + fill sweep together | measured blue/cyan/red trio over `chainBlue` (no preset added) | 12         | —           |
 | `StackPanels`   | `panels.ts` — `StackPanel[]` + optional `caption`       | one per panel + one label click     | `cyanOnBlack` + `accentTertiary`              | 13         | —           |
 | `MilestoneLanes` | `lanes.ts` — `MilestoneLanesData` (lanes + measured y0/pitch/barH grid, per-bar `hFrac` override) | one per bar, then tick markers | `statusAmber` verbatim | 14         | —           |
@@ -212,32 +212,35 @@ palette prop), `alt` (`accentAlt` override, else the `orangeSpine` accent),
 accent). The optional `labelRows` carry the measured dot row + label row below
 the columns — one string per column, revealed together on the final click.
 RatioStrip authoring notes (wave 2, research art_2kSBGNmJ §3.3 — source video
-95–101s): one proportional band, 71.5%w × 21.9%h at y 51.4%h, that tells a
-share-of-total story in two native clicks. Click 1 builds every segment at its
-initial width (segments grow rightward in parallel); click 2 re-proportions the
-band to the settled shares while the caption row and the teal region's
-internals (a mint label chip at the region's left edge, a darker-teal sub-band
-right-aligned) fade in. Segment widths are proportions — each state normalizes
-over its own sum, so the band always reads as shares of 100%. `wFrac` is the
-click-1 width, optional `wFracFinal` the click-2 destination (omit it and the
-segment holds its width); both clicks are state-driven width transitions on
-revealed-state classes — backward nav snaps, reduced-motion freezes. The final
-state tiles the band exactly, so the settled copy stacks over the initial one
-(the StepFlow dim-base + stacked-copy pattern) with no residue.
+95–101s; fidelity rework per report art_iHm120ov §RatioStrip, settled frame
+t=99.1s at 1920×1080): one proportional band, 71.5%w × 21.9%h at y 51.4%h,
+that tells a share-of-total story in three native clicks — a two-phase build.
+Click 1 pops the band at its initial widths (~120ms width ease); click 2
+re-flows the teal region to its settled share in three bursts ~470ms apart
+(measured 99.10 / 99.57 / 99.83s — stacked burst rects with stepped
+transition-delays over the final copy); click 3 fades in the mint chip and
+the tone-colored caption row. Segment widths are proportions — each state
+normalizes over its own sum, so the band always reads as shares of 100%.
+`wFrac` is the click-1 width, optional `wFracFinal` the re-flow destination
+(burst 3; omit it and the segment holds its width); all clicks are
+state-driven transitions on revealed-state classes — backward nav snaps,
+reduced-motion freezes. The final state tiles the band exactly, so the
+settled copy stacks over the initial one (the StepFlow dim-base +
+stacked-copy pattern) with no residue. Static chrome (present before the
+band pops): a dark panel plate (y≈331–440, x≈234–1685) and the white
+`heading` row above the band. Caption labels adopt their segment's tone
+family; the optional `caption` renders chrome-dim.
 
-Hue decision (the wave-2 palette-neutral rule — no new preset): the settled
-frame reads a large teal region with a salmon segment (`#f77c7b`) and a mint
-chip (`#9dfbd6`). Teal maps to the `accentTertiary` token (the demo passes
-`#1cd798`; blue/teal-family hues normalize to their token per the house
-convention), red to `statusAmber.accentAlt`, and the salmon — the
-compression-muddied-amber hypothesis; evidence crops were not available at
-build time, so the research's guidance decides — maps to `statusAmber.accent`
-(`#f7ba20`) rather than introducing a sixth hue. The mint chip stays a
-documented local constant (`MINT` in `RatioStrip.vue`, chip fill only), and the
-darker-teal sub-band renders as a 35% black overlay on the resolved teal token
-so it stays darker than whatever teal the palette resolves to. Initial
-proportions are [I]: the measured 22k→108k px teal re-flow seeds the teal at
-~1/5 of its settled share with red/amber holding the rest.
+Hue decisions (report art_iHm120ov §RatioStrip — measured, replacing the
+wave-2 hypotheses): the red segment is a red→salmon gradient (`accentAlt` →
+measured `#f98c8c`) — the earlier "salmon/amber segment" was a misread of
+that gradient's tail; no amber exists in the source. The teal region is the
+bright left-to-right gradient `#76eec5` → the `accentTertiary` token (the
+demo passes `#1cd798`); the darker-teal sub-band was a misread tone and is
+gone. The mint chip `#a0fcd9` and the panel plate `#18181b` stay documented
+local constants. Initial proportions are [I]: the measured 22k→108k px teal
+re-flow seeds the teal at ~1/5 of its settled share with red holding the
+rest; the burst waypoints (band shares 0.35 / 0.55) are re-paced [I].
 
 Data contract (exported from `components/stepflow/strip.ts`):
 
@@ -246,7 +249,7 @@ interface StripSegment {
   id: string                       // stable key — Vue keys + test selectors
   tone: 'accent' | 'alt' | 'tertiary' | 'plain'
   wFrac: number                    // initial width, fraction of the band (click 1)
-  wFracFinal?: number              // settled width after the re-proportion (click 2)
+  wFracFinal?: number              // settled width after the click-2 re-flow (burst 3)
   label?: string                   // caption-row label under the segment's final left edge
 }
 interface RatioStripData {
