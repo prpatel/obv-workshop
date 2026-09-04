@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { twoBarCompareLayout, type CompareBar } from './stepflow/compare'
+import {
+  DATA_TEXT_COLOR,
+  RULE_COLOR,
+  SUBHEAD_SIZE,
+  twoBarCompareLayout,
+  type CompareBar,
+  type DataTextBlock,
+} from './stepflow/compare'
 import { resolvePalette, statusAmber, type StepFlowPaletteOverride } from './stepflow/palettes'
 import { iconPath, ICON_FALLBACK } from './stepflow/icons'
 
@@ -9,22 +16,39 @@ const props = withDefaults(defineProps<{
   bars: CompareBar[]
   /** Optional text for the top-right chip (reveals with the annotation click). */
   chip?: string
+  /** The big light-cyan data-text block above the bars (reveals with the annotation click). */
+  dataText?: DataTextBlock
   /** Partial palette merged over the family's measured `statusAmber` preset. */
   palette?: StepFlowPaletteOverride
   /** Mono header line, e.g. 'INFRA'. */
   title?: string
   /** Header tail rendered in chrome green after `title` (two-tone chrome convention). */
   titleAccent?: string
+  /** Centered white headline row under the header band (measured composition). */
+  subhead?: string
+  /** Chrome-green tail rendered after `subhead` (two-tone chrome convention). */
+  subheadAccent?: string
 }>(), { palette: () => ({}) })
 
 // statusAmber is this family's locked recording base (accent = amber, accentAlt
-// = red); a `palette` prop still overrides any field, per the shared contract.
-const p = computed(() => resolvePalette({ ...statusAmber, ...props.palette }))
-const layout = computed(() => twoBarCompareLayout({ bars: props.bars, chip: props.chip }))
+// = red); the rework adds the recording's teal top-chip tone as accentTertiary
+// (measured #1cd797 on the ref frame — report art_iHm120ov §TwoBarCompare).
+// A `palette` prop still overrides any field, per the shared contract.
+const p = computed(() => resolvePalette({
+  ...statusAmber,
+  accentTertiary: '#1cd797',
+  ...props.palette,
+}))
+const layout = computed(() => twoBarCompareLayout({
+  bars: props.bars,
+  chip: props.chip,
+  dataText: props.dataText,
+  subhead: props.subhead,
+  subheadAccent: props.subheadAccent,
+}))
 
-// Icon chips are chrome (the recordings' white outlined chip + light icon),
-// not palette fields — same treatment as NodeEdge's plain tone.
-const CHROME = '#f5f4f7'
+// Icon chips carry the family amber with dark icon strokes, the top chip the
+// recording's teal plate — measured ref tones, not chrome constants anymore.
 const CHROME_GREEN = '#66fb00'
 
 function toneColor(tone: CompareBar['tone']): string {
@@ -50,10 +74,12 @@ function resolveIcon(key: string): string {
 }
 
 // Typography on the StepFlow scale: 34px title at source height 848, rescaled
-// so custom viewBox sizes stay proportional (StepFlow.vue pattern).
+// so custom viewBox sizes stay proportional (StepFlow.vue pattern). Label
+// sizes are the rework's measured classes (ref t=168.7s: ~23px dark on-bar
+// glyphs ≈ 32px font; ~28px under-bar class) — ~2× the pre-rework rows.
 const type = computed(() => {
   const k = layout.value.viewBox.height / 848
-  return { titleSize: 34 * k, labelSize: 16, subSize: 13, chipSize: 13 }
+  return { titleSize: 34 * k, labelSize: 32, subSize: 28, chipSize: 26 }
 })
 
 function fmt(n: number): string {
@@ -98,15 +124,13 @@ function fmt(n: number): string {
           :width="bar.chip.w"
           :height="bar.chip.h"
           rx="6"
-          fill="none"
-          :stroke="CHROME"
-          :stroke-width="3"
+          :fill="p.accent"
         />
         <g
           class="sf-tbc-chip-icon"
           :transform="iconTransform(bar.chip.cx, bar.chip.cy)"
           fill="none"
-          :stroke="CHROME"
+          :stroke="p.iconStroke"
           stroke-width="2"
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -116,11 +140,57 @@ function fmt(n: number): string {
     </g>
 
     <!--
-      Annotation layer: the small glyphs on/under each bar plus the optional
-      top-right chip, one shared click after the bars (the recording's labels
-      arrive late, ColumnRow-style). Hidden entirely until that click.
+      Annotation layer: the data-text block, the glyphs on/under each bar and
+      the top-right chip — one shared click after the bars (the recording's
+      labels arrive late, ColumnRow-style). Hidden entirely until that click.
     -->
-    <g v-if="layout.bars.some((b) => b.label || b.sub) || chip" v-click="layout.bars.length + 1" class="sf-tbc-annot">
+    <g
+      v-if="layout.bars.some((b) => b.label || b.sub) || chip || layout.dataText.length || layout.caption || layout.note || layout.rules.length"
+      v-click="layout.bars.length + 1"
+      class="sf-tbc-annot"
+    >
+      <text
+        v-for="(line, i) in layout.dataText"
+        :key="`data-${i}`"
+        class="sf-tbc-dataline"
+        :x="line.x"
+        :y="line.y"
+        :font-size="line.size"
+        :fill="DATA_TEXT_COLOR"
+        font-weight="700"
+        letter-spacing="0.04em"
+      >{{ line.text }}</text>
+      <!-- Divider rules + the between-the-bars caption/note rows: the second
+           evidence pass's measured layers (ref t=168.7s y722/752/789/970). -->
+      <rect
+        v-for="(rule, i) in layout.rules"
+        :key="`rule-${i}`"
+        class="sf-tbc-rule"
+        :x="rule.x"
+        :y="rule.y"
+        :width="rule.w"
+        :height="rule.h"
+        :fill="RULE_COLOR"
+      />
+      <text
+        v-if="layout.caption"
+        class="sf-tbc-caption"
+        :x="layout.caption.x"
+        :y="layout.caption.y"
+        :font-size="layout.caption.size"
+        :fill="p.subtext"
+        letter-spacing="0.06em"
+      >{{ layout.caption.text }}</text>
+      <text
+        v-if="layout.note"
+        class="sf-tbc-note"
+        :x="layout.note.x"
+        :y="layout.note.y"
+        :font-size="layout.note.size"
+        fill="#ffffff"
+        font-weight="700"
+        letter-spacing="0.06em"
+      >{{ layout.note.text }}</text>
       <template v-for="bar in layout.bars" :key="`annot-${bar.id}`">
         <text
           v-if="bar.label"
@@ -129,7 +199,7 @@ function fmt(n: number): string {
           :y="bar.labelY"
           dominant-baseline="central"
           :font-size="type.labelSize"
-          fill="#ffffff"
+          :fill="p.iconStroke"
           letter-spacing="0.06em"
         >{{ bar.label }}</text>
         <text
@@ -151,7 +221,7 @@ function fmt(n: number): string {
           :width="layout.topChip.w"
           :height="layout.topChip.h"
           rx="6"
-          :fill="p.track"
+          :fill="p.accentTertiary ?? p.accent"
         />
         <text
           class="sf-tbc-topchip-text"
@@ -165,6 +235,23 @@ function fmt(n: number): string {
         >{{ chip }}</text>
       </template>
     </g>
+
+    <!--
+      Centered two-tone headline row — header chrome like the title, always
+      visible (measured ref composition: white lead + chrome-green tail,
+      baseline y161 at 1080p).
+    -->
+    <text
+      v-if="layout.subhead"
+      class="sf-tbc-subhead"
+      :x="layout.subhead.x"
+      :y="layout.subhead.y"
+      text-anchor="middle"
+      :font-size="SUBHEAD_SIZE"
+      fill="#ffffff"
+      font-weight="700"
+      letter-spacing="0.04em"
+    >{{ layout.subhead.text }}<tspan v-if="layout.subhead.accent" :fill="CHROME_GREEN">&nbsp;{{ layout.subhead.accent }}</tspan></text>
 
     <text
       v-if="title"
