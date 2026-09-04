@@ -20,25 +20,25 @@ const p = computed(() => resolvePalette(props.palette))
 const layout = computed(() => panelsLayout(props.panels))
 const plan = computed(() => revealPlan(props.panels, !!props.caption))
 
-// Tone → token: `alt`/`tertiary` fall back to `accent` when the override omits
-// them, so a plain `cyanOnBlack` slide still renders every panel (measured
-// hues reach the slide through the palette prop, never hardcoded here).
+// Tone → token: `alt`/`tertiary`/`quaternary` fall back to `accent` when the
+// override omits them, so a plain `cyanOnBlack` slide still renders every panel
+// (measured hues reach the slide through the palette prop, never hardcoded here).
 function fill(tone: StackPanel['tone']): string {
   if (tone === 'alt') return p.value.accentAlt ?? p.value.accent
   if (tone === 'tertiary') return p.value.accentTertiary ?? p.value.accent
+  if (tone === 'quaternary') return p.value.accentQuaternary ?? p.value.accent
   return p.value.accent
 }
 
 // Typography measured from the v4 recording: header cap ≈ 6%h (baseline
-// 0.117·h), caption glyphs y1099–1127 ≈ 0.036·h. Panel text sizes are [I]
-// approximations anchored to the measured text-block heights (band block
-// y511–587 ≈ 77px source for title + 2 body rows, amber 831–911, green
-// 852–897) — tightly-leaded, centered in their panels.
+// 0.117·h). Panel titles are the wave-1 fix list's ~40px-at-1080 white
+// in-fill labels (0.038·h, as before); the caption glyphs y1099–1127 read
+// ~26px at 1080 (0.024·h) — the fix list's caption size.
 const type = computed(() => ({
   header: 0.088 * layout.value.viewBox.height,
   panelTitle: 0.038 * layout.value.viewBox.height,
   row: 0.025 * layout.value.viewBox.height,
-  caption: 0.036 * layout.value.viewBox.height,
+  caption: 0.024 * layout.value.viewBox.height,
 }))
 
 // The recording's panels have rounded corners (visual inspection); the radius
@@ -60,40 +60,43 @@ interface Label {
 // elements) → one shared click with a ~90ms per-element cascade.
 const LABEL_STEP_MS = 90
 
-// All text reveals together on the final click: every panel text block centers
-// in its panel (measured: band block center x1004/y549 vs band center
-// x970/y544; amber and green centers within 2px), the caption centers under
-// the composition (measured center x965 vs x970). Panel text renders dark
-// (iconStroke — the recording has no light glyphs inside any panel); only the
-// caption is white.
+// All text reveals together on the final click. Titles render white (~40px
+// at 1080 per the wave-1 fix list) at each panel's top-left inset (pad 23px,
+// baseline 43px — design choices within the fix list's "top-left of fill";
+// the recording's settled frame centers dark text blocks instead — accepted
+// deviation, recorded in the PR). Rows render dark (iconStroke), left-aligned
+// under their panel's title; the caption centers under the composition
+// (measured caption center x965 vs mosaic center x970) in white.
+const PAD_X = 0.012
+const TITLE_BASELINE = 0.04
 const labels = computed<Label[]>(() => {
   const out: Label[] = []
   for (const panel of layout.value.panels) {
-    const cy = panel.y + panel.h / 2
+    const left = panel.x + PAD_X * layout.value.viewBox.width
     if (panel.title) {
       out.push({
         key: `${panel.id}-title`,
         text: panel.title,
-        x: panel.x + panel.w / 2,
-        y: cy + type.value.panelTitle * 0.35,
+        x: left,
+        y: panel.y + TITLE_BASELINE * layout.value.viewBox.height,
         size: type.value.panelTitle,
-        fill: p.value.iconStroke,
-        anchor: 'middle',
+        fill: '#ffffff',
+        anchor: 'start',
         delay: out.length * LABEL_STEP_MS,
       })
     }
     if (panel.rows?.length) {
       const lineH = type.value.row * 1.45
-      const first = cy - ((panel.rows.length - 1) * lineH) / 2 + type.value.row * 0.35
+      const first = panel.y + TITLE_BASELINE * layout.value.viewBox.height + type.value.panelTitle * 1.75
       panel.rows.forEach((row, r) => {
         out.push({
           key: `${panel.id}-row-${r}`,
           text: row,
-          x: panel.x + panel.w / 2,
+          x: left,
           y: first + r * lineH,
           size: type.value.row,
           fill: p.value.iconStroke,
-          anchor: 'middle',
+          anchor: 'start',
           delay: out.length * LABEL_STEP_MS,
         })
       })
@@ -198,23 +201,26 @@ const CHROME_GREEN = '#66fb00'
 }
 
 /*
- * Measured motion (family blueprint F3, re-measured this session: band halves
- * at 3.40/3.67s, amber pop 4.13s, green fade 4.53s, stepped labels 5.53–6.07s).
- * Like StepFlow's .sf-track-fill, the transition lives on the destination
- * state and the hidden state's transition:none makes backward nav instant —
- * the locked decision, zero JS. Scoped selectors (0,2,0 + attribute) beat
- * Slidev's built-in .slidev-vclick-target transition.
+ * Measured motion (family blueprint F3, re-measured per the wave-1 fix list:
+ * each fill lands in a ~30–50ms burst — blue at 3.47s, cyan ~270ms later,
+ * amber 4.13s, green 4.53s, stepped labels 5.53–6.07s — so panels pop at
+ * 60ms and the legacy sweep runs 80ms). Like StepFlow's .sf-track-fill, the
+ * transition lives on the destination state and the hidden state's
+ * transition:none makes backward nav instant — the locked decision, zero JS.
+ * Scoped selectors (0,2,0 + attribute) beat Slidev's built-in
+ * .slidev-vclick-target transition.
  */
 
 /* Sweep: .sf-track-fill applied to a region — scaleX on the revealed state
  * sweeps the fill left→right; transform-box: fill-box pins the origin to the
- * rect's own left edge. */
+ * rect's own left edge. Kept for stylized use at the measured burst pace
+ * (~80ms); the demo slide ships pops — the recording's mechanism. */
 .sf-panel--sweep .sf-band {
   transform-box: fill-box;
   transform-origin: left center;
   transition:
-    transform 300ms cubic-bezier(0, 0, 0.2, 1),
-    opacity 120ms ease-out;
+    transform 80ms cubic-bezier(0, 0, 0.2, 1),
+    opacity 60ms ease-out;
 }
 
 .sf-panel--sweep.slidev-vclick-hidden .sf-band {
@@ -222,13 +228,15 @@ const CHROME_GREEN = '#66fb00'
   transition: none;
 }
 
-/* Pop: fade + slight scale-up — the disc-pop pattern at region scale. */
+/* Pop: fade + slight scale-up — the disc-pop pattern at region scale. The
+ * recording's fills land in ~30–50ms bursts (60fps walks: blue completes in
+ * two ~30ms bursts); 60ms sits inside the fix list's 50–80ms window. */
 .sf-panel--pop .sf-band {
   transform-box: fill-box;
   transform-origin: center;
   transition:
-    transform 150ms cubic-bezier(0, 0, 0.2, 1),
-    opacity 150ms ease-out;
+    transform 60ms cubic-bezier(0, 0, 0.2, 1),
+    opacity 60ms ease-out;
 }
 
 .sf-panel--pop.slidev-vclick-hidden .sf-band {

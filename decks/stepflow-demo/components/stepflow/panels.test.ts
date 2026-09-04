@@ -1,74 +1,79 @@
 import { describe, expect, it } from 'vitest'
 import { panelsLayout, revealPlan, SWEEP_FRAC, type StackPanel } from './panels'
 
-// Hand-computed constants for the default 1920×1080 canvas, from the measured
-// v4 mosaic fractions (research art_0AzKGXnD §F3, re-measured this session
-// from the recording frames at source scale 2038×1144):
-//   band  x240–1701 y381–707  → 0.1178, 0.3330, 0.7168, 0.2850
-//   amber x240–798  y708–1035 → 0.1178, 0.6189, 0.2738, 0.2858
-//   green x798–1701 y708–1035 → 0.3916, 0.6189, 0.4431, 0.2858
+// Hand-computed constants for the default 1920×1080 canvas, from the wave-1
+// re-measured v4 mosaic (tight fill masks on the settled frame, source scale
+// 2038×1144): blue x244–1039, cyan x1040–1695 (abutting the blue seam), amber
+// x244–797, green x800–1695; top row y386–707, bottom row y710–1029.
 const SEED: StackPanel[] = [
-  { id: 'band', xFrac: 0.1178, yFrac: 0.333, wFrac: 0.7168, hFrac: 0.285, tone: 'accent', bandReveal: 'sweep' },
-  { id: 'amber', xFrac: 0.1178, yFrac: 0.6189, wFrac: 0.2738, hFrac: 0.2858, tone: 'alt', bandReveal: 'pop' },
-  { id: 'green', xFrac: 0.3916, yFrac: 0.6189, wFrac: 0.4431, hFrac: 0.2858, tone: 'tertiary', bandReveal: 'pop' },
+  { id: 'blue', xFrac: 0.1197, yFrac: 0.3374, wFrac: 0.3906, hFrac: 0.2815, tone: 'accent', bandReveal: 'pop' },
+  { id: 'cyan', xFrac: 0.5103, yFrac: 0.3374, wFrac: 0.3219, hFrac: 0.2815, tone: 'alt', bandReveal: 'pop' },
+  { id: 'amber', xFrac: 0.1197, yFrac: 0.6206, wFrac: 0.2718, hFrac: 0.2797, tone: 'tertiary', bandReveal: 'pop' },
+  { id: 'green', xFrac: 0.3925, yFrac: 0.6189, wFrac: 0.4396, hFrac: 0.2815, tone: 'quaternary', bandReveal: 'pop' },
 ]
 
+// The legacy top-band sweep entry, kept for the styled sweep mechanism.
+const BAND: StackPanel = { id: 'band', xFrac: 0.1178, yFrac: 0.333, wFrac: 0.7168, hFrac: 0.285, tone: 'accent', bandReveal: 'sweep' }
+
 describe('panelsLayout — absolute rects', () => {
-  it('resolves the measured three-panel mosaic on the default 1920×1080 stage', () => {
+  it('resolves the measured four-panel mosaic on the default 1920×1080 stage', () => {
     const l = panelsLayout(SEED)
 
     expect(l.viewBox).toEqual({ width: 1920, height: 1080 })
-    expect(l.panels).toHaveLength(3)
+    expect(l.panels).toHaveLength(4)
 
-    const [band, amber, green] = l.panels
-    // 0.1178 · 1920 = 226.176   0.3330 · 1080 = 359.64
-    // 0.7168 · 1920 = 1376.256  0.2850 · 1080 = 307.8
-    expect(band.x).toBeCloseTo(226.176, 6)
-    expect(band.y).toBeCloseTo(359.64, 6)
-    expect(band.w).toBeCloseTo(1376.256, 6)
-    expect(band.h).toBeCloseTo(307.8, 6)
-    // 0.6189 · 1080 = 668.412   0.2738 · 1920 = 525.696
-    // 0.2858 · 1080 = 308.664
-    expect(amber.x).toBeCloseTo(226.176, 6)
-    expect(amber.y).toBeCloseTo(668.412, 6)
-    expect(amber.w).toBeCloseTo(525.696, 6)
-    expect(amber.h).toBeCloseTo(308.664, 6)
-    // 0.3916 · 1920 = 751.872   0.4431 · 1920 = 850.752
-    expect(green.x).toBeCloseTo(751.872, 6)
+    const [blue, cyan, amber, green] = l.panels
+    // blue:  0.1197·1920=229.824  0.3374·1080=364.392  0.3906·1920=749.952  0.2815·1080=304.02
+    expect(blue.x).toBeCloseTo(229.824, 6)
+    expect(blue.y).toBeCloseTo(364.392, 6)
+    expect(blue.w).toBeCloseTo(749.952, 6)
+    expect(blue.h).toBeCloseTo(304.02, 6)
+    // cyan:  0.5103·1920=979.776  0.3219·1920=618.048
+    expect(cyan.x).toBeCloseTo(979.776, 6)
+    expect(cyan.y).toBeCloseTo(364.392, 6)
+    expect(cyan.w).toBeCloseTo(618.048, 6)
+    expect(cyan.h).toBeCloseTo(304.02, 6)
+    // amber: 0.6206·1080=670.248  0.2718·1920=521.856  0.2797·1080=302.076
+    expect(amber.x).toBeCloseTo(229.824, 6)
+    expect(amber.y).toBeCloseTo(670.248, 6)
+    expect(amber.w).toBeCloseTo(521.856, 6)
+    expect(amber.h).toBeCloseTo(302.076, 6)
+    // green: 0.3925·1920=753.6   0.6189·1080=668.412  0.4396·1920=844.032
+    expect(green.x).toBeCloseTo(753.6, 6)
     expect(green.y).toBeCloseTo(668.412, 6)
-    expect(green.w).toBeCloseTo(850.752, 6)
-    expect(green.h).toBeCloseTo(308.664, 6)
+    expect(green.w).toBeCloseTo(844.032, 6)
+    expect(green.h).toBeCloseTo(304.02, 6)
   })
 
   it('scales every rect with a custom viewBox (off-nominal stage)', () => {
     const l = panelsLayout(SEED, { width: 960, height: 540 })
-    const [band] = l.panels
+    const [blue] = l.panels
 
     expect(l.viewBox).toEqual({ width: 960, height: 540 })
     // Halving the stage halves every coordinate.
-    expect(band.x).toBeCloseTo(113.088, 6)
-    expect(band.y).toBeCloseTo(179.82, 6)
-    expect(band.w).toBeCloseTo(688.128, 6)
-    expect(band.h).toBeCloseTo(153.9, 6)
+    expect(blue.x).toBeCloseTo(114.912, 6)
+    expect(blue.y).toBeCloseTo(182.196, 6)
+    expect(blue.w).toBeCloseTo(374.976, 6)
+    expect(blue.h).toBeCloseTo(152.01, 6)
   })
 
-  it('keeps content and reveal fields on the resolved rects (5-panel off-nominal seed)', () => {
-    const five: StackPanel[] = [
+  it('keeps content and reveal fields on the resolved rects (6-panel off-nominal seed)', () => {
+    const six: StackPanel[] = [
       ...SEED,
-      { id: 't4', xFrac: 0.05, yFrac: 0.05, wFrac: 0.1, hFrac: 0.1, tone: 'accent', title: 'T4', rows: ['a', 'b'] },
-      { id: 't5', xFrac: 0.85, yFrac: 0.05, wFrac: 0.1, hFrac: 0.1, tone: 'alt' },
+      { id: 't5', xFrac: 0.05, yFrac: 0.05, wFrac: 0.1, hFrac: 0.1, tone: 'accent', title: 'T5', rows: ['a', 'b'] },
+      { id: 't6', xFrac: 0.85, yFrac: 0.05, wFrac: 0.1, hFrac: 0.1, tone: 'alt' },
     ]
-    const l = panelsLayout(five)
+    const l = panelsLayout(six)
 
-    expect(l.panels).toHaveLength(5)
-    const t4 = l.panels[3]
-    expect(t4.id).toBe('t4')
-    expect(t4.tone).toBe('accent')
-    expect(t4.title).toBe('T4')
-    expect(t4.rows).toEqual(['a', 'b'])
-    expect(t4.bandReveal).toBeUndefined() // default pop
-    expect(t4.x).toBeCloseTo(0.05 * 1920, 6)
-    expect(l.panels[0].bandReveal).toBe('sweep')
+    expect(l.panels).toHaveLength(6)
+    const t5 = l.panels[4]
+    expect(t5.id).toBe('t5')
+    expect(t5.tone).toBe('accent')
+    expect(t5.title).toBe('T5')
+    expect(t5.rows).toEqual(['a', 'b'])
+    expect(t5.bandReveal).toBeUndefined() // default pop
+    expect(t5.x).toBeCloseTo(0.05 * 1920, 6)
+    expect(l.panels[0].bandReveal).toBe('pop')
   })
 
   it('accepts an empty panel list (renders nothing, throws nothing)', () => {
@@ -94,34 +99,34 @@ describe('panelsLayout — validation', () => {
   })
 })
 
-describe('revealPlan — the re-paced 4-click choreography', () => {
-  it('paces the measured mosaic to 4 clicks: band, amber, green, labels', () => {
+describe('revealPlan — the re-paced 5-click choreography', () => {
+  it('paces the measured mosaic to 5 clicks: blue, cyan, amber, green, labels', () => {
     const plan = revealPlan(SEED, true)
-    expect(plan.panelClicks).toEqual([1, 2, 3])
-    expect(plan.labelClick).toBe(4)
-    expect(plan.totalClicks).toBe(4)
+    expect(plan.panelClicks).toEqual([1, 2, 3, 4])
+    expect(plan.labelClick).toBe(5)
+    expect(plan.totalClicks).toBe(5)
   })
 
   it('gives the label click to caption-only slides too', () => {
     const bare: StackPanel[] = SEED.map(({ id, xFrac, yFrac, wFrac, hFrac, tone }) => ({ id, xFrac, yFrac, wFrac, hFrac, tone }))
     const plan = revealPlan(bare, true)
-    expect(plan.labelClick).toBe(4)
-    expect(plan.totalClicks).toBe(4)
+    expect(plan.labelClick).toBe(5)
+    expect(plan.totalClicks).toBe(5)
   })
 
   it('omits the label click when no panel carries text and no caption is given', () => {
     const bare: StackPanel[] = SEED.map(({ id, xFrac, yFrac, wFrac, hFrac, tone }) => ({ id, xFrac, yFrac, wFrac, hFrac, tone }))
     const plan = revealPlan(bare, false)
     expect(plan.labelClick).toBe(0)
-    expect(plan.totalClicks).toBe(3)
+    expect(plan.totalClicks).toBe(4)
   })
 
-  it('scales with panel count (off-nominal 5-panel seed)', () => {
-    const five: StackPanel[] = [...SEED, { id: 't4', xFrac: 0.05, yFrac: 0.05, wFrac: 0.1, hFrac: 0.1, tone: 'accent', title: 'T4' }, { id: 't5', xFrac: 0.85, yFrac: 0.05, wFrac: 0.1, hFrac: 0.1, tone: 'alt' }]
-    const plan = revealPlan(five, false)
-    expect(plan.panelClicks).toEqual([1, 2, 3, 4, 5])
-    expect(plan.labelClick).toBe(6)
-    expect(plan.totalClicks).toBe(6)
+  it('scales with panel count (off-nominal 6-panel seed)', () => {
+    const six: StackPanel[] = [...SEED, { id: 't5', xFrac: 0.05, yFrac: 0.05, wFrac: 0.1, hFrac: 0.1, tone: 'accent', title: 'T5' }, { id: 't6', xFrac: 0.85, yFrac: 0.05, wFrac: 0.1, hFrac: 0.1, tone: 'alt' }]
+    const plan = revealPlan(six, false)
+    expect(plan.panelClicks).toEqual([1, 2, 3, 4, 5, 6])
+    expect(plan.labelClick).toBe(7)
+    expect(plan.totalClicks).toBe(7)
   })
 })
 
@@ -130,7 +135,7 @@ describe('SWEEP_FRAC — the band sweep extent', () => {
     expect(SWEEP_FRAC).toBe(1)
     // The component sizes the sweep element as w · SWEEP_FRAC — at 1 it covers
     // the band exactly (no unfilled strip at the right edge).
-    const [band] = panelsLayout(SEED).panels
+    const [band] = panelsLayout([BAND]).panels
     expect(band.w * SWEEP_FRAC).toBeCloseTo(1376.256, 6)
   })
 })

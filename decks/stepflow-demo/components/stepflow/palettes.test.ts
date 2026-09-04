@@ -95,4 +95,22 @@ describe('resolvePalette', () => {
     const overridden = resolvePalette({ accent: '#ff0055' })
     expect(overridden.accentTertiary ?? overridden.accent).toBe('#ff0055')
   })
+
+  it('passes an accentQuaternary override through untouched', () => {
+    expect(resolvePalette({ accentQuaternary: '#3599fb' }).accentQuaternary).toBe('#3599fb')
+  })
+
+  it('an accentQuaternary override does not disturb the resolved accent', () => {
+    expect(resolvePalette({ accentQuaternary: '#3599fb' }).accent).toBe(cyanOnBlack.accent)
+  })
+
+  it('when omitted, accentQuaternary stays undefined and consumers fall back to the resolved accent', () => {
+    // Documented consumer contract: `palette.accentQuaternary ?? palette.accent`.
+    const resolved = resolvePalette()
+    expect(resolved.accentQuaternary).toBeUndefined()
+    expect(resolved.accentQuaternary ?? resolved.accent).toBe(cyanOnBlack.accent)
+    // The fallback reads the RESOLVED accent, so an accent override flows into it.
+    const overridden = resolvePalette({ accent: '#ff0055' })
+    expect(overridden.accentQuaternary ?? overridden.accent).toBe('#ff0055')
+  })
 })

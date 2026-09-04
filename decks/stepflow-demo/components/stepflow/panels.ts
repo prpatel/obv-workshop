@@ -3,12 +3,13 @@
  * blueprint F3, research art_0AzKGXnD — re-measured per the v4 recording
  * frames this session).
  *
- * The recording shows a four-panel mosaic on the black stage: a full-width top
- * band that sweeps in left→right, an amber sub-panel popping at bottom-left,
- * and a teal-green sub-panel fading in at bottom-right, with text labels
- * fading in last, stepped. The band's two recorded shades (blue #3599fb left,
- * cyan #1fd0ea right) ship as ONE `accent` band — the spec's locked read —
- * because the palette contract carries no fourth tone; see the README row.
+ * The recording is a four-panel mosaic on the black stage — blue top-left,
+ * cyan top-right (~3px gutter at the x≈1040 seam), amber bottom-left, teal-
+ * green bottom-right — with a text layer per panel and a caption row below.
+ * The four recorded shades ride the palette's four accent slots: the slide
+ * seeds `accent: '#3599fb'`, `accentAlt: '#1fd0ea'`, `accentTertiary:
+ * '#f7ba20'`, `accentQuaternary: '#1cd798'` (the fourth slot was added when
+ * the wave-1 fidelity fix list split the former one-shade band).
  *
  * Every position is a fraction of the 1920×1080 stage, so the same numbers
  * serve the deck canvas and any future embed. All functions here are pure and
@@ -28,8 +29,11 @@ export interface StackPanel {
   wFrac: number
   /** Height as a fraction of stage height. */
   hFrac: number
-  /** Color role resolved against the palette (`tertiary` falls back to `accent`). */
-  tone: 'accent' | 'alt' | 'tertiary'
+  /**
+   * Color role resolved against the palette (`tertiary`/`quaternary` fall
+   * back to `accent` when the override omits them).
+   */
+  tone: 'accent' | 'alt' | 'tertiary' | 'quaternary'
   /** White label rendered top-left inside the panel; fades on the label click. */
   title?: string
   /** Dark text rows inside the panel (the sub-panels in the recording). */

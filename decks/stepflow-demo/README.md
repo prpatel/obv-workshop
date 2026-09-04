@@ -40,7 +40,7 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (13) · VerticalSpine (4) · HeroTile (1) · SchematicRows (10) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (3) · SegmentTimeline (3) · StackPanels (4) · MilestoneLanes (5) · HexCluster (3)
+├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (13) · VerticalSpine (4) · HeroTile (1) · SchematicRows (10) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (3) · SegmentTimeline (3) · StackPanels (5) · MilestoneLanes (5) · HexCluster (3)
 ├─ components/
 │  ├─ StepFlow.vue                # the serpentine flow diagram (auto-imported by Slidev)
 │  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
@@ -53,7 +53,7 @@ decks/stepflow-demo/
 │  ├─ TileGrid.vue                # family built-in: hex-tile grid with glow, connector track, and label rows (row-major build)
 │  ├─ RatioStrip.vue              # family built-in: proportional band, two-phase pop + three-burst teal re-flow (wave 2)
 │  ├─ SegmentTimeline.vue         # family built-in: thin track, bright fills between glowing nodes (sweep-then-pop)
-│  ├─ StackPanels.vue             # family built-in: measured panel mosaic (sweep band + pop panels)
+│  ├─ StackPanels.vue             # family built-in: measured four-panel mosaic (burst pops + legacy sweep)
 │  ├─ MilestoneLanes.vue          # family built-in: four-lane Gantt/milestone chart (offset bars + tick markers)
 │  ├─ HexCluster.vue              # family built-in: hexagon cluster (outline pop + content fade)
 │  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance + per-slide durationSec beats
@@ -139,6 +139,7 @@ the deck style, not a palette field.
 | ---------------- | -------- | -------------------- | ---------------------------------------- |
 | `accentAlt`      | `string` | — (stays undefined)  | status tones; NodeEdge amber `alt` nodes |
 | `accentTertiary` | `string` | `accent`             | teal-green (`#1cd798` family): StackPanels green panel, HexCluster green icon and text |
+| `accentQuaternary` | `string` | `accent`           | fourth accent slot — the v4 StackPanels recording's four-tone mosaic (green) |
 
 `accentTertiary` merges with the same override-wins rule as every top-level
 field. When omitted it resolves absent, and consumers read
@@ -181,7 +182,7 @@ inline on the demo slides; data order is the click order for every family.
 | `TileGrid`      | `tiles.ts` — `TileGridData` (tiles/cols + tile & pitch fracs; per-tile `tone`/`wFrac`/`hFrac`/`mini` overrides) | 6 — one per tile, row-major | `cyanOnBlack` (measured hex core `#1ed0e8` + matrix/row tones via `accentAlt`/`accentTertiary` + status/plain constants) | 10         | `cpu` · `boxes` · `layers` (candidates; fallback covers a wrong guess) |
 | `RatioStrip`    | `strip.ts` — `RatioStripData` (segments + `yFrac`/`hFrac` + optional heading/caption) | 3 — band pop at initial proportions, three-burst teal re-flow, then chip + tone-colored caption row | measured gradients on the `accentAlt`/`accentTertiary` tokens — hue decisions in the notes below | 11         | —           |
 | `SegmentTimeline` | `timeline.ts` — `TimelineSegment[]` (`tone` is `'accent'`/`'tertiary'`/`'alt'`, optional proportional `wFrac`, optional `label`/`sublabel`) | 3 — one per segment: node pop + fill sweep together | measured blue/cyan/red trio over `chainBlue` (no preset added) | 12         | —           |
-| `StackPanels`   | `panels.ts` — `StackPanel[]` + optional `caption`       | one per panel + one label click     | `cyanOnBlack` + `accentTertiary`              | 13         | —           |
+| `StackPanels`   | `panels.ts` — `StackPanel[]` + optional `caption`       | one per panel + one label click     | four-accent seed (`accent`…`accentQuaternary` = the recorded blue/cyan/amber/green) | 13         | —           |
 | `MilestoneLanes` | `lanes.ts` — `MilestoneLanesData` (lanes + measured y0/pitch/barH grid, per-bar `hFrac` override) | one per bar, then tick markers | `statusAmber` verbatim | 14         | —           |
 | `HexCluster`    | `hex.ts` — `HexNodeData[]` + `arrangement`              | one per cell                        | `chainBlue` + `accentTertiary`                | 15         | `bot`       |
 
@@ -294,15 +295,17 @@ omits them; this wave adds no palette preset). Nodes derive from the fills they 
 transition (~2.4s, the `.sf-track-fill` pattern): each fill completes just before the
 next click pops the next node — sweep-then-pop, instant snap on backward nav.
 
-StackPanels authoring notes: list panels in reveal order — the sweep band first
-(`bandReveal: 'sweep'`), then the sub-panels (`'pop'`, the default). `tone`
-resolves against the palette (`'tertiary'` falls back to `accent` when the
-palette omits `accentTertiary`). Panel `title`/`rows` render dark, centered in
-their panels; the optional `caption` renders white, centered under the
-composition. The recording's two-shade band fill (blue `#3599fb` left, cyan
-`#1fd0ea` right) ships as one `accent` band — the contract carries no fourth
-tone. Accepted deviation: the recording is a continuous auto-run, re-paced to
-one click per panel plus one shared stepped-label click.
+StackPanels authoring notes: list panels in reveal order — the wave-1
+re-measured mosaic is blue `#3599fb` top-left, cyan `#1fd0ea` top-right,
+amber `#f7ba20` bottom-left, green `#1cd798` bottom-right, seeded via
+`accent`/`accentAlt`/`accentTertiary`/`accentQuaternary` (the fourth slot was
+added when the former one-shade band split; a missing slot falls back to
+`accent`). Panels pop in ~60ms bursts (`'pop'`, the recording's mechanism;
+`'sweep'` stays available at ~80ms). Panel `title` renders white (~40px at
+1080) at the panel's top-left; `rows` render dark, left-aligned under it;
+the optional `caption` renders white (~26px), centered under the
+composition. Accepted deviation: the recording is a continuous auto-run,
+re-paced to one click per panel plus one shared stepped-label click.
 
 MilestoneLanes authoring notes: bar offsets and sizes are data — `(xFrac,
 wFrac)` are canvas-width fractions, and the lane grid rides the measured
@@ -496,7 +499,7 @@ spacing only), so a varied recorded rhythm is encoded as its mean cadence.
 | 8 | TwoBarCompare | 3 | ≥1.5 s between bars | `5` | ≈1.67 s/click |
 | 10 | TileGrid | 6 | ≈1.45 s/tile (measured 27.32→28.77 s) | `8.7` | 1.45 s/tile |
 | 12 | SegmentTimeline | 3 | node pop ≈140ms, then ≈2.4s fill sweep per segment (measured 10–90% over 2.55s) | `7.5` | 2.5 s/click |
-| 13 | StackPanels | 4 | 0.4–0.5 s burst cadence | `1.8` | 0.45 s/click |
+| 13 | StackPanels | 5 | 0.27–0.45 s panel bursts, labels ≈+1.0 s | `1.8` | 0.36 s/click |
 | 15 | HexCluster | 3 | 0.4–0.5 s/click | `1.4` | ≈0.47 s/click |
 
 Slides 2 (StepFlow, the endorsed calibration slide), 6 (HeroTile, single
