@@ -496,8 +496,9 @@ describe('SegmentTimeline component', () => {
     expect(html).toContain('heading?')
     // The measured title ink spans x563–1358 (795px); the mono face renders
     // wider, so the family pins the extent via TitleChrome's SVG textLength
-    // (the shared mechanism NodeEdge introduced) with spacingAndGlyphs fit.
+    // (the shared mechanism NodeEdge introduced) — spacing-only, glyphs
+    // never squeeze.
     expect(html).toContain('textLength="795"')
-    expect(html).toContain('lengthAdjust="spacingAndGlyphs"')
+    expect(html).toContain('lengthAdjust="spacing"')
   })
 })

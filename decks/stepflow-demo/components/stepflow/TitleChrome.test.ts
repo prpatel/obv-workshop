@@ -14,7 +14,7 @@ describe('TitleChrome', () => {
     const wrapper = mountChrome({ title: 'DATA', titleAccent: 'ROADMAP', capHeight: 78, capTop: 98 })
     const text = wrapper.find('text.sf-chrome-title')
     expect(text.exists()).toBe(true)
-    expect(Number(text.attributes('font-size'))).toBeCloseTo(78 / 0.752, 4)
+    expect(Number(text.attributes('font-size'))).toBeCloseTo(78 / 0.730, 4)
     expect(Number(text.attributes('y'))).toBe(176)
     expect(text.attributes('text-anchor')).toBe('middle')
     expect(Number(text.attributes('x'))).toBe(960)

@@ -150,8 +150,10 @@ describe('VerticalSpine', () => {
     const captions = wrapper.findAll('.sf-spine-caption')
 
     expect(captions[0].attributes('textLength')).toBe('110.2')
-    expect(captions[0].attributes('lengthAdjust')).toBe('spacingAndGlyphs')
-    expect(captions[1].attributes('textLength')).toBe('285.4')
+    expect(captions[0].attributes('lengthAdjust')).toBe('spacing')
+    // 'PIPELINES' renders natural at cap 38.7 — within the 2% pin threshold
+    // of its measured 285.4px extent — so no textLength attribute renders.
+    expect(captions[1].attributes('textLength')).toBeUndefined()
   })
 
   it('reveals the gray footer lines second-to-last and the axis chrome last', () => {
@@ -206,9 +208,10 @@ describe('VerticalSpine', () => {
     const wrapper = mountSpine({ nodes: spineNodes, title: 'CENTER AXIS', titleAccent: 'RHYTHM' })
     const header = wrapper.find('.sf-chrome-title')
 
-    // Sheet Title row: green SQL phrase first at cap 84 in the band y48–132.
-    expect(Number(header.attributes('font-size'))).toBeCloseTo(84 / 0.752, 4)
-    expect(Number(header.attributes('y'))).toBe(132)
+    // Sheet Title row: stem-measured fallback band (glyph-core cap 68.8,
+    // y56.5–125.3); the demo slide's title-tokens carry the per-run metrics.
+    expect(Number(header.attributes('font-size'))).toBeCloseTo(68.8 / 0.730, 4)
+    expect(Number(header.attributes('y'))).toBe(125.3)
   })
 
   it('applies the two-preset composition: chainBlue cards, orangeSpine spine', () => {

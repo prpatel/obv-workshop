@@ -426,7 +426,7 @@ describe('TwoBarCompare component', () => {
     // Measured extents pin the condensed-face tails (ref ink x352–912/x352–948).
     expect(labels[0].attributes('textLength')).toBe('564')
     expect(labels[1].attributes('textLength')).toBe('600')
-    labels.forEach((label) => expect(label.attributes('lengthAdjust')).toBe('spacingAndGlyphs'))
+    labels.forEach((label) => expect(label.attributes('lengthAdjust')).toBe('spacing'))
     expect(labels[0].text()).toBe('EVERY CUSTOMER COMES BACK TWICE')
     expect(labels[1].text()).toBe('THIS BACKFILLS THE SAME DAY TWICE')
   })
@@ -585,6 +585,6 @@ describe('TwoBarCompare component', () => {
     // The ref headline's measured ink extent x565–1359 → 796px textLength pin
     // (TitleChrome.titleTextLength, the PR #42 mechanism).
     expect(header.html()).toContain('textLength="796"')
-    expect(header.html()).toContain('lengthAdjust="spacingAndGlyphs"')
+    expect(header.html()).toContain('lengthAdjust="spacing"')
   })
 })

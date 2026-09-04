@@ -128,10 +128,10 @@ describe('HeroTile', () => {
     const wrapper = mountTile({ title: 'SECTION', titleAccent: 'DIVIDER' })
     const header = wrapper.find('.sf-chrome-title')
 
-    // Sheet Title row: cap 70.8 in the band y55.7–126.5, centered ≈x912.
+    // Sheet Title row: glyph-core cap 65 in the band y60.3–125.3, centered ≈x912.
     // The subtitle prop is retired — the trace maps no secondary header line.
-    expect(Number(header.attributes('font-size'))).toBeCloseTo(70.8 / 0.752, 4)
-    expect(Number(header.attributes('y'))).toBe(126.5)
+    expect(Number(header.attributes('font-size'))).toBeCloseTo(65 / 0.730, 4)
+    expect(Number(header.attributes('y'))).toBe(125.3)
     expect(Number(header.attributes('x'))).toBe(912)
     expect(wrapper.find('.sf-hero-subtitle').exists()).toBe(false)
   })
@@ -148,11 +148,11 @@ describe('HeroTile', () => {
 
     expect(runs).toHaveLength(4)
     // Tokens without per-token caps fall back to the chrome's measured band
-    // (cap 70.8, baseline y126.5) — the slide-6 authoring shape.
+    // (glyph-core cap 65, baseline y125.3) — the slide-6 authoring shape.
     for (const run of runs) {
-      expect(Number(run.attributes('font-size'))).toBeCloseTo(titleFontSize(70.8), 4)
-      expect(Number(run.attributes('y'))).toBeCloseTo(126.5, 3)
-      expect(run.attributes('lengthAdjust')).toBe('spacingAndGlyphs')
+      expect(Number(run.attributes('font-size'))).toBeCloseTo(titleFontSize(65), 4)
+      expect(Number(run.attributes('y'))).toBeCloseTo(125.3, 3)
+      expect(run.attributes('lengthAdjust')).toBe('spacing')
     }
     expect(runs[0].attributes('x')).toBe('371')
     expect(Number(runs[0].attributes('textLength'))).toBeCloseTo(241.2, 3)

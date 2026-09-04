@@ -436,7 +436,7 @@ describe('RatioStrip component', () => {
     expect(Number(heading.attributes('x'))).toBeCloseTo(369, 4)
     expect(Number(heading.attributes('y'))).toBeCloseTo(380, 4)
     expect(heading.attributes('textLength')).toBe('339')
-    expect(Number(heading.attributes('font-size'))).toBeCloseTo(17 / 0.752, 3)
+    expect(Number(heading.attributes('font-size'))).toBeCloseTo(17 / 0.730, 3)
     // Row 2: gray caps in the body field, spread over the measured 396px.
     const heading2 = wrapper.find('text.sf-rs-heading2')
     expect(heading2.text()).toBe('TIME IN ONE WORKING DAY')
@@ -444,7 +444,7 @@ describe('RatioStrip component', () => {
     expect(Number(heading2.attributes('x'))).toBeCloseTo(276, 4)
     expect(Number(heading2.attributes('y'))).toBeCloseTo(481, 4)
     expect(heading2.attributes('textLength')).toBe('396')
-    expect(Number(heading2.attributes('font-size'))).toBeCloseTo(17 / 0.752, 3)
+    expect(Number(heading2.attributes('font-size'))).toBeCloseTo(17 / 0.730, 3)
     // 9 measurement ticks: 4×25px at y510, first tick centered on x281.
     const ticks = wrapper.findAll('.sf-rs-ticks rect')
     expect(ticks).toHaveLength(9)
@@ -568,9 +568,9 @@ describe('RatioStrip component', () => {
     expect(texts.every((t) => t.attributes('font-weight') === '700')).toBe(true)
     expect(texts.map((t) => Number(t.attributes('x')))).toEqual([730, 969, 1302])
     expect(texts.every((t) => Number(t.attributes('y')) === 683)).toBe(true) // measured label baseline
-    expect(Number(texts[0].attributes('font-size'))).toBeCloseTo(20 / 0.752, 3)
+    expect(Number(texts[0].attributes('font-size'))).toBeCloseTo(20 / 0.730, 3)
     expect(texts.map((t) => Number(t.attributes('textLength')))).toEqual([160, 255, 218])
-    expect(texts.every((t) => t.attributes('lengthAdjust') === 'spacingAndGlyphs')).toBe(true)
+    expect(texts.every((t) => t.attributes('lengthAdjust') === 'spacing')).toBe(true)
     // The clip group carries the sweep; individual labels are unclipped.
     expect(wrapper.find('g[clip-path="url(#sf-rs-band-sweep)"]').exists()).toBe(true)
     // Two sweep rects: [702→1282] then [1282→1551] — the measured split between boxes 2–3.
@@ -598,7 +598,7 @@ describe('RatioStrip component', () => {
     expect(capTexts[0].attributes('fill')).toBe('#e94343') // measured red, not chrome-dim
     expect(Number(capTexts[0].attributes('x'))).toBeCloseTo(277, 4)
     expect(Number(capTexts[0].attributes('y'))).toBeCloseTo(858, 4)
-    expect(Number(capTexts[0].attributes('font-size'))).toBeCloseTo(23 / 0.752, 3)
+    expect(Number(capTexts[0].attributes('font-size'))).toBeCloseTo(23 / 0.730, 3)
     expect(capTexts[0].attributes('textLength')).toBe('332')
     expect(capTexts[0].attributes('lengthAdjust')).toBe('spacing')
     expect(capTexts[1].text()).toBe('ACTUAL DATA PROBLEMS')

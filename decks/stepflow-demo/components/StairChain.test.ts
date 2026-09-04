@@ -127,11 +127,11 @@ describe('StairChain', () => {
     expect(punches.map((t) => t.text())).toEqual(['01', '02', '03', '04', '05', '06'])
 
     const first = punches[0]
-    // Cap 40 → font 40/0.752; condensed to the measured 69px ink width;
-    // centered on the circle; baseline 758 + 0.49·146 + 20.
-    expect(Number(first.attributes('font-size'))).toBeCloseTo(40 / 0.752, 6)
+    // Cap 40 → font 40/0.730; pinned to the measured 69px ink width (spacing
+    // only); centered on the circle; baseline 758 + 0.49·146 + 20.
+    expect(Number(first.attributes('font-size'))).toBeCloseTo(40 / 0.730, 6)
     expect(Number(first.attributes('textLength'))).toBeCloseTo(69, 6)
-    expect(first.attributes('lengthAdjust')).toBe('spacingAndGlyphs')
+    expect(first.attributes('lengthAdjust')).toBe('spacing')
     expect(Number(first.attributes('x'))).toBeCloseTo(63 + 73, 6)
     expect(Number(first.attributes('y'))).toBeCloseTo(758 + 0.49 * 146 + 20, 6)
     expect(first.attributes('fill')).toBe('#041628')
@@ -139,8 +139,8 @@ describe('StairChain', () => {
     // Cyan blocks punch in the cyan-side near-black.
     expect(punches[3].attributes('fill')).toBe('#011e23')
     // Per-block measured caps vary (42/66/56/66/66/59 native bands).
-    expect(Number(punches[1].attributes('font-size'))).toBeCloseTo(62 / 0.752, 6)
-    expect(Number(punches[2].attributes('font-size'))).toBeCloseTo(53 / 0.752, 6)
+    expect(Number(punches[1].attributes('font-size'))).toBeCloseTo(62 / 0.730, 6)
+    expect(Number(punches[2].attributes('font-size'))).toBeCloseTo(53 / 0.730, 6)
     expect(Number(punches[3].attributes('textLength'))).toBeCloseTo(50, 6)
   })
 
@@ -274,10 +274,10 @@ describe('StairChain', () => {
     expect(title.text()).toContain('THE DATA ENGINEERING')
     expect(title.text()).toContain('LIFECYCLE')
     // Sheet-measured chrome: the sheet's y48–144 band is glow-inclusive; the
-    // glyph core matches NodeEdge's (white y49–126) → cap 78 → font-size
-    // 78/0.752, baseline y127, centered ≈x916.
-    expect(Number(title.attributes('font-size'))).toBeCloseTo(78 / 0.752, 4)
-    expect(Number(title.attributes('y'))).toBe(127)
+    // glyph core matches NodeEdge's (white y56.5–125.3) → cap 68.8 → font-size
+    // 68.8/0.730, baseline y125.3, centered ≈x916.
+    expect(Number(title.attributes('font-size'))).toBeCloseTo(68.8 / 0.730, 4)
+    expect(Number(title.attributes('y'))).toBe(125.3)
     expect(Number(title.attributes('x'))).toBe(916)
     expect(withAccent.html()).toContain('#66fb00')
 

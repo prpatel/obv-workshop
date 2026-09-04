@@ -55,10 +55,9 @@ describe('SchematicRows component — title chrome', () => {
     expect(title.exists()).toBe(true)
     expect(title.text()).toContain('Harder')
     expect(title.text()).toContain('to maintain')
-    // Direction-2 condensation: the deck's mono runs wide at cap 78.4, so the
-    // measured 877.6px combined ink extent is pinned (SVG textLength + glyphs).
-    expect(title.html()).toContain('877.6')
-    expect(title.html()).toContain('spacingAndGlyphs')
+    // Direction-2: natural mono ink at glyph-core cap 62.2 lands within the 2%
+    // pin threshold of the measured 877.6px extent — natural render, no pin.
+    expect(title.attributes('textLength')).toBeUndefined()
   })
 })
 
