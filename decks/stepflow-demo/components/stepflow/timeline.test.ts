@@ -295,6 +295,11 @@ describe('SegmentTimeline component', () => {
     expect(gradients).toHaveLength(3)
     const glowColors = gradients.map((grad) => grad.findAll('stop')[0]!.attributes('stop-color'))
     expect(glowColors).toEqual(['#3699fa', '#1ed0e8', '#f75720'])
+    // Measured halo peak: 0.34 — the ref's halos register in the census glow band.
+    expect(Number(gradients[0]!.findAll('stop')[0]!.attributes('stop-opacity'))).toBeCloseTo(0.34, 2)
+    // Full brightness through the disc edge, fading to 0 at the halo reach.
+    expect(Number(gradients[0]!.findAll('stop')[1]!.attributes('stop-opacity'))).toBeCloseTo(0.34, 2)
+    expect(Number(gradients[0]!.findAll('stop')[2]!.attributes('stop-opacity'))).toBe(0)
 
     groups.forEach((group, i) => {
       const disc = group.find('circle.disc')

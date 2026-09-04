@@ -50,7 +50,9 @@ const p = computed(() => resolvePalette({
   accentTertiary: NODE_CYAN,
   accentAlt: NODE_RED,
   track: TRACK_DIM,
-  glow: { spread: GLOW_SPREAD },
+  // Measured halo: 35px reach at peak 0.34 — the ref's halos register in the
+  // census glow band (lum 41–110), which the family's 0.28 default misses.
+  glow: { peak: 0.34, spread: GLOW_SPREAD },
   ...props.palette,
 }))
 
