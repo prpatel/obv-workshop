@@ -27,6 +27,14 @@ export interface StepFlowPalette {
    * `palette.accentTertiary ?? palette.accent`.
    */
   accentTertiary?: string
+  /**
+   * Optional fourth accent — the v4 StackPanels recording is a four-tone
+   * mosaic (blue #3599fb, cyan #1fd0ea, amber #f7ba20, green #1cd798), one
+   * tone more than the alt/tertiary pair carries. Merged like every optional
+   * top-level accent; when omitted, consumers fall back to `accent`:
+   * `palette.accentQuaternary ?? palette.accent`.
+   */
+  accentQuaternary?: string
   /** Glow behind each disc: peak luminance fraction at the disc edge, falloff in px (§4: 0.28 peak, invisible by ~60px). */
   glow: { peak: number; spread: number }
 }
@@ -92,9 +100,9 @@ export const stepBlue = '#3698fb'
  *
  * - No argument returns the full `cyanOnBlack` preset.
  * - `glow` is deep-merged: overriding `peak` keeps the default `spread`, and vice versa.
- * - Optional top-level accents (`accentAlt`, `accentTertiary`) follow the same
- *   override-wins rule; an omitted `accentTertiary` stays undefined and the
- *   consumer falls back to `accent`.
+ * - Optional top-level accents (`accentAlt`, `accentTertiary`,
+ *   `accentQuaternary`) follow the same override-wins rule; an omitted accent
+ *   stays undefined and the consumer falls back to `accent`.
  * - Unknown keys are tolerated (no validation, no throw); typed fields always resolve.
  * - Pure: no DOM access, no mutation of the presets or the override.
  */

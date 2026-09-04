@@ -572,11 +572,13 @@ canvasWidth: 1920
 
 <!--
   StackPanels demo (v4 family): the recording is a continuous auto-run;
-  native v-clicks re-pace it to four clicks — band sweep, amber panel, green
-  panel, stepped labels (accepted deviation per the family spec). Panel
-  geometry is the measured v4 mosaic in stage fractions; the band's recorded
-  two-shade fill (blue #3599fb left, cyan #1fd0ea right) ships as one accent
-  band — the palette contract carries no fourth tone. AutoAdvance is
+  native v-clicks re-pace it to five clicks — one burst-pop per panel (blue,
+  cyan, amber, green), then the stepped labels (accepted deviation per the
+  family spec). Panel geometry is the wave-1 re-measured 2×2 mosaic in stage
+  fractions: blue #3599fb top-left, cyan #1fd0ea top-right (abutting at the
+  x≈1040 seam), amber #f7ba20 bottom-left, #1cd798 green bottom-right — the
+  four recorded shades ride the palette's four accent slots, including the
+  `accentQuaternary` fourth tone added for this split. AutoAdvance is
   per-slide opt-in: `a` toggles a hands-free run, `?autoplay=N` starts one on
   slide enter.
 -->
@@ -586,12 +588,13 @@ canvasWidth: 1920
 <StackPanels
   title="STACK PANELS"
   titleAccent="FAMILY 3"
-  caption="band sweep, panel pops, stepped label fade — one click each"
-  :palette="{ accentAlt: '#f7ba20', accentTertiary: '#1cd798' }"
+  caption="measured 2×2 mosaic — panel bursts, stepped labels"
+  :palette="{ accent: '#3599fb', accentAlt: '#1fd0ea', accentTertiary: '#f7ba20', accentQuaternary: '#1cd798' }"
   :panels="[
-    { id: 'band', xFrac: 0.1178, yFrac: 0.3330, wFrac: 0.7168, hFrac: 0.2850, tone: 'accent', bandReveal: 'sweep', title: 'ONE CANVAS', rows: ['GEOMETRY AS FRACTIONS', 'REVEALS AS NATIVE CLICKS'] },
-    { id: 'amber', xFrac: 0.1178, yFrac: 0.6189, wFrac: 0.2738, hFrac: 0.2858, tone: 'alt', bandReveal: 'pop', rows: ['MEASURED FROM', 'THE RECORDING'] },
-    { id: 'green', xFrac: 0.3916, yFrac: 0.6189, wFrac: 0.4431, hFrac: 0.2858, tone: 'tertiary', bandReveal: 'pop', rows: ['ACCENT_TERTIARY', 'FALLS BACK TO ACCENT'] },
+    { id: 'blue', xFrac: 0.1197, yFrac: 0.3374, wFrac: 0.3906, hFrac: 0.2815, tone: 'accent', bandReveal: 'pop', title: 'RUNTIME' },
+    { id: 'cyan', xFrac: 0.5103, yFrac: 0.3374, wFrac: 0.3219, hFrac: 0.2815, tone: 'alt', bandReveal: 'pop', title: 'CANVAS' },
+    { id: 'amber', xFrac: 0.1197, yFrac: 0.6206, wFrac: 0.2718, hFrac: 0.2797, tone: 'tertiary', bandReveal: 'pop', title: 'INGEST' },
+    { id: 'green', xFrac: 0.3925, yFrac: 0.6189, wFrac: 0.4396, hFrac: 0.2815, tone: 'quaternary', bandReveal: 'pop', title: 'WAREHOUSE', rows: ['STREAMS REPLACE BATES', 'GOVERNED BY DEFAULT'] },
   ]"
 />
 
