@@ -385,11 +385,13 @@ canvasWidth: 1920
 
 <!--
   ColumnRow demo (src 223–229s): five equal tone-coded columns rising
-  bottom→top, left → right (clicks 1–5), then the dot + label rows below (6).
-  Tones read the existing tokens: house cyan for the accent columns, the
-  orangeSpine/statusAmber accents for the alt/status columns, and the
-  accentTertiary teal (passed here — the field resolves absent by default).
-  The recording's four-column comparison variant (230–237s) is the same
+  bottom→top, left → right (clicks 1–5), then the tinted label row below (6).
+  Tones read the existing tokens: the measured step-blue constant for the
+  ship endpoint, house cyan for the accent column, the orangeSpine/statusAmber
+  accents for the alt/status columns, and the accentTertiary teal (passed here
+  — the field resolves absent by default). Heading chrome (amber bar-chip,
+  white icon badge, white caption) is static — no click of its own, matching
+  the recording. The four-column comparison variant (230–237s) is the same
   component as seed data: fewer columns with `underline: true` on each.
   AutoAdvance is renderless deck-level wiring (`a` key, ?autoplay=N on the URL).
 -->
@@ -401,7 +403,7 @@ canvasWidth: 1920
   title-accent="STAGES"
   :palette="{ accentTertiary: '#1cd798' }"
   :columns="[
-    { id: 'extract', tone: 'accent', label: 'EXTRACT' },
+    { id: 'extract', tone: 'blue', label: 'EXTRACT' },
     { id: 'load', tone: 'accent', label: 'LOAD' },
     { id: 'transform', tone: 'alt', label: 'TRANSFORM', underline: true },
     { id: 'orchestrate', tone: 'tertiary', label: 'ORCHESTRATE' },
@@ -409,9 +411,10 @@ canvasWidth: 1920
   ]"
   :yFrac="0.514"
   :hFrac="0.233"
+  :heading="{ icon: 'flask-conical', caption: 'FIVE STAGES · ONE PIPELINE' }"
   :labelRows="[
-    ['· · · ·', '· ·', '· · · · · ·', '· · ·', '· · · · ·'],
-    ['SOURCES', 'TABLES', 'JOBS', 'MODELS', 'DASHBOARDS'],
+    { texts: ['SOURCES', 'TABLES', 'JOBS', 'MODELS', 'DASHBOARDS'], tone: 'column' },
+    { texts: ['· ·', '·', '· · ·', '·', '· ·'], tone: 'column' },
   ]"
 />
 
