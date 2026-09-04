@@ -55,7 +55,7 @@ const type = computed(() => {
     headerSize: 0.085 * h,
     headerBaseline: 0.112 * h,
     labelSize: 27 * src,
-    cardTitleSize: 102 * src,
+    cardTitleSize: 105 * src,
     captionSize: 44 * (h / 1080),
     flankSize: 15 * src,
     footerSize: 24 * (h / 1080),
@@ -208,7 +208,7 @@ const sideCards = computed(() => props.nodes.filter((n) => n.side === 'left' || 
           :font-size="fmt(type.cardTitleSize)"
           :fill="cardTone(node.side)"
           font-weight="800"
-          :textLength="fmt(layout.cards[node.side].w * 0.96)"
+          :textLength="fmt(layout.cards[node.side].w)"
           lengthAdjust="spacingAndGlyphs"
         >{{ node.title }}</text>
         <text
