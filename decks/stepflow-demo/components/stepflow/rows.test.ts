@@ -14,7 +14,6 @@ import {
   HIGHLIGHT_BAND,
   HIGHLIGHT_BANDS,
   CONNECTOR_RAIL,
-  PATH_TEXT,
   ROW_BASELINE,
   ROW_EM_TO_INK,
   ROW_FONT,
@@ -23,6 +22,7 @@ import {
   TRAFFIC_DOTS,
   TYPEWRITER_TOTAL_MS,
   WINDOW_FRAME,
+  WINDOW_PLATES,
   rowCharDelayMs,
   rowChars,
   rowClick,
@@ -158,18 +158,26 @@ describe('window chrome + measured geometry (true 1920-scale)', () => {
     expect(TRAFFIC_DOTS.map((d) => d.cy)).toEqual([348.9, 348.9, 348.9])
   })
 
-  it('ships the tab text and right-aligned path (no underline — the y360+ ink is descenders)', () => {
+  it('ships the smaller tracked tab text (cap ≈17, advance ≈18.3, x187–492) — no path', () => {
     expect(TAB_TEXT.text).toBe('answer_service.py')
-    expect(TAB_TEXT.x).toBe(165)
-    expect(TAB_TEXT.baseline).toBe(358.5)
+    expect(TAB_TEXT.x).toBe(187)
+    expect(TAB_TEXT.baseline).toBe(358)
+    expect(TAB_TEXT.font).toBe(23.3)
+    expect(TAB_TEXT.tracking).toBe(4.3)
     expect('underline' in TAB_TEXT).toBe(false)
-    expect(PATH_TEXT.rightEdge).toBe(1408)
+  })
+
+  it('ships the measured ambience plates (chrome band, code canvas, blue callout canvas)', () => {
+    expect(WINDOW_PLATES.band).toEqual({ x: 14, y: 312, w: 1794, h: 81, fill: '#19181d' })
+    expect(WINDOW_PLATES.main).toEqual({ x: 14, y: 395, w: 1206, h: 685, fill: '#080808' })
+    expect(WINDOW_PLATES.right).toEqual({ x: 1220, y: 395, w: 588, h: 685, fill: '#0c0b10' })
   })
 
   it('the window is a single dim top rule — no left/right rules, no divider', () => {
     expect(WINDOW_FRAME.top.x).toBe(46)
     expect(WINDOW_FRAME.top.y).toBe(302)
     expect(WINDOW_FRAME.top.w).toBe(1413)
+    expect(WINDOW_FRAME.top.fill).toBe('#2b261e') // peak luma ≈37, blurred in the component
     expect(Object.keys(WINDOW_FRAME)).toEqual(['top'])
   })
 
@@ -239,6 +247,11 @@ describe('callout ladder (four measured ring+label pairs)', () => {
       expect(SCHEMATIC_ROWS_CALLOUTS[i].ink.x).toBeGreaterThan(SCHEMATIC_ROWS_CALLOUTS[i].ring.cx)
       expect(SCHEMATIC_ROWS_CALLOUTS[i].ring.ry).toBeLessThan(30)
     }
+  })
+
+  it('ring strokes vary with the measured marker weight (fat amber ellipse, thin ladder rings)', () => {
+    const strokes = SCHEMATIC_ROWS_CALLOUTS.map((c) => c.ring.stroke)
+    expect(strokes).toEqual([14, 4, 6.5, 4])
   })
 
   it('tails are optional short strokes off the ring (callouts 2 and 4)', () => {

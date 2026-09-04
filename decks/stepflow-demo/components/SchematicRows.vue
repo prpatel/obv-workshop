@@ -9,7 +9,6 @@ import {
   CONNECTOR_RAIL,
   HIGHLIGHT_BAND,
   HIGHLIGHT_BANDS,
-  PATH_TEXT,
   ROW_BASELINE,
   ROW_FONT,
   ROW_NUMBER_STYLE,
@@ -19,6 +18,7 @@ import {
   TOKEN_COLORS,
   TRAFFIC_DOTS,
   WINDOW_FRAME,
+  WINDOW_PLATES,
   rowClick,
   type RowTokenTone,
   type SchematicRowsData,
@@ -84,14 +84,28 @@ function px(n: number): string {
       />
 
       <!--
-        Window chrome (click 1): frame rules, traffic dots, the answer_service.py
-        tab with its underline, and the right-aligned gray path. Pops in as one
-        group — the sheet's largest single event (f170).
+        Window chrome (click 1): the single dim top rule (blurred to the frame's
+        soft y299–305 profile), traffic dots, and the smaller tracked
+        answer_service.py tab. The sheet's right-aligned path is not visible in
+        the settled frame and is deliberately not rendered (see rows.ts). Pops in
+        as one group — the sheet's largest single event (f170).
       -->
       <g v-click="CLICK_CHROME" class="sf-rows-window">
+        <!-- Ambience plates first: the chrome band, code canvas, and callout
+             column canvas (measured flat fills, see rows.ts WINDOW_PLATES). -->
+        <rect
+          v-for="(plate, k) in [WINDOW_PLATES.band, WINDOW_PLATES.main, WINDOW_PLATES.right]"
+          :key="`plate-${k}`"
+          :x="plate.x"
+          :y="plate.y"
+          :width="plate.w"
+          :height="plate.h"
+          :fill="plate.fill"
+        />
         <rect
           v-for="(rule, k) in [WINDOW_FRAME.top]"
           :key="`rule-${k}`"
+          class="sf-rows-rule"
           :x="rule.x"
           :y="rule.y"
           :width="rule.w"
@@ -110,15 +124,9 @@ function px(n: number): string {
           class="sf-rows-chrome-text"
           :transform="`translate(${TAB_TEXT.x} ${TAB_TEXT.baseline})`"
           :font-size="TAB_TEXT.font"
+          :letter-spacing="TAB_TEXT.tracking"
           :fill="TAB_TEXT.fill"
         >{{ TAB_TEXT.text }}</text>
-        <text
-          class="sf-rows-chrome-text"
-          :transform="`translate(${PATH_TEXT.rightEdge} ${PATH_TEXT.baseline})`"
-          :font-size="PATH_TEXT.font"
-          :fill="PATH_TEXT.fill"
-          text-anchor="end"
-        >{{ PATH_TEXT.text }}</text>
       </g>
 
       <!--
@@ -173,7 +181,7 @@ function px(n: number): string {
           :transform="`rotate(${callout.ring.rot} ${callout.ring.cx} ${callout.ring.cy})`"
           fill="none"
           :stroke="callout.ring.fill"
-          stroke-width="3.5"
+          :stroke-width="callout.ring.stroke"
         />
         <polyline
           v-if="callout.tail.length"
@@ -267,6 +275,12 @@ function px(n: number): string {
   font-family: var(--sf-font-mono, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace);
 }
 
+/* The frame's top rule reads as a soft ~7px glow band (y299–305), not a crisp
+   2.5px line — blur the core rect into that profile. */
+.sf-rows-rule {
+  filter: blur(1.3px);
+}
+
 /* Band and callouts: fade-only reveals (150ms), instant backward snap. */
 .sf-rows-band,
 .sf-rows-callout {
@@ -312,6 +326,8 @@ function px(n: number): string {
    animation:none so backward nav snaps and re-reveals replay. */
 .sf-rows-char {
   opacity: 0;
+  /* fill forwards is load-bearing: the char's natural state is opacity 0, and
+     the 1ms animation must HOLD opacity 1 after finishing. */
   animation: sf-rows-type 1ms linear forwards;
   animation-delay: calc(var(--ci) * var(--cd));
 }

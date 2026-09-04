@@ -67,7 +67,9 @@ export interface CalloutSpec {
   id: string
   /** Verbatim label text (OCR-verified against 2× crops). */
   label: string
-  ring: { cx: number, cy: number, rx: number, ry: number, rot: number, fill: string }
+  /** `stroke` is the measured ring stroke width in px (rings vary: 14 on the fat
+   * amber ellipse, 4–6.5 on the small ladder rings). */
+  ring: { cx: number, cy: number, rx: number, ry: number, rot: number, fill: string, stroke: number }
   /** Optional short tail stroke off the ring (the hand-drawn look), 1080 px points. */
   tail?: [number, number][]
   /** Measured label ink: left edge, ink top, cap height, per-char advance, color (1080 px). */
@@ -101,9 +103,21 @@ export const TOKEN_COLORS: Record<RowTokenTone, string> = {
  * than the mono advance over ~12 chars (e.g. row 4 ends x759, mono predicts 734). */
 export const STRING_EXTRA_TRACKING = 2.1
 
-/** Window chrome: one dim top rule (measured y302, x46–1459). */
+/** Window chrome: one dim top rule (measured y299–305 soft profile peaking
+ * y303–304 at luma ≈37 — rendered as a 2.5px core at the peak luma, blurred
+ * 1.3px in the component to reproduce the soft profile). */
 export const WINDOW_FRAME = {
-  top: { x: 46, y: 302, w: 1413, h: 2.5, fill: '#332e26' },
+  top: { x: 46, y: 302, w: 1413, h: 2.5, fill: '#2b261e' },
+} as const
+
+/** Window ambience plates (measured flat fills in the settled frame): a chrome
+ * band behind the dots/tab/rule, the dark code canvas, and the slightly blue
+ * callout-column canvas. The frame is NOT pure black below the chrome — these
+ * three plates are the dominant background. */
+export const WINDOW_PLATES = {
+  band: { x: 14, y: 312, w: 1794, h: 81, fill: '#19181d' },
+  main: { x: 14, y: 395, w: 1206, h: 685, fill: '#080808' },
+  right: { x: 1220, y: 395, w: 588, h: 685, fill: '#0c0b10' },
 } as const
 
 /** Traffic dots (measured centers (63.3/96.8/131.6, 348.9), d≈20). */
@@ -113,26 +127,27 @@ export const TRAFFIC_DOTS = [
   { cx: 131.6, cy: 348.9, r: 10, fill: '#30bf49' },
 ] as const
 
-/** Tab text (same mono face as the code, no underline — the y360–364 ink is
- * descenders) and the right-aligned sheet-authoritative path. */
+/** Tab text: a SMALLER, letter-spaced label than the code rows — the frame's tab
+ * ink is cap ≈17 (y341–358) over 17 chars spanning x187–492 (advance ≈18.3px),
+ * i.e. font ≈23.3 with +4.3px/char tracking. No underline — the y360–364 ink is
+ * the `_`/`p`/`y` descenders.
+ *
+ * The sheet's right-aligned `data.mrk.shop/services` path is NOT visible in the
+ * settled frame (no ink above luma 35 right of x1412 beyond a 3-px stray cluster
+ * at x1412–1414 and a dim ~46px cluster at x1412–1458 too small for any string);
+ * it is therefore not rendered — recorded here so the divergence is traceable. */
 export const TAB_TEXT = {
   text: 'answer_service.py',
-  x: 165,
-  baseline: 358.5,
-  font: 32.5,
+  x: 187,
+  baseline: 358,
+  font: 23.3,
+  tracking: 4.3,
   fill: '#e4e3e8',
 } as const
 
-export const PATH_TEXT = {
-  text: 'data.mrk.shop/services',
-  rightEdge: 1408,
-  baseline: 352,
-  font: 15,
-  fill: '#a5a4ae',
-} as const
-
-/** Gutter row numbers (measured digit ink x84–97 on every row, gray). */
-export const ROW_NUMBER_STYLE = { x: 84.5, font: 32.5, fill: '#a5a5ae' } as const
+/** Gutter row numbers (measured digit ink x84–97 on every row, gray; the glyph
+ * side-bearing at font 32.5 is ≈4px, so the text anchor sits at 80.5). */
+export const ROW_NUMBER_STYLE = { x: 80.5, font: 32.5, fill: '#a5a5ae' } as const
 
 /** Code-row typography: the deck mono at 32.5px, uncondensed — measured advance
  * ≈19.6px (0.6em), cap ≈23.7px, row-1 extent 124→743 within 1%. */
@@ -285,14 +300,14 @@ export const SCHEMATIC_ROWS_CALLOUTS: CalloutSpec[] = [
   {
     id: 'dependencies',
     label: 'DEPENDENCIES TO MAINTAIN',
-    ring: { cx: 1329, cy: 512.5, rx: 35, ry: 53.5, rot: -12, fill: '#f9bc28' },
+    ring: { cx: 1329, cy: 512.5, rx: 35, ry: 53.5, rot: -12, fill: '#f9bc28', stroke: 14 },
     ink: { x: 1289, inkTop: 610, cap: 20, advance: 17.9, fill: '#9d9ca6' },
     click: CLICK_CALLOUT_1,
   },
   {
     id: 'api',
     label: 'API IT CALLS',
-    ring: { cx: 1319.5, cy: 761.5, rx: 21.5, ry: 21.5, rot: -12, fill: '#4ec3d8' },
+    ring: { cx: 1319.5, cy: 761.5, rx: 21.5, ry: 21.5, rot: -12, fill: '#4ec3d8', stroke: 4 },
     tail: [[1312, 781], [1294, 802]],
     ink: { x: 1413, inkTop: 750, cap: 25, advance: 17.9, fill: '#f5f4f7' },
     click: CLICK_BAND,
@@ -300,14 +315,14 @@ export const SCHEMATIC_ROWS_CALLOUTS: CalloutSpec[] = [
   {
     id: 'data',
     label: 'DATA IT READS',
-    ring: { cx: 1319.5, cy: 876, rx: 23.5, ry: 27, rot: -10, fill: '#4e92e2' },
+    ring: { cx: 1319.5, cy: 876, rx: 23.5, ry: 27, rot: -10, fill: '#4e92e2', stroke: 6.5 },
     ink: { x: 1417, inkTop: 862, cap: 25, advance: 17.9, fill: '#f5f4f7' },
     click: 8,
   },
   {
     id: 'model',
     label: 'MODEL IT ASKS',
-    ring: { cx: 1319.5, cy: 985.5, rx: 28.5, ry: 27.5, rot: -8, fill: '#46c797' },
+    ring: { cx: 1319.5, cy: 985.5, rx: 28.5, ry: 27.5, rot: -8, fill: '#46c797', stroke: 4 },
     tail: [[1322, 958], [1318, 934]],
     ink: { x: 1417, inkTop: 976, cap: 26, advance: 17.9, fill: '#afaeb2' },
     click: 9,
@@ -337,7 +352,7 @@ export function rowChars(row: CodeRow): { ch: string, tone: RowTokenTone }[] {
 export interface CalloutLayout {
   id: string
   label: string
-  ring: { cx: number, cy: number, rx: number, ry: number, rot: number, fill: string }
+  ring: { cx: number, cy: number, rx: number, ry: number, rot: number, fill: string, stroke: number }
   tail: [number, number][]
   ink: { x: number, baseline: number, font: number, tracking: number, fill: string }
   click: number

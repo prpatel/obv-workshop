@@ -7,7 +7,6 @@ import {
   CONNECTOR_RAIL,
   HIGHLIGHT_BAND,
   HIGHLIGHT_BANDS,
-  PATH_TEXT,
   ROW_BASELINE,
   ROW_EM_TO_INK,
   ROW_FONT,
@@ -70,7 +69,7 @@ describe('SchematicRows component — window chrome', () => {
 
     expect(chrome.exists()).toBe(true)
     expect(chrome.attributes('data-sfc-click')).toBe('1')
-    expect(chrome.findAll('rect').length).toBe(1) // the single dim top rule
+    expect(chrome.findAll('rect').length).toBe(4) // 3 ambience plates + the top rule
     expect(chrome.findAll('circle')).toHaveLength(3)
   })
 
@@ -89,16 +88,15 @@ describe('SchematicRows component — window chrome', () => {
     expect(tab.text()).toBe(TAB_TEXT.text)
     expect(tab.attributes('transform')).toContain(`translate(${TAB_TEXT.x} ${TAB_TEXT.baseline})`)
     expect(tab.attributes('transform')).not.toContain('scale(')
-    expect(wrapper.findAll('.sf-rows-window rect')).toHaveLength(1) // top rule only — the y360+ ink is descenders
+    expect(wrapper.findAll('.sf-rows-window rect')).toHaveLength(4) // plates + top rule — no underline (y360+ ink is descenders)
   })
 
-  it('right-aligns the gray path at its measured right edge', () => {
+  it('renders no path text — the sheet\'s right-aligned path is not visible in the settled frame', () => {
     const wrapper = mountRows()
-    const path = wrapper.findAll('.sf-rows-window text')[1]
+    const texts = wrapper.findAll('.sf-rows-window text')
 
-    expect(path.text()).toBe(PATH_TEXT.text)
-    expect(path.attributes('text-anchor')).toBe('end')
-    expect(path.attributes('transform')).toContain(`translate(${PATH_TEXT.rightEdge}`)
+    expect(texts).toHaveLength(1) // the tab only
+    expect(texts[0].text()).toBe(TAB_TEXT.text)
   })
 })
 
