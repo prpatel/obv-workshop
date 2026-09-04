@@ -232,7 +232,7 @@ canvasWidth: 1920
     { id: 'marker', title: '', tone: 'alt', side: 'center' },
     { id: 'label', title: 'TRANSPARENCY IN ACTION', tone: 'alt', side: 'center' },
     { id: 'left-stat', title: '4X', caption: 'faster pipelines', tone: 'accent', side: 'left' },
-    { id: 'right-stat', title: '50%', caption: 'less toil', tone: 'accent', side: 'right', titleScale: 0.88 },
+    { id: 'right-stat', title: '50%', caption: 'less toil', tone: 'accent', side: 'right', titleScale: 0.84 },
   ]"
 />
 
