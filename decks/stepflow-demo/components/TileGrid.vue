@@ -1,6 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { tileGridLayout, TILE_PLAIN, TILE_STATUS, type Tile } from './stepflow/tiles'
+import { computed, useId } from 'vue'
+import {
+  hexPath,
+  tileGridLayout,
+  tileTrackLines,
+  TILE_CORE,
+  TILE_MINI,
+  TILE_PLAIN,
+  TILE_SHEEN,
+  TILE_STATUS,
+  TILE_TRACK,
+  type Tile,
+} from './stepflow/tiles'
 import { resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
 import { iconPath, ICON_FALLBACK } from './stepflow/icons'
 
@@ -37,42 +48,79 @@ const layout = computed(() => tileGridLayout({
   x0Frac: props.x0Frac,
   y0Frac: props.y0Frac,
 }))
+const tracks = computed(() => tileTrackLines(layout.value.tiles))
+
+// Measured hex-tile anatomy (wave-2 fidelity rework — report art_iHm120ov
+// §TileGrid, t=33.0s reads at the 1920×1080 reference scale):
+// - the hex core spans ~0.825 × 0.93 of the tile box (~98×97px in the demo's
+//   119×104 box), pointed left-right;
+// - a soft glow halo (the same hex, blurred) reaches a ~155px footprint;
+// - a ~12px #353642 connector track runs through tile centers behind the tiles;
+// - icons are ~40px near-black strokes (~3px rendered) centered in the hex;
+// - two label rows sit below each tile — cyan mini over the white label
+//   (both ~16px glyphs).
+const HEX_W_FRAC = 0.825
+const HEX_H_FRAC = 0.93
+const HALO_OPACITY = 0.35
+const HALO_BLUR = 14
+const SHEEN_LENGTH = 50 // px at the 1080 reference height
+const SHEEN_GAP = 16 // px between the sheen dash and the hex's left vertex
+const SHEEN_WIDTH = 7
+const TRACK_WIDTH = 12
+const MINI_OFFSET = 25.5 // cyan row center below the tile box bottom
+const LABEL_OFFSET = 55.5 // white row center below the tile box bottom
+
+// All measured constants anchor to the 1920×1080 reference read; k rescales
+// them for custom viewBox sizes (NodeEdge.vue pattern).
+const k = computed(() => layout.value.viewBox.height / 1080)
+
+// Glow halo: blurred copy of the hex under the solid core (StepFlow.vue's
+// useId pattern — two TileGrids on one page must not collide on filter ids).
+const glowId = useId()
+
+interface HexTileRender {
+  index: number
+  tile: (typeof layout.value.tiles)[number]
+  d: string
+  cx: number
+  cy: number
+  w: number
+  h: number
+}
+
+const rendered = computed<HexTileRender[]>(() =>
+  layout.value.tiles.map((tile, index) => {
+    const w = tile.w * HEX_W_FRAC
+    const h = tile.h * HEX_H_FRAC
+    const cx = tile.x + tile.w / 2
+    const cy = tile.y + tile.h / 2
+    return { index, tile, d: hexPath(cx, cy, w, h), cx, cy, w, h }
+  }),
+)
 
 // Measured matrix tones that have no palette slot ship as chrome-class
-// constants (see tiles.ts) — the wave adds no palette fields.
+// constants (see tiles.ts) — the wave adds no palette fields. The accent tone
+// resolves to the measured hex-core fill (the source's settled read of the
+// cyan family, darker than the StepFlow-disc #23d7ed).
 function tileColor(tone: Tile['tone']): string {
   if (tone === 'alt') return p.value.accentAlt ?? p.value.accent
   if (tone === 'tertiary') return p.value.accentTertiary ?? p.value.accent
   if (tone === 'status') return TILE_STATUS
   if (tone === 'plain') return TILE_PLAIN
-  return p.value.accent
+  return TILE_CORE
 }
 
-// Measured inner layout (research §3.5: small teal icon + white text per tile;
-// the 1fps read leaves the exact glyph placement [I]-confidence — resolved to
-// a centered icon over a centered label, matching the tilegrid crop).
+// Icons: near-black strokes on every measured tile (t=33.0s rgb ≈ (2,4,0) —
+// the wave-1 teal-on-cyan read rendered sub-visible contrast), ~40px, centered
+// in the hexagon.
 const ICON_BOX = 24
-const ICON_SIZE = 36 // 24px glyphs at the 1280-wide source, rescaled to 1920
-const ICON_CENTER_FRAC = 0.38 // icon center at 38% of tile height
-const LABEL_CENTER_FRAC = 0.76 // label center at 76% of tile height
+const ICON_SIZE = 40
+const ICON_STROKE_UNITS = 2 // 24-unit Lucide convention → ~3.3px rendered
 
-function iconTransform(tile: { x: number; y: number; w: number; h: number }): string {
-  const cx = tile.x + tile.w / 2
-  const cy = tile.y + tile.h * ICON_CENTER_FRAC
-  const s = ICON_SIZE / ICON_BOX
-  return `translate(${fmt(cx - ICON_SIZE / 2)} ${fmt(cy - ICON_SIZE / 2)}) scale(${fmt(s)})`
-}
-
-// Teal icons on the cyan/amber/red tiles (measured); dark icons where the
-// fill is already light (plain white tile) or is the teal itself.
-function iconColor(tone: Tile['tone']): string {
-  if (tone === 'plain' || tone === 'tertiary') return p.value.iconStroke
-  return p.value.accentTertiary ?? p.value.accent
-}
-
-// Labels are white on filled tiles (measured); dark on the plain tile.
-function labelColor(tone: Tile['tone']): string {
-  return tone === 'plain' ? p.value.iconStroke : '#ffffff'
+function iconTransform(hex: { cx: number; cy: number }): string {
+  const size = ICON_SIZE * k.value
+  const s = size / ICON_BOX
+  return `translate(${fmt(hex.cx - size / 2)} ${fmt(hex.cy - size / 2)}) scale(${fmt(s)})`
 }
 
 // Unknown key renders the visible fallback (never undefined into v-html) and
@@ -86,11 +134,12 @@ function resolveIcon(key: string): string {
 }
 
 // Typography on the StepFlow scale: 34px title at source height 848, rescaled
-// so custom viewBox sizes stay proportional (NodeEdge.vue pattern).
-const type = computed(() => {
-  const k = layout.value.viewBox.height / 848
-  return { titleSize: 34 * k, labelSize: 14 }
-})
+// so custom viewBox sizes stay proportional (NodeEdge.vue pattern). Label rows
+// measure ~16px glyphs at the 1920×1080 read.
+const type = computed(() => ({
+  titleSize: 34 * (layout.value.viewBox.height / 848),
+  labelSize: 16 * k.value,
+}))
 
 const CHROME_GREEN = '#66fb00'
 
@@ -106,6 +155,28 @@ function fmt(n: number): string {
     role="img"
     :aria-label="`${tiles.length}-tile grid diagram`"
   >
+    <defs>
+      <filter :id="glowId" x="-60%" y="-60%" width="220%" height="220%">
+        <feGaussianBlur in="SourceGraphic" :stdDeviation="HALO_BLUR * k" />
+      </filter>
+    </defs>
+
+    <!--
+      Connector track behind the tiles (t=33.0s: #353642, ~12px, through tile
+      centers — the source renders it under both rows).
+    -->
+    <line
+      v-for="(line, i) in tracks"
+      :key="`track-${i}`"
+      class="sf-tg-track"
+      :x1="line.x1"
+      :y1="line.y"
+      :x2="line.x2"
+      :y2="line.y"
+      :stroke="TILE_TRACK"
+      :stroke-width="TRACK_WIDTH * k"
+    />
+
     <!--
       One group per tile, arriving on click i + 1 (row-major — the recording's
       build order). Slidev toggles each group's OWN slidev-vclick-hidden class:
@@ -113,42 +184,72 @@ function fmt(n: number): string {
       revealed = 150ms fade / 120ms rise.
     -->
     <g
-      v-for="(tile, i) in layout.tiles"
-      :key="tile.id"
-      v-click="i + 1"
+      v-for="hex in rendered"
+      :key="hex.tile.id"
+      v-click="hex.index + 1"
       class="sf-tg-tile"
     >
-      <rect
-        class="sf-tg-rect"
-        :x="tile.x"
-        :y="tile.y"
-        :width="tile.w"
-        :height="tile.h"
-        rx="10"
-        :fill="tileColor(tile.tone)"
+      <!-- Glow halo first (under the core): the same hex path, blurred. -->
+      <path
+        class="sf-tg-halo"
+        :d="hex.d"
+        :fill="tileColor(hex.tile.tone)"
+        :opacity="HALO_OPACITY"
+        :filter="`url(#${glowId})`"
+      />
+      <path
+        class="sf-tg-hex"
+        :d="hex.d"
+        :fill="tileColor(hex.tile.tone)"
+      />
+      <!--
+        Lit-vertex sheen (t=33.0s): a bright light-cyan dash on the track just
+        before the first tile's left vertex — the track's entry into the grid.
+      -->
+      <line
+        v-if="hex.index === 0"
+        class="sf-tg-sheen"
+        :x1="hex.cx - hex.w / 2 - (SHEEN_GAP + SHEEN_LENGTH) * k"
+        :y1="hex.cy"
+        :x2="hex.cx - hex.w / 2 - SHEEN_GAP * k"
+        :y2="hex.cy"
+        :stroke="TILE_SHEEN"
+        :stroke-width="SHEEN_WIDTH * k"
+        stroke-linecap="round"
       />
       <g
-        v-if="tile.icon"
+        v-if="hex.tile.icon"
         class="sf-tg-icon"
-        :transform="iconTransform(tile)"
+        :transform="iconTransform(hex)"
         fill="none"
-        :stroke="iconColor(tile.tone)"
-        stroke-width="2"
+        :stroke="p.iconStroke"
+        :stroke-width="ICON_STROKE_UNITS"
         stroke-linecap="round"
         stroke-linejoin="round"
-        v-html="resolveIcon(tile.icon)"
+        v-html="resolveIcon(hex.tile.icon)"
       />
       <text
-        v-if="tile.label"
-        class="sf-tg-label"
-        :x="tile.x + tile.w / 2"
-        :y="tile.y + tile.h * LABEL_CENTER_FRAC"
+        v-if="hex.tile.mini"
+        class="sf-tg-mini"
+        :x="hex.cx"
+        :y="hex.tile.y + hex.tile.h + MINI_OFFSET * k"
         text-anchor="middle"
         dominant-baseline="central"
         :font-size="type.labelSize"
-        :fill="labelColor(tile.tone)"
+        :fill="TILE_MINI"
         letter-spacing="0.08em"
-      >{{ tile.label }}</text>
+      >{{ hex.tile.mini }}</text>
+      <text
+        v-if="hex.tile.label"
+        class="sf-tg-label"
+        :x="hex.cx"
+        :y="hex.tile.y + hex.tile.h + LABEL_OFFSET * k"
+        text-anchor="middle"
+        dominant-baseline="central"
+        :font-size="type.labelSize"
+        :fill="p.subtext"
+        letter-spacing="0.08em"
+      >{{ hex.tile.label }}</text>
     </g>
 
     <text
@@ -190,20 +291,20 @@ function fmt(n: number): string {
   transition: none;
 }
 
-.sf-tg-rect {
+.sf-tg-hex {
   transform-box: fill-box;
   transform-origin: center;
   transition: transform 120ms cubic-bezier(0, 0, 0.2, 1), opacity 150ms ease-out;
 }
 
-.sf-tg-tile.slidev-vclick-hidden .sf-tg-rect {
+.sf-tg-tile.slidev-vclick-hidden .sf-tg-hex {
   transform: scale(0.6);
   transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .sf-tg-tile,
-  .sf-tg-rect {
+  .sf-tg-hex {
     transition: none;
   }
 }
