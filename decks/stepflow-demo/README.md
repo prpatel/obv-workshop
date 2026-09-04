@@ -49,7 +49,7 @@ decks/stepflow-demo/
 │  ├─ HeroTile.vue                # family built-in: single-click section-divider tile
 │  ├─ SchematicRows.vue           # terminal-style token listing with an embedded thin-line schematic
 │  ├─ TwoBarCompare.vue           # family built-in: two left-anchored comparison bars (data text, chips, annotation click)
-│  ├─ ColumnRow.vue               # family built-in: tone-coded column row (rising columns + label rows)
+│  ├─ ColumnRow.vue               # family built-in: tone-coded column row (heading chrome + rising columns + tinted labels)
 │  ├─ TileGrid.vue                # family built-in: hex-tile grid with glow, connector track, and label rows (row-major build)
 │  ├─ RatioStrip.vue              # family built-in: proportional band, two-phase pop + three-burst teal re-flow (wave 2)
 │  ├─ SegmentTimeline.vue         # family built-in: thin track, bright fills between glowing nodes (sweep-then-pop)
@@ -177,7 +177,7 @@ inline on the demo slides; data order is the click order for every family.
 | `HeroTile`      | `spine.ts` — `HeroTileData` (tile + icon + optional label on the spine axis) | 1 — tile, icon, label together | `orangeSpine` verbatim (`#f85721`)            | 6          | `user-round` |
 | `SchematicRows` | `rows.ts` — `SchematicRowsData` (rows + optional schematic) | one per row; schematic strokes share their attached row's click | override: v6-measured cool `#2f95b9` + amber `#f2ba1f` | 7          | —           |
 | `TwoBarCompare` | `compare.ts` — `CompareBar[]` + `TwoBarCompareData` (bars/xFrac/barHFrac/yFracs + optional `dataText` block — `lines`/`subline`/`caption`/`note`/`rules` — and centered `subhead`) | 3 — bar 1, bar 2, then one shared annotation click for the data-text block, caption/note rows, divider rules, labels, and chips | `statusAmber` (the component's family default; rework adds the measured teal `#1cd797` top-chip tone) | 8          | —           |
-| `ColumnRow`     | `columns.ts` — `ColumnRowData` (columns + `yFrac`/`hFrac` + optional `labelRows`) | 5 columns left→right, then the label rows | `cyanOnBlack` base + token mix (`orangeSpine`/`statusAmber` accents, `accentTertiary` teal) | 9          | —           |
+| `ColumnRow`     | `columns.ts` — `ColumnRowData` (columns + `yFrac`/`hFrac` + optional `heading`/`labelRows`) | 5 columns left→right, then the label rows | `cyanOnBlack` base + token mix (`stepBlue` ship endpoint, `orangeSpine`/`statusAmber` accents, `accentTertiary` teal) | 9          | —           |
 | `TileGrid`      | `tiles.ts` — `TileGridData` (tiles/cols + tile & pitch fracs; per-tile `tone`/`wFrac`/`hFrac`/`mini` overrides) | 6 — one per tile, row-major | `cyanOnBlack` (measured hex core `#1ed0e8` + matrix/row tones via `accentAlt`/`accentTertiary` + status/plain constants) | 10         | `cpu` · `boxes` · `layers` (candidates; fallback covers a wrong guess) |
 | `RatioStrip`    | `strip.ts` — `RatioStripData` (segments + `yFrac`/`hFrac` + optional heading/caption) | 3 — band pop at initial proportions, three-burst teal re-flow, then chip + tone-colored caption row | measured gradients on the `accentAlt`/`accentTertiary` tokens — hue decisions in the notes below | 11         | —           |
 | `SegmentTimeline` | `timeline.ts` — `TimelineSegment[]` (`tone` is `'accent'`/`'tertiary'`/`'alt'`, optional proportional `wFrac`, optional `label`/`sublabel`) | 3 — one per segment: node pop + fill sweep together | measured blue/cyan/red trio over `chainBlue` (no preset added) | 12         | —           |
@@ -202,15 +202,23 @@ HeroTile authoring notes: single click — `icon` (Lucide key) plus an optional
 `label` beneath the tile; the palette defaults to the measured `orangeSpine`
 preset verbatim, so the tile color needs no override.
 
-ColumnRow authoring notes: columns are equal-width at the measured 10.3%w ×
-23.3%h, tops at 51.4%h, x-pitch 13.75%w, first column at 17.3%w — the row just
-carries fewer columns for the four-column comparison variant (src 230–237s,
-`underline: true` on each; its white underlines render in the family's amber
-status token). Tones read the existing tokens: `accent` (house cyan via the
-palette prop), `alt` (`accentAlt` override, else the `orangeSpine` accent),
-`tertiary` (`accentTertiary`, else accent), `status` (the `statusAmber`
-accent). The optional `labelRows` carry the measured dot row + label row below
-the columns — one string per column, revealed together on the final click.
+ColumnRow authoring notes (reworked to the ref t=229.0 composition — wave 2):
+columns are equal-width at the measured 10.3%w × 23.3%h, tops at 51.4%h,
+x-pitch 13.75%w, first column at 17.3%w — the row just carries fewer columns
+for the four-column comparison variant (src 230–237s, `underline: true` on
+each; its white underlines render in the family's amber status token). Tones
+read the existing tokens plus the measured step blue: `accent` (house cyan via
+the palette prop), `alt` (`accentAlt` override, else the `orangeSpine`
+accent), `tertiary` (`accentTertiary`, else accent), `status` (the
+`statusAmber` accent), `blue` (the `stepBlue` constant measured off the
+ref's ship endpoint). Thin dark plate outlines rim every column edge and a
+base rail runs under the field — near-black chrome, no click of its own. The
+optional `heading` renders the measured chrome above the middle column (amber
+bar-chip, white icon badge, wide white caption; static like the title), and
+the optional `labelRows` carry text rows below the columns — one string per
+column, revealed together on the final click; plain rows keep the legacy white
+dot/label sizing, while `{ texts, tone: 'column' }` rows render at the
+measured tinted-label size with every cell filled in its column's tone.
 RatioStrip authoring notes (wave 2, research art_2kSBGNmJ §3.3 — source video
 95–101s; fidelity rework per report art_iHm120ov §RatioStrip, settled frame
 t=99.1s at 1920×1080): one proportional band, 71.5%w × 21.9%h at y 51.4%h,
