@@ -206,8 +206,9 @@ const sideCards = computed(() => props.nodes.filter((n) => n.side === 'left' || 
           text-anchor="middle"
           dominant-baseline="central"
           :font-size="fmt(type.cardTitleSize)"
-          fill="#ffffff"
-          letter-spacing="0.04em"
+          :fill="cardTone(node.side)"
+          font-weight="700"
+          letter-spacing="0.02em"
         >{{ node.title }}</text>
         <text
           v-if="node.caption"

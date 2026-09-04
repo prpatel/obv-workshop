@@ -197,9 +197,9 @@ VerticalSpine authoring notes: `side: 'center'` nodes stack down the spine axis
 in data order — an empty-title node renders the solid orange diamond marker, a
 titled one renders the label row (flanked by small accent diamonds); `side:
 'left' | 'right'` nodes fill the two measured card slots as outlined plates —
-near-black `#0b0a11` fill with a 4–5px (source-scale) card-colored stroke, the
-white `title` inside and a big 44px (1080-canvas) card-colored `caption`
-underneath. The two-tone demo cards come from the palette: `accent` on the
+near-black `#0b0a11` fill with a 4–5px (source-scale) card-colored stroke, a
+big bold card-tone `title` inside (the glyph mass is the measured 42–45% ink
+of the card bbox) and a 44px (1080-canvas) card-colored `caption` underneath. The two-tone demo cards come from the palette: `accent` on the
 left, `accentAlt` on the right. The optional `footer` prop reveals one last
 gray row — a 75.2%-wide dim `#202020` rule centered on the spine axis plus
 two `#a0a0a0` 24px lines centered under the card columns.
