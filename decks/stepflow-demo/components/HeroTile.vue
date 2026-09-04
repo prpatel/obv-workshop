@@ -32,14 +32,14 @@ const HEADER_FILL = '#ffffff'
 // Gradient id is component-unique (one HeroTile per slide by contract).
 const GLOW_ID = 'sf-hero-glow-gradient'
 
-// Halo stops (objectBoundingBox on the halo circle): peak strength held
-// across the whole visible ring — the settled reference keeps 24-40-lum
-// dark-red mass out to its 156px cutoff (ring bins 120-140px: 4.28%,
-// 140-160px: 2.34% of non-black), so the plateau must survive past the
-// tile edge (0.78R) and only exhaust in the last ~10% of the radius.
+// Halo stops (objectBoundingBox on the halo circle): plateau strength 0.32
+// held to 0.77R, exhausting by the measured 156px cutoff. Calibrated
+// empirically in report-faithful units (dark-red 24-40-lum mass of
+// non-black; reference target 6.9%): plateau end 0.735R measured 5.09%,
+// 0.90R measured 14.48%; linear interpolation puts 0.77R at ~6.9%.
 const glowStops = [
   { offset: 0, opacity: 0.32 },
-  { offset: 0.9, opacity: 0.32 },
+  { offset: 0.77, opacity: 0.32 },
   { offset: 1, opacity: 0 },
 ]
 
