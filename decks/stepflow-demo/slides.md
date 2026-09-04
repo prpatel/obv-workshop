@@ -153,14 +153,20 @@ canvasWidth: 1920
 ---
 
 <!--
-  Demo slide: NodeEdge — free-position nodes and polyline edges. Each click
-  pops one node (clicks 1-4), then draws one polyline edge via the StepFlow
-  dashoffset draw (5-6; the status edge in accentAlt red), then one status
-  element per click (7-9). Measured deviation (locked): the v3 recording's
-  amber→red swap is modeled appearance-only — status reveals additively,
-  nothing is removed. Node positions are DATA (canvas fractions), never
-  computed. AutoAdvance is renderless deck-level wiring: the `a` key toggles a
-  hands-free run and `?autoplay=N` in the URL starts one on slide enter.
+  Demo slide: NodeEdge — free-position nodes and polyline edges. The node
+  primitive (fidelity report art_v4jVdTnp §2, re-measured against the src-3
+  settle frame t=4.0) is a ~100px square — #0b0a11 plate, 6px tone-colored
+  border, 3-line ~20px tone-colored label inside — plus one taller solid
+  bright-red status square; edges are dim red ~6px (bright red is reserved
+  for the status square). Each click pops one node (clicks 1-6, ~70ms), then
+  pops one edge (7-13, ~80ms — measured from the recording at native fps:
+  edges reach full ink 1-2 frames after onset, a pop, not a dashoffset
+  draw). Node positions are DATA (canvas fractions), never computed. The
+  red ambient wash behind the network zone and the terminal readout are
+  static chrome, not click-bound. Palette seed: the recording's measured
+  blue #33a5cd, amber #e6b434, dim-red track #5a1e1e. AutoAdvance is
+  renderless deck-level wiring: the `a` key toggles a hands-free run and
+  `?autoplay=N` in the URL starts one on slide enter.
 -->
 
 <div class="sf-demo-stage">
@@ -168,23 +174,24 @@ canvasWidth: 1920
 <NodeEdge
   title="DATA"
   title-accent="PLATFORM"
-  :palette="{ accent: '#349aea', accentAlt: '#e5413f' }"
+  :palette="{ accent: '#33a5cd', accentAlt: '#e6b434', track: '#5a1e1e' }"
+  :terminal="['LAST DEPLOY 14M AGO', 'VER 2.4.1']"
   :nodes="[
-    { id: 'ingest', xFrac: 0.6363, yFrac: 0.4017, tone: 'alt', label: 'INGEST' },
-    { id: 'lake', xFrac: 0.7569, yFrac: 0.5245, tone: 'accent', label: 'LAKEHOUSE' },
-    { id: 'catalog', xFrac: 0.7569, yFrac: 0.7723, tone: 'plain', icon: 'database' },
-    { id: 'serve', xFrac: 0.6363, yFrac: 0.8972, tone: 'accent', label: 'SERVE' },
+    { id: 'ingest', xFrac: 0.515, yFrac: 0.524, tone: 'accent', label: ['INGEST', 'EVENTS', '12K/S'] },
+    { id: 'lake', xFrac: 0.756, yFrac: 0.524, tone: 'accent', label: ['LAKE', 'BRONZE', '4.1TB'] },
+    { id: 'catalog', xFrac: 0.516, yFrac: 0.772, tone: 'alt', label: ['CATALOG', 'TABLES', '1204'] },
+    { id: 'serve', xFrac: 0.756, yFrac: 0.772, tone: 'plain', label: ['SERVE', 'API', '84MS'] },
+    { id: 'replay', xFrac: 0.636, yFrac: 0.896, tone: 'accent', label: ['REPLAY', 'CDC', 'V2.4'] },
+    { id: 'lag', xFrac: 0.159, yFrac: 0.605, tone: 'status', label: ['SLOW', '5M'] },
   ]"
   :edges="[
-    { from: 'ingest', to: 'serve', status: true,
-      points: [[0.6363, 0.4476], [0.6363, 0.8462]] },
-    { from: 'lake', to: 'catalog',
-      points: [[0.7569, 0.549], [0.7569, 0.7478]] },
-  ]"
-  :status="[
-    { attach: 'lake', text: 'SLOW 5m', tone: 'alt', kind: 'block' },
-    { attach: 'catalog', text: 'DRIFT', tone: 'alt', kind: 'outline' },
-    { attach: 'serve', text: 'REPLAY', tone: 'accent', kind: 'arrow' },
+    { from: 'lake', to: 'serve', points: [[0.756, 0.524], [0.756, 0.772]] },
+    { from: 'ingest', to: 'catalog', points: [[0.515, 0.524], [0.516, 0.772]] },
+    { from: 'ingest', to: 'lake', points: [[0.515, 0.524], [0.515, 0.36], [0.756, 0.36], [0.756, 0.524]] },
+    { from: 'catalog', to: 'serve', points: [[0.516, 0.772], [0.756, 0.772]] },
+    { from: 'ingest', to: 'serve', points: [[0.515, 0.524], [0.756, 0.772]] },
+    { from: 'catalog', to: 'replay', points: [[0.516, 0.772], [0.636, 0.896]] },
+    { from: 'serve', to: 'replay', points: [[0.756, 0.772], [0.636, 0.896]] },
   ]"
 />
 

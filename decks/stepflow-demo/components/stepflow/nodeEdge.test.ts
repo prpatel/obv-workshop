@@ -1,96 +1,90 @@
 // @vitest-environment happy-dom
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import NodeEdge from '../NodeEdge.vue'
 import {
   edgePoints,
+  labelLines,
   nodeEdgeLayout,
-  polylineLength,
   polylinePath,
-  STATUS_ARROW,
-  STATUS_BLOCK,
-  STATUS_GAP,
-  STATUS_OUTLINE,
+  NODE_PLATE,
+  NODE_RX,
+  NODE_SIZE_FRAC,
+  NODE_STROKE,
+  STATUS_RED,
+  STATUS_SQUARE,
   type FlowEdge,
   type FlowNode,
   type FlowStatus,
 } from './nodeEdge'
+import { polylineLength } from './paths'
 
 /** Slidev registers the v-click directive globally at runtime; the render tests stub it as a no-op. */
-function mountNodeEdge(props: { nodes: FlowNode[]; edges: FlowEdge[]; status?: FlowStatus[]; palette?: object; title?: string; titleAccent?: string }) {
+function mountNodeEdge(props: { nodes: FlowNode[]; edges: FlowEdge[]; status?: FlowStatus[]; palette?: object; title?: string; titleAccent?: string; terminal?: string[] }) {
   return mount(NodeEdge, { props, global: { directives: { click: {} } } })
 }
 
 /**
- * The demo seed mirrors the slide data: node positions and the vertical status
- * run are the v3 recording's measured fractions (research art_0AzKGXnD §F2,
- * re-verified against frame crops this session).
+ * The seed mirrors the reworked demo slide exactly (the fidelity report
+ * art_v4jVdTnp §2 primitive): six ~100px plate squares — five bordered with
+ * 3-line tone-colored labels, one taller solid bright-red status square —
+ * seven dim-red pop edges, plus a status overlay pair to keep that contract
+ * covered. Node positions are the src-3 settle-frame measured fractions.
  */
 const nodes: FlowNode[] = [
-  { id: 'ingest', xFrac: 0.6363, yFrac: 0.4017, tone: 'alt', label: 'INGEST' },
-  { id: 'lake', xFrac: 0.7569, yFrac: 0.5245, tone: 'accent', label: 'LAKEHOUSE' },
-  { id: 'catalog', xFrac: 0.7569, yFrac: 0.7723, tone: 'plain', icon: 'database' },
-  { id: 'serve', xFrac: 0.6363, yFrac: 0.8972, tone: 'accent', label: 'SERVE' },
+  { id: 'ingest', xFrac: 0.515, yFrac: 0.524, tone: 'accent', label: ['INGEST', 'EVENTS', '12K/S'] },
+  { id: 'lake', xFrac: 0.756, yFrac: 0.524, tone: 'accent', label: ['LAKE', 'BRONZE', '4.1TB'] },
+  { id: 'catalog', xFrac: 0.516, yFrac: 0.772, tone: 'alt', label: ['CATALOG', 'TABLES', '1204'] },
+  { id: 'serve', xFrac: 0.756, yFrac: 0.772, tone: 'plain', label: ['SERVE', 'API', '84MS'] },
+  { id: 'replay', xFrac: 0.636, yFrac: 0.896, tone: 'accent', label: ['REPLAY', 'CDC', 'V2.4'] },
+  { id: 'lag', xFrac: 0.159, yFrac: 0.605, tone: 'status', label: ['SLOW', '5M'] },
 ]
 const edges: FlowEdge[] = [
-  { from: 'ingest', to: 'serve', points: [[0.6363, 0.4476], [0.6363, 0.8462]], status: true },
-  { from: 'lake', to: 'catalog', points: [[0.7569, 0.549], [0.7569, 0.7478]] },
+  { from: 'lake', to: 'serve', points: [[0.756, 0.524], [0.756, 0.772]] },
+  { from: 'ingest', to: 'catalog', points: [[0.515, 0.524], [0.516, 0.772]] },
+  { from: 'ingest', to: 'lake', points: [[0.515, 0.524], [0.515, 0.36], [0.756, 0.36], [0.756, 0.524]] },
+  { from: 'catalog', to: 'serve', points: [[0.516, 0.772], [0.756, 0.772]] },
+  { from: 'ingest', to: 'serve', points: [[0.515, 0.524], [0.756, 0.772]] },
+  { from: 'catalog', to: 'replay', points: [[0.516, 0.772], [0.636, 0.896]] },
+  { from: 'serve', to: 'replay', points: [[0.756, 0.772], [0.636, 0.896]] },
 ]
 const status: FlowStatus[] = [
   { attach: 'lake', text: 'SLOW 5m', tone: 'alt', kind: 'block' },
-  { attach: 'catalog', text: 'DRIFT', tone: 'alt', kind: 'outline' },
   { attach: 'serve', text: 'REPLAY', tone: 'accent', kind: 'arrow' },
 ]
 
-/** Evaluate the shipped .sf-ne-edge-fill stroke-dashoffset declaration (StepFlow.test.ts pattern). */
-function dashOffsetPx(css: string, drawn: number, len: number): number {
-  const rule = css.match(/\.sf-ne-edge-fill[^{,]*\{[^}]*\}/)?.[0] ?? ''
-  const decl = rule.match(/stroke-dashoffset:\s*([^;]+);/)?.[1] ?? ''
-  expect(decl, `.sf-ne-edge-fill must declare stroke-dashoffset; rule: "${rule}"`).toBeTruthy()
-  const expr = decl
-    .replaceAll('var(--sf-len)', `${len}px`)
-    .replaceAll('var(--sf-drawn)', `${drawn}px`)
-    .trim()
-  const calc = /^calc\(\s*([\d.]+)px\s*-\s*([\d.]+)px\s*\)$/.exec(expr)
-  if (calc) return Number(calc[1]) - Number(calc[2])
-  const bare = /^([\d.]+)px$/.exec(expr)
-  expect(bare, `unexpected stroke-dashoffset expression "${decl}"`).toBeTruthy()
-  return Number(bare![1])
-}
-
-/** Pull the numeric value of a --sf-drawn custom property from a style attribute. */
-function drawnPx(style: string | undefined): number {
-  const match = /--sf-drawn:\s*([\d.]+)px/.exec(style ?? '')
-  expect(match, `--sf-drawn missing in "${style}"`).toBeTruthy()
-  return Number.parseFloat(match![1])
+/** All rendered <style> text — scoped styles are injected on mount. */
+function renderedCss(): string {
+  return Array.from(document.querySelectorAll('style'))
+    .map((tag) => tag.textContent ?? '')
+    .join('\n')
 }
 
 describe('polyline helpers — hand-computed constants', () => {
-  it('polylinePath emits M + L commands in order', () => {
+  it('polylinePath (re-exported from paths.ts) emits M + L commands in order', () => {
     expect(polylinePath([[100, 100], [300, 100], [300, 300]])).toBe('M 100 100 L 300 100 L 300 300')
   })
 
-  it('polylineLength resolves the 3-4-5 triangle exactly', () => {
+  it('polylineLength (paths.ts, SchematicRows consumer) resolves the 3-4-5 triangle exactly', () => {
     expect(polylineLength([[0, 0], [3, 4]])).toBe(5)
   })
 
   it('polylineLength sums each segment: an L-path is its two legs', () => {
     expect(polylineLength([[100, 100], [300, 100], [300, 300]])).toBe(400)
   })
+})
 
-  it('polylineLength of a degenerate single point is 0', () => {
-    expect(polylineLength([[42, 7]])).toBe(0)
+describe('labelLines — one string per rendered line', () => {
+  it('wraps a single string into one line', () => {
+    expect(labelLines('INGEST')).toEqual(['INGEST'])
   })
 
-  it('polylineLength is direction-independent', () => {
-    const fwd = polylineLength([[10, 10], [130, 40], [60, 250]])
-    const rev = polylineLength([[60, 250], [130, 40], [10, 10]])
-    expect(rev).toBeCloseTo(fwd, 6)
-    expect(fwd).toBeCloseTo(Math.hypot(120, 30) + Math.hypot(70, 210), 6)
+  it('passes an array through unchanged', () => {
+    expect(labelLines(['SLOW', '5M'])).toEqual(['SLOW', '5M'])
   })
 
-  it('polylineLength handles collinear multi-point runs without drift', () => {
-    expect(polylineLength([[0, 0], [100, 0], [250, 0]])).toBe(250)
+  it('maps an omitted label to no lines', () => {
+    expect(labelLines(undefined)).toEqual([])
   })
 })
 
@@ -114,46 +108,42 @@ describe('edgePoints — fraction to px conversion', () => {
 })
 
 describe('nodeEdgeLayout — resolved geometry', () => {
-  it('converts node fractions to px centers with the measured radius', () => {
+  it('converts node fractions to px centers with the measured square side', () => {
     const l = nodeEdgeLayout({ nodes: [nodes[0]], edges: [] })
-    expect(l.nodes[0].cx).toBeCloseTo(0.6363 * 1920, 6) // 1221.696
-    expect(l.nodes[0].cy).toBeCloseTo(0.4017 * 1080, 6) // 433.836
-    expect(l.nodes[0].r).toBeCloseTo(48, 6) // 0.025 × 1920
+    expect(l.nodes[0].cx).toBeCloseTo(0.515 * 1920, 6) // 988.8
+    expect(l.nodes[0].cy).toBeCloseTo(0.524 * 1080, 6) // 565.92
+    expect(l.nodes[0].w).toBeCloseTo(NODE_SIZE_FRAC * 1920, 6) // 96
+    expect(l.nodes[0].h).toBeCloseTo(NODE_SIZE_FRAC * 1920, 6)
     expect(l.viewBox).toEqual({ width: 1920, height: 1080 })
   })
 
-  it('resolves edge path and analytic length: the measured vertical run', () => {
-    const l = nodeEdgeLayout({ nodes, edges })
-    // (0.8462 − 0.4476) × 1080 = 430.488
-    expect(l.edges[0].length).toBeCloseTo(430.488, 6)
-    expect(l.edges[0].d).toBe(`M ${0.6363 * 1920} ${0.4476 * 1080} L ${0.6363 * 1920} ${0.8462 * 1080}`)
-    expect(l.edges[0].status).toBe(true)
-    expect(l.edges[1].status).toBe(false)
+  it('resolves the status square at its own measured size, taller than wide', () => {
+    const l = nodeEdgeLayout({ nodes: [nodes[5]], edges: [] })
+    expect([l.nodes[0].w, l.nodes[0].h]).toEqual([STATUS_SQUARE.w, STATUS_SQUARE.h])
+    expect(l.nodes[0].w).toBeLessThan(l.nodes[0].h)
   })
 
-  it('hangs the block left of its node, vertically centered', () => {
+  it('resolves each edge path over its polyline fractions (no length — edges pop, not draw)', () => {
+    const l = nodeEdgeLayout({ nodes, edges })
+    expect(l.edges[0].d).toBe(`M ${0.756 * 1920} ${0.524 * 1080} L ${0.756 * 1920} ${0.772 * 1080}`)
+    expect(l.edges).toHaveLength(7)
+    expect('length' in l.edges[0]).toBe(false)
+  })
+
+  it('hangs the block left of its node square, vertically centered', () => {
     const l = nodeEdgeLayout({ nodes, edges, status: [status[0]] })
     const node = l.nodes.find((n) => n.id === 'lake')!
     const el = l.status[0]
-    expect(el.cx).toBeCloseTo(node.cx - node.r - STATUS_GAP - STATUS_BLOCK.w / 2, 6)
+    expect(el.cx).toBeCloseTo(node.cx - node.w / 2 - 20 - 50, 6)
     expect(el.cy).toBeCloseTo(node.cy, 6)
-    expect([el.w, el.h]).toEqual([STATUS_BLOCK.w, STATUS_BLOCK.h])
   })
 
-  it('hangs the outline left of its node with its own measured size', () => {
+  it('hangs the arrow below its node square', () => {
     const l = nodeEdgeLayout({ nodes, edges, status: [status[1]] })
-    const node = l.nodes.find((n) => n.id === 'catalog')!
-    const el = l.status[0]
-    expect(el.cx).toBeCloseTo(node.cx - node.r - STATUS_GAP - STATUS_OUTLINE.w / 2, 6)
-    expect([el.w, el.h]).toEqual([STATUS_OUTLINE.w, STATUS_OUTLINE.h])
-  })
-
-  it('hangs the arrow below its node', () => {
-    const l = nodeEdgeLayout({ nodes, edges, status: [status[2]] })
     const node = l.nodes.find((n) => n.id === 'serve')!
     const el = l.status[0]
     expect(el.cx).toBeCloseTo(node.cx, 6)
-    expect(el.cy).toBeCloseTo(node.cy + node.r + STATUS_GAP + STATUS_ARROW.h / 2, 6)
+    expect(el.cy).toBeCloseTo(node.cy + node.h / 2 + 20 + 50, 6)
   })
 
   it('validates references and ranges instead of rendering blank', () => {
@@ -171,14 +161,24 @@ describe('nodeEdgeLayout — resolved geometry', () => {
 })
 
 describe('NodeEdge component', () => {
-  it('renders one node group per node, a dim base + one accent copy per edge, and one status group per element', () => {
+  it('renders one node group per node, one pop edge per edge, and one status group per element', () => {
     const wrapper = mountNodeEdge({ nodes, edges, status })
 
     expect(wrapper.find('svg.nodeedge').exists()).toBe(true)
-    expect(wrapper.findAll('.sf-ne-node')).toHaveLength(4)
-    expect(wrapper.findAll('path.sf-ne-edge-base')).toHaveLength(2)
-    expect(wrapper.findAll('path.sf-ne-edge-fill')).toHaveLength(2)
-    expect(wrapper.findAll('.sf-ne-status')).toHaveLength(3)
+    expect(wrapper.findAll('.sf-ne-node')).toHaveLength(6)
+    expect(wrapper.findAll('path.sf-ne-edge')).toHaveLength(7)
+    expect(wrapper.findAll('.sf-ne-status')).toHaveLength(2)
+  })
+
+  it('renders no circle primitive and no dashoffset draw machinery (the corrected contract)', () => {
+    const wrapper = mountNodeEdge({ nodes, edges })
+    const css = renderedCss()
+
+    expect(wrapper.find('circle').exists()).toBe(false)
+    expect(css).not.toContain('stroke-dashoffset')
+    expect(css).not.toContain('stroke-dasharray')
+    expect(css).not.toContain('--sf-drawn')
+    expect(wrapper.findAll('path.sf-ne-edge-base')).toHaveLength(0)
   })
 
   it('exposes the measured canvas and an accessible name', () => {
@@ -187,107 +187,109 @@ describe('NodeEdge component', () => {
 
     expect(svg.attributes('viewBox')).toBe('0 0 1920 1080')
     expect(svg.attributes('role')).toBe('img')
-    expect(svg.attributes('aria-label')).toBe('4-node network diagram')
+    expect(svg.attributes('aria-label')).toBe('6-node network diagram')
   })
 
-  it('applies the tone system: accent, alt, and plain chrome-white node strokes', () => {
-    const wrapper = mountNodeEdge({ nodes, edges, status, palette: { accent: '#349aea', accentAlt: '#e5413f' } })
-    const rings = wrapper.findAll('.sf-ne-node-ring')
+  it('renders the measured plate primitive: rounded #0b0a11 squares with 6px tone borders', () => {
+    const wrapper = mountNodeEdge({ nodes, edges, status, palette: { accent: '#33a5cd', accentAlt: '#e6b434', track: '#5a1e1e' } })
+    const plates = wrapper.findAll('rect.sf-ne-node-plate')
 
-    expect(rings[0].attributes('stroke')).toBe('#e5413f') // alt → accentAlt
-    expect(rings[1].attributes('stroke')).toBe('#349aea') // accent
-    expect(rings[2].attributes('stroke')).toBe('#f5f4f7') // plain → chrome white
-    expect(rings[3].attributes('stroke')).toBe('#349aea')
+    expect(plates[0].attributes('fill')).toBe(NODE_PLATE)
+    expect(plates[0].attributes('rx')).toBe(String(NODE_RX))
+    expect(plates[0].attributes('stroke')).toBe('#33a5cd') // accent → palette accent
+    expect(plates[0].attributes('stroke-width')).toBe(String(NODE_STROKE))
+    expect(plates[2].attributes('stroke')).toBe('#e6b434') // alt → accentAlt
+    expect(plates[3].attributes('stroke')).toBe('#f5f4f7') // plain → chrome white
   })
 
-  it('draws status edges in accentAlt and plain edges in accent', () => {
-    const wrapper = mountNodeEdge({ nodes, edges, status, palette: { accent: '#349aea', accentAlt: '#e5413f' } })
-    const fills = wrapper.findAll('path.sf-ne-edge-fill')
+  it('renders the status node as the solid bright-red square, bright red reserved for status', () => {
+    const wrapper = mountNodeEdge({ nodes, edges, palette: { accent: '#33a5cd', accentAlt: '#e6b434', track: '#5a1e1e' } })
+    const plates = wrapper.findAll('rect.sf-ne-node-plate')
 
-    expect(fills[0].attributes('stroke')).toBe('#e5413f') // status edge → red
-    expect(fills[1].attributes('stroke')).toBe('#349aea') // plain edge → accent
+    expect(plates[5].attributes('fill')).toBe(STATUS_RED)
+    expect(plates[5].attributes('stroke')).toBe(STATUS_RED)
+    expect(plates[5].attributes('width')).toBe(String(STATUS_SQUARE.w))
+    expect(plates[5].attributes('height')).toBe(String(STATUS_SQUARE.h))
   })
 
-  it('pre-sets each accent copy to draw exactly its analytic polyline length', () => {
-    const wrapper = mountNodeEdge({ nodes, edges, status })
-    const layout = nodeEdgeLayout({ nodes, edges, status })
-    const fills = wrapper.findAll('path.sf-ne-edge-fill')
+  it('renders 3-line tone-colored labels inside each square; the status label is dark', () => {
+    const wrapper = mountNodeEdge({ nodes, edges, palette: { accent: '#33a5cd', accentAlt: '#e6b434', track: '#5a1e1e' } })
+    const groups = wrapper.findAll('.sf-ne-node')
 
-    fills.forEach((fill, i) => {
-      expect(drawnPx(fill.attributes('style'))).toBeCloseTo(layout.edges[i].length, 6)
-    })
+    const first = groups[0].findAll('tspan')
+    expect(first).toHaveLength(3)
+    expect(first[0].text()).toBe('INGEST')
+    expect(first[2].text()).toBe('12K/S')
+    expect(groups[0].find('text').attributes('fill')).toBe('#33a5cd')
+
+    const lag = groups[5].findAll('tspan')
+    expect(lag).toHaveLength(2)
+    expect(groups[5].find('text').attributes('fill')).toBe('#000000')
   })
 
-  it('covers [0, length] per edge at full reveal — dashoffset ships the remaining phase', () => {
-    // Regression pattern (StepFlow grey notch): a --sf-len dash at offset o
-    // paints [0, len − o]; the union over each edge's accent copies must reach
-    // the end of that edge's polyline.
-    const wrapper = mountNodeEdge({ nodes, edges, status })
-    const layout = nodeEdgeLayout({ nodes, edges, status })
-    const fills = wrapper.findAll('path.sf-ne-edge-fill')
-    const css = Array.from(document.querySelectorAll('style'))
-      .map((tag) => tag.textContent ?? '')
-      .join('\n')
+  it('draws every edge in the dim palette track, never bright red', () => {
+    const wrapper = mountNodeEdge({ nodes, edges, palette: { accent: '#33a5cd', accentAlt: '#e6b434', track: '#5a1e1e' } })
+    const paths = wrapper.findAll('path.sf-ne-edge')
 
-    fills.forEach((fill, i) => {
-      const len = layout.edges[i].length
-      const drawn = drawnPx(fill.attributes('style'))
-      const unionEnd = len - dashOffsetPx(css, drawn, len)
-      expect(unionEnd, `edge ${i} must paint [0, ${len}] at full reveal`).toBeCloseTo(len, 6)
-    })
+    expect(paths).toHaveLength(7)
+    for (const path of paths) {
+      expect(path.attributes('stroke')).toBe('#5a1e1e')
+      expect(path.attributes('stroke-width')).toBe('6')
+    }
+  })
 
-    // Backward-nav snap must survive any change to the revealed phase.
-    const hiddenRule = css.match(/\.sf-ne-edge-fill\.slidev-vclick-hidden[^{]*\{[^}]*\}/)?.[0] ?? ''
-    expect(hiddenRule).toContain('stroke-dashoffset: var(--sf-len)')
-    expect(hiddenRule).toContain('transition: none')
+  it('carries the measured pop timing, backward-nav snap, and reduced-motion block in its styles', () => {
+    mountNodeEdge({ nodes, edges, status })
+    const css = renderedCss()
+
+    expect(css).toContain('80ms') // edge pop (§ measured: 1–2 frames)
+    expect(css).toContain('70ms') // node pop (§ measured: ~2–3 frames)
+    expect(css).not.toContain('300ms') // the dashoffset draw is gone
+    // Backward nav snaps: hidden states carry transition:none (locked decision).
+    // Vue scoping appends the [data-v-*] attribute to the compound selector.
+    expect(css).toMatch(/\.sf-ne-edge\.slidev-vclick-hidden(\[data-v[^\]]+\])?\s*\{[^}]*transition:\s*none/)
+    expect(css).toMatch(/\.sf-ne-node\.slidev-vclick-hidden(\[data-v[^\]]+\])?\s*\{[^}]*transition:\s*none/)
+    expect(css).toContain('prefers-reduced-motion') // transitions disabled, instant state
+  })
+
+  it('renders the red ambient wash behind the network zone as static chrome (not click-bound)', () => {
+    const wrapper = mountNodeEdge({ nodes, edges })
+
+    const wash = wrapper.find('ellipse.sf-ne-wash')
+    expect(wash.exists()).toBe(true)
+    expect(wash.attributes('fill')).toMatch(/^url\(#/)
+  })
+
+  it('renders the terminal readout lines bottom-left in white at the measured column', () => {
+    const wrapper = mountNodeEdge({ nodes, edges, terminal: ['LAST DEPLOY 14M AGO', 'VER 2.4.1'] })
+    const lines = wrapper.findAll('text.sf-ne-terminal')
+
+    expect(lines).toHaveLength(2)
+    expect(lines[0].text()).toBe('LAST DEPLOY 14M AGO')
+    expect(lines[1].text()).toBe('VER 2.4.1')
+    expect(lines[0].attributes('x')).toBe('167.04') // 8.7% of 1920
+    expect(lines[0].attributes('fill')).toBe('#ffffff')
+  })
+
+  it('scales the header to the measured 7.2%h', () => {
+    const wrapper = mountNodeEdge({ nodes, edges, title: 'DATA', titleAccent: 'PLATFORM' })
+    const header = wrapper.find('text.header')
+
+    expect(header.attributes('font-size')).toBe('77.76') // 0.072 × 1080
+    expect(header.text()).toContain('DATA')
+    expect(header.html()).toContain('#66fb00')
   })
 
   it('renders the status layer kinds with their tone fills', () => {
-    const wrapper = mountNodeEdge({ nodes, edges, status, palette: { accent: '#349aea', accentAlt: '#e5413f' } })
+    const wrapper = mountNodeEdge({ nodes, edges, status, palette: { accent: '#33a5cd', accentAlt: '#e6b434' } })
     const groups = wrapper.findAll('.sf-ne-status')
 
-    expect(groups[0].find('rect[fill="#e5413f"]').exists()).toBe(true) // solid block, alt tone
-    expect(groups[1].find('rect[stroke="#e5413f"]').exists()).toBe(true) // outline box, alt tone
-    expect(groups[2].find('path[fill="#349aea"]').exists()).toBe(true) // arrow glyph, accent tone
+    expect(groups[0].find('rect[fill="#e6b434"]').exists()).toBe(true) // solid block, alt tone
+    expect(groups[1].find('path[fill="#33a5cd"]').exists()).toBe(true) // arrow glyph, accent tone
     expect(groups[0].text()).toContain('SLOW 5m')
-  })
-
-  it('renders the fallback icon and warns on an unknown icon key', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    try {
-      const bad: FlowNode[] = [{ id: 'x', xFrac: 0.5, yFrac: 0.5, tone: 'plain', icon: 'not-a-key' }]
-      const wrapper = mountNodeEdge({ nodes: bad, edges: [] })
-
-      expect(warn).toHaveBeenCalledWith(expect.stringContaining('not-a-key'))
-      // ICON_FALLBACK (Lucide circle-help) geometry must be in the markup.
-      expect(wrapper.find('.sf-ne-node-icon').html()).toContain('r="10"')
-    } finally {
-      warn.mockRestore()
-    }
   })
 
   it('surfaces the layout RangeError for unknown edge endpoints instead of rendering blank', () => {
     expect(() => mountNodeEdge({ nodes, edges: [{ ...edges[0], from: 'ghost' }] })).toThrow(RangeError)
-  })
-
-  it('carries the measured timing constants and reduced-motion block in its rendered styles', () => {
-    mountNodeEdge({ nodes, edges, status })
-
-    const css = Array.from(document.querySelectorAll('style'))
-      .map((tag) => tag.textContent ?? '')
-      .join('\n')
-
-    expect(css).toContain('300ms') // edge draw (§9)
-    expect(css).toContain('120ms') // node ring pop
-    expect(css).toContain('150ms') // node/status fade
-    expect(css).toContain('prefers-reduced-motion') // transitions disabled, instant state
-  })
-
-  it('renders the two-tone header: white title + chrome-green titleAccent tail', () => {
-    const wrapper = mountNodeEdge({ nodes, edges, status, title: 'DATA', titleAccent: 'PLATFORM' })
-    const header = wrapper.find('text.header')
-
-    expect(header.text()).toContain('DATA')
-    expect(header.html()).toContain('#66fb00')
   })
 })
