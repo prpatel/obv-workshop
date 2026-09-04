@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, useId } from 'vue'
 import {
   BADGE_ICON_AT_1080,
   columnRowLayout,
@@ -33,6 +33,13 @@ const props = withDefaults(defineProps<{
   /** Header tail rendered in chrome green after `title` (two-tone chrome convention). */
   titleAccent?: string
 }>(), { labelRows: () => [], palette: () => ({}) })
+
+// Glow halo per the wave-2 rework: the ref t=229.0 frame carries a tinted
+// glow band (report art_iHm120ov §ColumnRow: 0.64% glow) around the columns —
+// the family treatment TileGrid shipped (blurred copy under the solid core).
+const glowId = useId()
+const HALO_OPACITY = 0.6
+const HALO_BLUR = 18
 
 const p = computed(() => resolvePalette(props.palette))
 const layout = computed(() => columnRowLayout({ columns: props.columns, yFrac: props.yFrac, hFrac: props.hFrac, labelRows: props.labelRows }))
@@ -155,8 +162,16 @@ function px(n: number): string {
       />
     </g>
 
-    <!-- One sibling group per column: block + optional amber underline + inside
-         label, rising bottom→top on the column's click (clicks 1…n). -->
+    <!-- Glow filter for the measured column halo (TileGrid's treatment:
+         blurred under-copy at family constants opacity 0.6 / blur 18k). -->
+    <defs>
+      <filter :id="glowId" x="-60%" y="-60%" width="220%" height="220%">
+        <feGaussianBlur in="SourceGraphic" :stdDeviation="HALO_BLUR * typeScale(layout.viewBox)" />
+      </filter>
+    </defs>
+
+    <!-- One sibling group per column: halo + block + optional amber underline
+         + inside label, rising bottom→top on the column's click (clicks 1…n). -->
     <g
       v-for="(col, i) in layout.columns"
       :key="col.id"
@@ -164,6 +179,17 @@ function px(n: number): string {
       class="sf-col"
       :style="{ '--sf-rise': px(risePx) }"
     >
+      <!-- Glow halo first (under the core): the same rect, blurred. -->
+      <rect
+        class="sf-col-halo"
+        :x="col.x"
+        :y="col.y"
+        :width="col.w"
+        :height="col.h"
+        :fill="toneColor(col.tone)"
+        :opacity="HALO_OPACITY"
+        :filter="`url(#${glowId})`"
+      />
       <rect
         class="sf-col-block"
         :x="col.x"

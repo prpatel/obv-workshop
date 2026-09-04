@@ -464,3 +464,30 @@ describe('ColumnRow rework — blue tone, tinted labels, heading chrome, plates'
     expect(Number(wrapper.find('.sf-col-rail').attributes('y'))).toBeCloseTo(809.01, 6)
   })
 })
+
+describe('columnRowLayout rework — measured column glow halo', () => {
+  it('underlays every column with a blurred tone-tinted halo copy at family constants', () => {
+    const { wrapper } = mountColumnRow({ columns, yFrac, hFrac })
+    const halos = wrapper.findAll('.sf-col-halo')
+    const blocks = wrapper.findAll('.sf-col-block')
+
+    expect(halos).toHaveLength(5)
+    halos.forEach((h, i) => {
+      const block = blocks[i]
+      // Same footprint as the solid core, blurred copy painted under it.
+      expect(Number(h.attributes('x'))).toBe(Number(block.attributes('x')))
+      expect(Number(h.attributes('y'))).toBe(Number(block.attributes('y')))
+      expect(Number(h.attributes('width'))).toBe(Number(block.attributes('width')))
+      expect(Number(h.attributes('height'))).toBe(Number(block.attributes('height')))
+      expect(h.attributes('fill')).toBe(block.attributes('fill'))
+      expect(Number(h.attributes('opacity'))).toBeCloseTo(0.6, 6)
+      // The halo references the component's own gaussian filter (useId-scoped).
+      const filterRef = h.attributes('filter') ?? ''
+      expect(filterRef).toMatch(/^url\(#.+\)$/)
+      const filterId = filterRef.slice(5, -1)
+      const defs = wrapper.find(`filter#${CSS.escape(filterId)}`)
+      expect(defs.exists()).toBe(true)
+      expect(defs.find('feGaussianBlur').exists()).toBe(true)
+    })
+  })
+})

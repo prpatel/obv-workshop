@@ -407,6 +407,7 @@ canvasWidth: 1920
   :heading="{ icon: 'flask-conical', caption: 'FIVE STAGES · ONE PIPELINE' }"
   :labelRows="[
     { texts: ['SOURCES', 'TABLES', 'JOBS', 'MODELS', 'DASHBOARDS'], tone: 'column' },
+    { texts: ['· ·', '·', '· · ·', '·', '· ·'], tone: 'column' },
   ]"
 />
 
