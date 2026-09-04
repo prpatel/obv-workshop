@@ -1,66 +1,69 @@
 /**
- * SegmentTimeline data contract + pure layout math (wave-2 family, spec
- * art_3VsrSvLm Wave-2 addendum; measured blueprint research art_2kSBGNmJ §3.1,
- * source 211–222s).
+ * SegmentTimeline data contract + pure layout math (wave-2 family; fidelity
+ * rework per art_iHm120ov §SegmentTimeline, measured against the source's
+ * 211–222s timeline at ref frame t=220.5, read at 1920×1080).
  *
- * One horizontal bar split into contiguous tone-coded segments, three tick
- * markers hanging below it, and an optional right-side label chip. Segment
- * sweeps are revealed-state width transitions (the established .sf-track-fill
- * pattern applied to a rect) — no path-length math.
+ * Structure (the wave-2 rework — the family's identity): a thin dim track at
+ * the node axis carries bright segment fills running between the nodes, one
+ * glowing disc per segment sitting just inside its fill's right end, a 2px
+ * node-colored tick dropping from each node to a two-row white label block,
+ * and a bright white lead segment capping the track's right end. The prior
+ * 68px-tall two-tone bar, the authored tick list, and the right-side chip are
+ * gone — nodes are derived from the fills they cap, so ticks and labels can
+ * never drift off their nodes.
  *
- * Measured from the source video (all numbers 1280×720 source px; canvas
- * fractions = px/1280 (x), px/720 (y)): bar x208–972, y297–365 (68px tall);
- * cool blue segment x208–674 (466px) then orange x676–972 (296px) —
- * contiguous; three 2×95px tick lines at x340/639/938, y367–462, small labels
- * beneath (12px glyphs, tops y508); a right-side label chip 89×22 @1006,320,
- * vertically centered on the bar. The source's 2px segment separation is
- * sub-tolerance: segments are modeled as contiguous and their widths as
- * proportional shares of the bar span, normalized to fill x0→x1 exactly.
+ * Measured from ref frame t=220.5 (1920×1080): track y490–502 (12px) spanning
+ * x306–1653; fills blue x313–540, cyan x560–960, red x980–~1460 settled —
+ * each fill starts at the previous node's disc edge and ends 30px past its
+ * own node's center; nodes ~100px diameter at (510, 930, 1430) on the track
+ * axis with glow halos reaching a 149–182px footprint; 2px ticks from the
+ * track bottom to y659; label rows (26px + 16px glyphs) centered under the
+ * nodes, baselines y729/y779; white lead x1509–1641 inset 12px from the
+ * track's right end. Palette: blue #3699fa / cyan #1ed0e8 / red #f75720, dim
+ * track #001010, white lead #f5f4f7, labels #f0f0f0.
+ *
+ * Choreography (native v-clicks): click i pops node i (~140ms scale pop),
+ * fades its tick + labels in after a beat (~250ms, 120ms delayed), and sweeps
+ * fill i left→right over ~2.4s — so each fill completes just before the next
+ * click pops the next node (sweep-then-pop; measured 10–90% over 2550ms,
+ * node pops 100–150ms, node-to-node beat ~2.5s).
  *
  * Pure and SSR-safe: no DOM access, no mutation of the inputs.
  */
 
-/** One contiguous bar segment. Tones map to palette roles (`accent` = chainBlue blue, `alt` = orangeSpine orange). */
+/** Tone roles for the measured blue/cyan/red trio (`accentTertiary` falls back to `accent` when a custom palette omits it). */
+export type TimelineTone = 'accent' | 'tertiary' | 'alt'
+
+/** One track segment, capped by its glowing node. */
 export interface TimelineSegment {
   /** Stable key — test selectors and per-segment reveal identity. */
   id: string
-  /** Palette role: `accent` (cool blue) or `alt` (orange). */
-  tone: 'accent' | 'alt'
-  /** Short label rendered centered inside the segment (reveals with the ticks layer). */
+  /** Palette role: `accent` (blue), `tertiary` (cyan), or `alt` (red). */
+  tone: TimelineTone
+  /** Big white label row centered under the node (reveals with the node). */
   label?: string
+  /** Smaller white sub-label row beneath `label`. */
+  sublabel?: string
   /**
-   * Proportional share of the bar span, in canvas-width-fraction units
-   * (the measured composition is 0.3640625 blue + 0.23125 orange). Shares are
-   * normalized across segments so the bar always fills x0Frac → x1Frac
-   * exactly, keeping segments contiguous. Omitted = one equal share.
+   * Proportional share of the fillable span, in canvas-width-fraction units
+   * (the measured composition is 0.118229 blue + 0.208333 cyan + 0.25 red).
+   * Shares are normalized across segments; omitted = one equal share.
    */
   wFrac?: number
 }
 
-/** A tick marker below the bar. `xFrac` is a canvas-width fraction. */
-export interface TimelineTick {
-  /** Tick line x as a fraction of the canvas width. */
-  xFrac: number
-  /** Small label rendered beneath the tick line. */
-  label: string
-}
-
-/** The full SegmentTimeline composition: segments, ticks, bar geometry, chip. */
+/** The full SegmentTimeline composition: segments over a measured track. */
 export interface SegmentTimelineData {
   /** Contiguous segments, left → right. At least one. */
   segments: TimelineSegment[]
-  /** Tick markers below the bar (may be empty). */
-  ticks: TimelineTick[]
-  /** Bar top y as a fraction of the canvas height. */
+  /** Track top y as a fraction of the canvas height. */
   yFrac: number
-  /** Bar height as a fraction of the canvas height. */
+  /** Track height as a fraction of the canvas height. */
   hFrac: number
-  /** Bar left x as a fraction of the canvas width. */
+  /** Track left x as a fraction of the canvas width. */
   x0Frac: number
-  /** Bar right x as a fraction of the canvas width. */
+  /** Track right x as a fraction of the canvas width. */
   x1Frac: number
-  /** Right-side label chip text (legend tag); omit for no chip. */
-  chip?: string
 }
 
 export interface Canvas {
@@ -68,76 +71,85 @@ export interface Canvas {
   height: number
 }
 
-/** Measured tick-line length below the bar: 95px at source height 720 (fraction of canvas height). */
-export const TICK_LEN_FRAC = 95 / 720
-/** Gap between the bar bottom and the tick tops: 2px at source height 720. */
-export const TICK_GAP_FRAC = 2 / 720
-/** Gap from the tick-line end to the tick-label baseline: 58px at source height 720 (glyph tops y508, 12px tall). */
-export const TICK_LABEL_GAP_FRAC = 58 / 720
-/** Measured chip width: 89px at source width 1280 (fraction of canvas width). */
-export const CHIP_W_FRAC = 89 / 1280
-/** Measured chip height: 22px at source height 720 (fraction of canvas height). */
-export const CHIP_H_FRAC = 22 / 720
-/** Gap between the bar's right end and the chip's left edge: 34px at source width 1280. */
-export const CHIP_GAP_FRAC = 34 / 1280
+/** Measured node radius: ~50px at source height 1080 (fraction of canvas height). */
+export const NODE_R_FRAC = 50 / 1080
+/** Fill overshoot past its own node's center: 30px at source width 1920. */
+export const FILL_PAST_FRAC = 30 / 1920
+/** Gap between consecutive fills: 20px at source width 1920 (x540→560, x960→980). */
+export const FILL_GAP_FRAC = 20 / 1920
+/** Measured white lead width: 134px at source width 1920 (x1509–1641). */
+export const LEAD_W_FRAC = 134 / 1920
+/** Lead inset from the track's right end: 12px at source width 1920. */
+export const LEAD_INSET_FRAC = 12 / 1920
+/** Measured tick run: track bottom (y502) down to y659 = 157px at source height 1080. */
+export const TICK_LEN_FRAC = 157 / 1080
+/** Measured label baseline: big row glyphs y703–729. */
+export const LABEL_BASELINE_FRAC = 729 / 1080
+/** Measured sub-label baseline: small row glyphs y763–779. */
+export const SUBLABEL_BASELINE_FRAC = 779 / 1080
 
-/** Typography in viewBox (1920×1080) units — measured glyph heights, rescaled ×1.5 from the 720p source. */
-export const SEG_LABEL_SIZE = 20 // in-segment labels — no glyph measurement in the source, inferred [I]
-export const TICK_LABEL_SIZE = 18 // measured 12px glyphs at 720p
-export const CHIP_LABEL_SIZE = 15 // inferred [I] for the 22px-tall chip
-export const TICK_STROKE = 3 // measured 2px tick lines at 720p
-export const CHIP_STROKE = 2
-export const CHIP_RADIUS = 9 // inferred [I]; rounded like the family's outlined boxes
+/** Measured palette (ref t=220.5 node/fill/track samples) — resolved through `resolvePalette`, never hardcoded in the component body. */
+export const NODE_BLUE = '#3699fa'
+export const NODE_CYAN = '#1ed0e8'
+export const NODE_RED = '#f75720'
+export const TRACK_DIM = '#001010'
+export const LEAD_WHITE = '#f5f4f7'
+export const LABEL_WHITE = '#f0f0f0'
 
-/** Resolved px geometry for the bar, ready to render. */
-export interface BarLayout {
+/** Glow halo reach beyond the disc: footprint 149–182px vs the ~100px discs → ~35px spread. */
+export const GLOW_SPREAD = 35
+
+/** Typography in viewBox (1920×1080) units — measured glyph heights (26px + 16px rows → ~36px/~22px fonts). */
+export const LABEL_SIZE = 36
+export const SUBLABEL_SIZE = 22
+export const TICK_STROKE = 2 // measured 2px tick lines
+
+/** Resolved px geometry for the dim track, ready to render. */
+export interface TrackLayout {
   x: number
   y: number
   width: number
   height: number
 }
 
-/** Resolved px geometry for one segment, ready to render. */
+/** Resolved px geometry for the bright white lead segment capping the track. */
+export interface LeadLayout {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+/** Resolved px geometry for one segment (fill + node + tick + labels), ready to render. */
 export interface SegmentLayout {
   id: string
-  tone: TimelineSegment['tone']
+  tone: TimelineTone
   label?: string
-  /** Left edge px. Segments are contiguous: segment i+1 starts where segment i ends. */
+  sublabel?: string
+  /** Fill left edge px. Fill i starts at fill i−1's right edge + the measured gap. */
   x: number
   /** Sweep width px — the revealed-state `--seg-w` (hidden state is width 0). */
   width: number
-  /** Label center (segment midpoint, bar vertical center) for the labels layer. */
+  /** Node disc center/radius px. Sits `FILL_PAST` left of the fill's right end, on the track axis. */
+  nodeCx: number
+  nodeCy: number
+  nodeR: number
+  /** Outer glow radius px (disc + halo reach). */
+  glowR: number
+  /** Tick line x (the node's center) and span, hanging from the track bottom. */
+  tickX: number
+  tickY0: number
+  tickLen: number
+  /** Label block centered under the node. */
   labelCx: number
-  labelCy: number
-}
-
-/** Resolved px geometry for one tick marker + its label, ready to render. */
-export interface TickLayout {
-  label: string
-  x: number
-  /** Tick-line top y (bar bottom + measured gap). */
-  y0: number
-  /** Tick-line length px. */
-  len: number
-  labelX: number
-  /** Tick-label baseline y (tick end + measured glyph gap). */
   labelBaseline: number
-}
-
-/** Resolved px geometry for the right-side label chip, ready to render. */
-export interface ChipLayout {
-  x: number
-  y: number
-  width: number
-  height: number
-  text: string
+  sublabelBaseline: number
 }
 
 export interface SegmentTimelineLayout {
-  bar: BarLayout
+  track: TrackLayout
+  lead: LeadLayout
   segments: SegmentLayout[]
-  ticks: TickLayout[]
-  chip?: ChipLayout
   viewBox: Canvas
 }
 
@@ -151,23 +163,24 @@ function requireFraction(value: number, name: string, { positive = false } = {})
 /**
  * Resolve the full render layout for a SegmentTimeline.
  *
- * - The bar is the measured span x0Frac → x1Frac at yFrac, hFrac; segment
- *   shares are normalized to fill it exactly (contiguous, never short).
- * - Ticks hang below the bar at their authored canvas x fractions; the chip
- *   derives from the bar's right end (measured gap, vertically centered) —
- *   position is never authored.
+ * - The track is the measured span x0Frac → x1Frac at yFrac, hFrac. The white
+ *   lead caps its right end (measured width, measured inset).
+ * - Fills divide the span left of the lead (minus one measured gap before it)
+ *   by normalized shares, with a measured gap between consecutive fills.
+ * - Node i sits on the track axis, `FILL_PAST` left of fill i's right end, so
+ *   the fill sweeps through its node and just past it. Ticks and label blocks
+ *   derive from the node centers — they can never drift.
  * - Violations (empty segments, unknown tone, non-positive wFrac, out-of-range
  *   fractions) throw RangeError, never render blank.
- * - Click choreography (native v-clicks): segment i sweeps on click i + 1,
- *   then the labels layer (segment labels, ticks, tick labels, chip) fades in
- *   on one final click — `segments.length + 1` clicks total.
+ * - Click choreography (native v-clicks): click i pops node i, fades its tick
+ *   + labels in after a beat, and sweeps fill i — one click per segment.
  */
 export function segmentTimelineLayout(data: SegmentTimelineData, viewBox: Canvas = { width: 1920, height: 1080 }): SegmentTimelineLayout {
   if (data.segments.length === 0) {
     throw new RangeError('SegmentTimeline needs at least one segment')
   }
   for (const segment of data.segments) {
-    if (segment.tone !== 'accent' && segment.tone !== 'alt') {
+    if (segment.tone !== 'accent' && segment.tone !== 'tertiary' && segment.tone !== 'alt') {
       throw new RangeError(`segment "${segment.id}" has unknown tone "${String(segment.tone)}"`)
     }
     if (segment.wFrac !== undefined && !(segment.wFrac > 0 && Number.isFinite(segment.wFrac))) {
@@ -185,57 +198,63 @@ export function segmentTimelineLayout(data: SegmentTimelineData, viewBox: Canvas
     throw new RangeError(`yFrac + hFrac (${data.yFrac} + ${data.hFrac}) runs past the canvas bottom`)
   }
 
-  const bar: BarLayout = {
+  const track: TrackLayout = {
     x: data.x0Frac * viewBox.width,
     y: data.yFrac * viewBox.height,
     width: (data.x1Frac - data.x0Frac) * viewBox.width,
     height: data.hFrac * viewBox.height,
   }
 
-  // Proportional shares, normalized to fill the span exactly. Omitted wFrac
-  // = one equal share, so `{a: 2}, {b}` splits 2:1.
+  const lead: LeadLayout = {
+    x: track.x + track.width - LEAD_INSET_FRAC * viewBox.width - LEAD_W_FRAC * viewBox.width,
+    y: track.y,
+    width: LEAD_W_FRAC * viewBox.width,
+    height: track.height,
+  }
+
+  // Fill spans: the track left of the lead (minus one gap before it) minus the
+  // inter-fill gaps, divided by normalized shares. Omitted wFrac = one equal
+  // share, so `{a: 2}, {b}` splits 2:1.
+  const fillGap = FILL_GAP_FRAC * viewBox.width
+  const fillableRight = lead.x - fillGap
+  const available = fillableRight - track.x - fillGap * (data.segments.length - 1)
+  if (available <= 0) {
+    throw new RangeError(`track span leaves no room for ${data.segments.length} fills beside the lead`)
+  }
   const shares = data.segments.map((segment) => segment.wFrac ?? 1)
   const shareSum = shares.reduce((total, share) => total + share, 0)
-  let cursor = bar.x
+
+  const nodeR = NODE_R_FRAC * viewBox.height
+  const nodeCy = track.y + track.height / 2
+  const fillPast = FILL_PAST_FRAC * viewBox.width
+  const glowR = nodeR + GLOW_SPREAD * (viewBox.height / 1080)
+
+  let cursor = track.x
   const segments: SegmentLayout[] = data.segments.map((segment, i) => {
-    const width = (shares[i] / shareSum) * bar.width
+    const width = (shares[i] / shareSum) * available
+    const fillRight = cursor + width
+    const nodeCx = fillRight - fillPast
     const layout: SegmentLayout = {
       id: segment.id,
       tone: segment.tone,
       label: segment.label,
+      sublabel: segment.sublabel,
       x: cursor,
       width,
-      labelCx: cursor + width / 2,
-      labelCy: bar.y + bar.height / 2,
+      nodeCx,
+      nodeCy,
+      nodeR,
+      glowR,
+      tickX: nodeCx,
+      tickY0: track.y + track.height,
+      tickLen: TICK_LEN_FRAC * viewBox.height,
+      labelCx: nodeCx,
+      labelBaseline: LABEL_BASELINE_FRAC * viewBox.height,
+      sublabelBaseline: SUBLABEL_BASELINE_FRAC * viewBox.height,
     }
-    cursor += width
+    cursor = fillRight + fillGap
     return layout
   })
 
-  const tickY0 = bar.y + bar.height + TICK_GAP_FRAC * viewBox.height
-  const ticks: TickLayout[] = data.ticks.map((tick) => {
-    requireFraction(tick.xFrac, `tick "${tick.label}" xFrac`)
-    const x = tick.xFrac * viewBox.width
-    const len = TICK_LEN_FRAC * viewBox.height
-    return {
-      label: tick.label,
-      x,
-      y0: tickY0,
-      len,
-      labelX: x,
-      labelBaseline: tickY0 + len + TICK_LABEL_GAP_FRAC * viewBox.height,
-    }
-  })
-
-  const chip: ChipLayout | undefined = data.chip === undefined
-    ? undefined
-    : {
-        x: bar.x + bar.width + CHIP_GAP_FRAC * viewBox.width,
-        y: bar.y + bar.height / 2 - (CHIP_H_FRAC * viewBox.height) / 2,
-        width: CHIP_W_FRAC * viewBox.width,
-        height: CHIP_H_FRAC * viewBox.height,
-        text: data.chip,
-      }
-
-  return { bar, segments, ticks, chip, viewBox }
+  return { track, lead, segments, viewBox }
 }

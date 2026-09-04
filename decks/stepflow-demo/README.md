@@ -52,7 +52,7 @@ decks/stepflow-demo/
 │  ├─ ColumnRow.vue               # family built-in: tone-coded column row (rising columns + label rows)
 │  ├─ TileGrid.vue                # family built-in: hex-tile grid with glow, connector track, and label rows (row-major build)
 │  ├─ RatioStrip.vue              # family built-in: proportional band with a live re-proportion (wave 2)
-│  ├─ SegmentTimeline.vue         # family built-in: proportional sweep bar with milestone ticks
+│  ├─ SegmentTimeline.vue         # family built-in: thin track, bright fills between glowing nodes (sweep-then-pop)
 │  ├─ StackPanels.vue             # family built-in: measured panel mosaic (sweep band + pop panels)
 │  ├─ MilestoneLanes.vue          # family built-in: four-lane Gantt/milestone chart (offset bars + tick markers)
 │  ├─ HexCluster.vue              # family built-in: hexagon cluster (outline pop + content fade)
@@ -180,7 +180,7 @@ inline on the demo slides; data order is the click order for every family.
 | `ColumnRow`     | `columns.ts` — `ColumnRowData` (columns + `yFrac`/`hFrac` + optional `labelRows`) | 5 columns left→right, then the label rows | `cyanOnBlack` base + token mix (`orangeSpine`/`statusAmber` accents, `accentTertiary` teal) | 9          | —           |
 | `TileGrid`      | `tiles.ts` — `TileGridData` (tiles/cols + tile & pitch fracs; per-tile `tone`/`wFrac`/`hFrac`/`mini` overrides) | 6 — one per tile, row-major | `cyanOnBlack` (measured hex core `#1ed0e8` + matrix/row tones via `accentAlt`/`accentTertiary` + status/plain constants) | 10         | `cpu` · `boxes` · `layers` (candidates; fallback covers a wrong guess) |
 | `RatioStrip`    | `strip.ts` — `RatioStripData` (segments + `yFrac`/`hFrac` + optional caption) | 2 — build at initial proportions, then re-proportion + captions | `statusAmber` + `accentTertiary` recording base — hue decision in the notes below | 11         | —           |
-| `SegmentTimeline` | `timeline.ts` — `TimelineSegment[]` (`tone` is `'accent'` or `'alt'`, optional proportional `wFrac`) + `TimelineTick[]` (`xFrac`, `label`) | 3 — one sweep per segment, then the labels layer | `chainBlue` + `orangeSpine` composed (no preset added) | 12         | —           |
+| `SegmentTimeline` | `timeline.ts` — `TimelineSegment[]` (`tone` is `'accent'`/`'tertiary'`/`'alt'`, optional proportional `wFrac`, optional `label`/`sublabel`) | 3 — one per segment: node pop + fill sweep together | measured blue/cyan/red trio over `chainBlue` (no preset added) | 12         | —           |
 | `StackPanels`   | `panels.ts` — `StackPanel[]` + optional `caption`       | one per panel + one label click     | `cyanOnBlack` + `accentTertiary`              | 13         | —           |
 | `MilestoneLanes` | `lanes.ts` — `MilestoneLanesData` (lanes + measured y0/pitch/barH grid, per-bar `hFrac` override) | one per bar, then tick markers | `statusAmber` verbatim | 14         | —           |
 | `HexCluster`    | `hex.ts` — `HexNodeData[]` + `arrangement`              | one per cell                        | `chainBlue` + `accentTertiary`                | 15         | `bot`       |
@@ -272,13 +272,16 @@ white label, both ~16px. One click per tile in data order. The measured matrix
 not extra components; unknown icon keys render the visible fallback icon and
 warn in dev.
 
-SegmentTimeline authoring notes: `segments` are proportional shares of the measured bar —
-authored `wFrac` values (fractions of the source canvas width) are normalized to fill the span
-exactly, and omitted shares default to equal widths. `tone: 'accent'` renders chainBlue and
-`'alt'` renders orangeSpine (composed presets — this wave adds no palette preset). Ticks are
-`xFrac` + `label`; tick lines, tick labels, and the optional right-side `chip` box are measured
-constants derived from the bar. The sweep is a revealed-state width transition (the
-`.sf-track-fill` pattern): no path-length math, instant snap on backward nav.
+SegmentTimeline authoring notes: `segments` are proportional shares of the fillable
+track — authored `wFrac` values (fractions of the source canvas width) are normalized
+over the span left of the white lead (minus the measured gaps), and omitted shares
+default to equal widths. `tone: 'accent'` / `'tertiary'` / `'alt'` render the measured
+blue / cyan / red trio (`tertiary`/`alt` fall back to `accent` when a custom palette
+omits them; this wave adds no palette preset). Nodes derive from the fills they cap
+(30px past each fill's right end), so the 2px node-colored ticks and the two-row white
+`label`/`sublabel` blocks can never drift. The fill sweep is a revealed-state width
+transition (~2.4s, the `.sf-track-fill` pattern): each fill completes just before the
+next click pops the next node — sweep-then-pop, instant snap on backward nav.
 
 StackPanels authoring notes: list panels in reveal order — the sweep band first
 (`bandReveal: 'sweep'`), then the sub-panels (`'pop'`, the default). `tone`
@@ -489,7 +492,7 @@ spacing only), so a varied recorded rhythm is encoded as its mean cadence.
 | 7 | SchematicRows | 10 | 0.3–0.5 s/row | `4` | 0.4 s/row |
 | 8 | TwoBarCompare | 3 | ≥1.5 s between bars | `5` | ≈1.67 s/click |
 | 10 | TileGrid | 6 | ≈1.45 s/tile (measured 27.32→28.77 s) | `8.7` | 1.45 s/tile |
-| 12 | SegmentTimeline | 3 | ≈2.5 s sweep per segment | `7.5` | 2.5 s/click |
+| 12 | SegmentTimeline | 3 | node pop ≈140ms, then ≈2.4s fill sweep per segment (measured 10–90% over 2.55s) | `7.5` | 2.5 s/click |
 | 13 | StackPanels | 4 | 0.4–0.5 s burst cadence | `1.8` | 0.45 s/click |
 | 15 | HexCluster | 3 | 0.4–0.5 s/click | `1.4` | ≈0.47 s/click |
 
