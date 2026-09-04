@@ -115,8 +115,11 @@ canvasWidth: 1920
   stair.ts now, so the seed carries only content — the 01–06 step numbers and
   captions (sheet art_4A7yguGJ) — plus the two-tone split (blocks 1–3 blue
   #3599fb, blocks 4–6 cyan #1fd0ea) through per-step `tone` roles, and the
-  callout amber pinned to the frame's #f4ba23. AutoAdvance runs 3s for the
-  7-click sequence (≈430ms stagger, inside the measured 400–500ms band);
+  callout amber pinned to the frame's #f4ba23. AutoAdvance pins the measured
+  beats (sheet art_4A7yguGJ §1.3): the recording holds a static header for
+  3.43s, then the callout fires at 3.43s and blocks 01–06 at
+  3.73/4.03/4.3/4.6/5.23/5.7s (≈300–630ms stagger, inside the measured
+  400–500ms band once the hold is honored);
   renderless deck-level wiring: the `a` key toggles a hands-free run and
   `?autoplay=N` in the URL starts one on slide enter.
 -->
@@ -138,7 +141,7 @@ canvasWidth: 1920
   ]"
 />
 
-<AutoAdvance :duration-sec="3" />
+<AutoAdvance :duration-sec="5.7" :step-schedule-sec="[3.433, 3.733, 4.033, 4.3, 4.6, 5.233, 5.7]" />
 
 </div>
 
@@ -171,7 +174,10 @@ canvasWidth: 1920
   So: nodes pop on clicks 1-6, edges
   7-12 (the two replay hookups share beat 12), then click 13 IS the hard cut
   — the whole scene (nodes, edges, red wash) vanishes instantly via native
-  Slidev click ranges `[reveal, 13)`, backward nav restores it. The
+  Slidev click ranges `[reveal, 13)`, backward nav restores it. AutoAdvance
+  pins the measured beats (sheet art_4A7yguGJ §2.3): the 12 network events
+  fire across the recording's 2.53–3.23s build window, and the cut lands at
+  4.417s. The
   terminal/log panel is static chrome at every click count; only the dim
   center element arrives with the cut. Palette seed: the recording's measured
   blue #33a5cd, amber #e6b434, dim-red track #5a1e1e. AutoAdvance is
@@ -206,7 +212,10 @@ canvasWidth: 1920
   ]"
 />
 
-<AutoAdvance :duration-sec="5" />
+<AutoAdvance
+  :duration-sec="4.417"
+  :step-schedule-sec="[2.53, 2.59, 2.66, 2.72, 2.78, 2.85, 2.91, 2.97, 3.04, 3.1, 3.17, 3.23, 4.417]"
+/>
 
 </div>
 
@@ -222,10 +231,14 @@ canvasWidth: 1920
 
 <!--
   VerticalSpine demo (v7 family, exact-trace sheet art_mkVNxsft §3): the center
-  axis is the rhythm — no drawn spine line. Reveal groups (5 clicks, GT beats):
-  ① traced axis glyph + DATA ENGINEERS label together (@2.83s), ② cyan card +
-  caption, ③ blue card + caption, ④ gray footer lines, ⑤ axis chrome (orange
-  stub, #b35526 rule, #403f48 bottom rule fading last). Cards are outlined
+  axis is the rhythm — no drawn spine line. Reveal groups (5 clicks, GT beats from
+  sheet art_mkVNxsft §3.3): ① traced axis glyph + DATA ENGINEERS label
+  together (@2.83s), ② cyan card + caption (@4.1s), ③ blue card + caption
+  (@5.4s), ④ gray footer lines, ⑤ axis chrome (orange stub, #b35526 rule,
+  #403f48 bottom rule fading last; stub+rule from 5.58s). Known divergence:
+  the recording reveals the footer texts (4.5–5.0s) before the blue card,
+  but the footer is fixed second-to-last in the component contract — pinned
+  at 5.5s. Cards are outlined
   plates with solid tone-tone glyph strokes (NOT dimmed) — cyan #21cfe9 left,
   blue #3698fb right via the palette accentAlt — and card-colored captions at
   the measured ink runs (SQL 110.2px, PIPELINES 285.4px). The header tokens
@@ -253,7 +266,10 @@ canvasWidth: 1920
   ]"
 />
 
-<AutoAdvance :duration-sec="5" />
+<AutoAdvance
+  :duration-sec="5.583"
+  :step-schedule-sec="[2.833, 4.1, 5.4, 5.5, 5.583]"
+/>
 
 </div>
 
@@ -274,7 +290,9 @@ canvasWidth: 1920
   (ring / bar / splayed legs — the same mark as the VerticalSpine axis),
   ringed by a tight red halo that reveals with the tile — the section-divider
   card. Single click; no label and no secondary header line at the mapped
-  state. Palette is the measured orangeSpine preset verbatim (#f85721); the
+  state. The recording is one ~120ms global fade at 417–533ms (sheet
+  art_mkVNxsft §4.3) — AutoAdvance fires the tile at 0.42s. Palette is the
+  measured orangeSpine preset verbatim (#f85721); the
   halo derives from the accent (≈0.30 opacity at the tile edge, linear to 0
   by r≈161.5px). Header tokens carry the sheet's measured condensation to the
   condensed-face ink runs (APIs, / cloud / systems, / green AI at cap 70.8,
@@ -292,7 +310,7 @@ canvasWidth: 1920
   ]"
 />
 
-<AutoAdvance />
+<AutoAdvance :duration-sec="0.42" :step-schedule-sec="[0.42]" />
 
 </div>
 
@@ -370,7 +388,11 @@ canvasWidth: 1920
   x565–1359 extent). Palette: statusAmber verbatim — the component's family
   default, so no palette prop is needed. AutoAdvance is renderless
   deck-level wiring: the `a` key toggles a hands-free run and ?autoplay=N in
-  the URL starts one on slide enter.
+  the URL starts one on slide enter. The clip window starts post-pop (bars
+  and annotations already present; sheet art_7bTnqSB3 §1.3), so AutoAdvance
+  compresses the 3-click build into the first 0.3s and lets the label fades
+  land at ≈3.1s/7.8s — the measured 2800–2983/7467–7667ms clip-relative
+  windows.
 -->
 
 <div class="sf-demo-stage">
@@ -393,7 +415,7 @@ canvasWidth: 1920
   ]"
 />
 
-<AutoAdvance :duration-sec="5" />
+<AutoAdvance :duration-sec="0.3" :step-schedule-sec="[0.1, 0.2, 0.3]" />
 
 </div>
 
@@ -529,7 +551,10 @@ canvasWidth: 1920
   mint + teal regions to their settled shares in three bursts ~1.1s apart
   (measured 650 / 1783 / 3617ms after the burst trigger), click 3 sweeps the
   chip labels left→right in two strokes (4567–4950ms clip time) and fades in
-  the caption row. Measured from the settled clip frame t≈5.97s at
+  the caption row. AutoAdvance pins the measured clip anchors (sheet
+  art_7bTnqSB3 §3.3): band 0.3s, burst trigger 0.65s (the internal stepped
+  delays then carry bursts 2–3 and the mint settle), chip sweep 4.567s.
+  Measured from the settled clip frame t≈5.97s at
   1920×1080 (art_7bTnqSB3 §3; band x 14.4–85.9%w × y 51.4–73.3%h): settled
   shares red 24% (330px, red→salmon gradient) / mint 11.3% (155px) / teal
   64.7% (888px), with the mint and teal regions reading as ONE continuous
@@ -576,7 +601,7 @@ canvasWidth: 1920
   ]"
 />
 
-<AutoAdvance />
+<AutoAdvance :duration-sec="4.567" :step-schedule-sec="[0.3, 0.65, 4.567]" />
 
 </div>
 
@@ -747,6 +772,8 @@ canvasWidth: 1920
   and an in-panel label. Click 1 builds the left plate (INGESTION), click 2
   the right (NODE) with its pre-build core, click 3 dims every bright web
   stroke to the ~6–10%-white settled contract (the 5.9–6.6s transition).
+  AutoAdvance pins the measured beats (sheet art_4A7yguGJ §3.3): left build
+  3.68s, right build 4.23s, dim 5.93s — uniform pacing dimmed ~4.5s early.
   Header strings verified from the hx-h1/h2/h3 crops: white 'DATA' + green
   'MESH DATA GRID' on the measured ≈x916 axis.
 -->
@@ -762,7 +789,7 @@ canvasWidth: 1920
   ]"
 />
 
-<AutoAdvance :duration-sec="1.4" />
+<AutoAdvance :duration-sec="5.933" :step-schedule-sec="[3.683, 4.233, 5.933]" />
 
 </div>
 

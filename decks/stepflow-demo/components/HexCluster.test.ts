@@ -1,5 +1,7 @@
 // @vitest-environment happy-dom
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { mount } from '@vue/test-utils'
 import HexCluster from './HexCluster.vue'
 import { hexClusterLayout, HEX_COLORS } from './stepflow/hex'
@@ -171,8 +173,23 @@ describe('HexCluster — motion contract', () => {
     mountHexCluster({})
     const css = compiledCss()
 
-    const instant = css.match(/\.sf-hx-plate\.sf-hx-instant \.sf-hx-cell[^{]*\{[^}]*\}/)?.[0] ?? ''
+    const instant = css.match(/\.sf-hx-instant \.sf-hx-cell[^{]*\{[^}]*\}/)?.[0] ?? ''
     expect(instant).toContain('transition: none')
     expect(css).toContain('prefers-reduced-motion')
+  })
+
+  it('keeps reactive class bindings off v-click elements', () => {
+    // Root cause of the click-2 no-op regression: a reactive :class on the
+    // same element as v-click re-patches the class attribute when the binding
+    // changes (`instant` flips on the first click step), wiping the
+    // directive's slidev-vclick-hidden class and revealing elements early.
+    // sf-hx-instant therefore lives on the SVG root, which carries no v-click.
+    const source = readFileSync(resolve(process.cwd(), 'decks/stepflow-demo/components/HexCluster.vue'), 'utf8')
+    expect(source).toContain('v-click=')
+    for (const element of source.matchAll(/<[A-Za-z][^<>]*>/g)) {
+      if (element[0].includes('v-click=')) {
+        expect(element[0], `element with v-click must not bind :class: ${element[0].slice(0, 80)}`).not.toContain(':class=')
+      }
+    }
   })
 })
