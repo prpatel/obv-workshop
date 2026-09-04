@@ -118,3 +118,23 @@ export const ICON_FALLBACK: string = `<circle cx="12" cy="12" r="10" />
 export function iconPath(key: string): string | undefined {
   return ICON_REGISTRY[key]
 }
+
+
+/**
+ * v7 axis/tile marker glyph — traced, not Lucide. The VerticalSpine axis icon
+ * and the HeroTile tile cutout are the same mark in the source recording: a
+ * ring over a horizontal bar with two splayed legs (exact-trace sheet
+ * art_mkVNxsft §3.2/§4.2; run-traced from the settled frames — ring outer
+ * r≈27/inner r≈21, 40-wide bar, legs diverging to the box edges). Geometry
+ * lives in its own 92×99.5-unit box (native source px), NOT the shared 24-box,
+ * so consumers scale it with their own measured box. Strokes use currentColor;
+ * the ink fills the box edge to edge.
+ */
+export const V7_MARKER_GLYPH = {
+  width: 92,
+  height: 99.5,
+  markup: `<circle cx="46" cy="27.5" r="23.75" fill="none" stroke="currentColor" stroke-width="6.5" />
+  <rect x="26" y="55" width="40" height="5.5" fill="currentColor" />
+  <path d="M21 59 3 99.5" fill="none" stroke="currentColor" stroke-width="6.5" />
+  <path d="M71 59 89 99.5" fill="none" stroke="currentColor" stroke-width="6.5" />`,
+} as const

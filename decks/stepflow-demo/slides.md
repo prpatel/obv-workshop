@@ -221,29 +221,35 @@ canvasWidth: 1920
 ---
 
 <!--
-  VerticalSpine demo (v7 family): the center axis is the rhythm — no drawn
-  spine line. One click per element, top → bottom: the orange diamond marker,
-  then the label row (with flanking diamonds), then the two side cards with
-  captions, and finally the gray footer row (per-column lines + dim rule).
-  Cards are outlined plates — cyan #24cce5 left, blue #3891e3 right via the
-  palette accentAlt — with big card-colored captions (wave-1 report §3).
-  Data order IS the click order; an empty title + side 'center' renders the
-  marker. AutoAdvance is renderless deck-level wiring (`a` key, ?autoplay=N
-  on the URL).
+  VerticalSpine demo (v7 family, exact-trace sheet art_mkVNxsft §3): the center
+  axis is the rhythm — no drawn spine line. Reveal groups (5 clicks, GT beats):
+  ① traced axis glyph + DATA ENGINEERS label together (@2.83s), ② cyan card +
+  caption, ③ blue card + caption, ④ gray footer lines, ⑤ axis chrome (orange
+  stub, #b35526 rule, #403f48 bottom rule fading last). Cards are outlined
+  plates with solid tone-tone glyph strokes (NOT dimmed) — cyan #21cfe9 left,
+  blue #3698fb right via the palette accentAlt — and card-colored captions at
+  the measured ink runs (SQL 110.2px, PIPELINES 285.4px). The header tokens
+  carry the sheet's measured condensation: the recordings' condensed mono face
+  runs narrower than the deck mono at equal cap, so each token is fitted to its
+  measured extent via textLength (green SQL first at cap 84, white tail sized
+  from its 52.9px x-height band). Data order IS the click order; withPrevious
+  folds the label into the glyph's click.
 -->
 
 <div class="sf-demo-stage">
 
 <VerticalSpine
-  title="CENTER AXIS"
-  titleAccent="RHYTHM"
-  :palette="{ accent: '#24cce5', accentAlt: '#3891e3' }"
-  :footer="{ left: 'MEASURED FROM THE RECORDING', right: 'ONE CLICK PER ELEMENT' }"
+  :palette="{ accent: '#21cfe9', accentAlt: '#3698fb' }"
+  :title-tokens="[
+    { text: 'SQL', accent: true, x: 228.8, width: 188.4, capHeight: 84, capTop: 58.5 },
+    { text: 'and pipelines still matter', x: 439.0, width: 1163.8, capHeight: 72.3, capTop: 53.8 },
+  ]"
+  :footer="{ left: 'QUERIES DRAFTED IN SECONDS', right: 'WHAT MOVES THE DATA EVERY DAY' }"
   :nodes="[
     { id: 'marker', title: '', tone: 'alt', side: 'center' },
-    { id: 'label', title: 'TRANSPARENCY IN ACTION', tone: 'alt', side: 'center' },
-    { id: 'left-stat', title: '4X', caption: 'faster pipelines', tone: 'accent', side: 'left' },
-    { id: 'right-stat', title: '50%', caption: 'less toil', tone: 'accent', side: 'right', titleScale: 0.76 },
+    { id: 'label', title: 'DATA ENGINEERS', tone: 'alt', side: 'center', withPrevious: true },
+    { id: 'left-card', caption: 'SQL', captionWidth: 110.2, captionScale: 1.2429, tone: 'accent', side: 'left' },
+    { id: 'right-card', caption: 'PIPELINES', captionWidth: 285.4, tone: 'accent', side: 'right' },
   ]"
 />
 
@@ -263,21 +269,27 @@ canvasWidth: 1920
 ---
 
 <!--
-  HeroTile demo (v7 segment 2): one solid orange tile dead on the spine axis
-  with a dark icon, ringed by a tight red halo that reveals with the tile —
-  the section-divider card. Single click; the label is optional and omitted
-  here to match the recording, while the secondary white header line rides
-  below the primary chrome at recording scale. Palette is the measured
-  orangeSpine preset verbatim (#f85721); the halo derives from the accent.
+  HeroTile demo (v7 segment 2, exact-trace sheet art_mkVNxsft §4): one solid
+  #f85721 tile dead on the spine axis with the traced black cutout glyph
+  (ring / bar / splayed legs — the same mark as the VerticalSpine axis),
+  ringed by a tight red halo that reveals with the tile — the section-divider
+  card. Single click; no label and no secondary header line at the mapped
+  state. Palette is the measured orangeSpine preset verbatim (#f85721); the
+  halo derives from the accent (≈0.30 opacity at the tile edge, linear to 0
+  by r≈161.5px). Header tokens carry the sheet's measured condensation to the
+  condensed-face ink runs (APIs, / cloud / systems, / green AI at cap 70.8,
+  band y55.7–126.5).
 -->
 
 <div class="sf-demo-stage">
 
 <HeroTile
-  title="SECTION"
-  titleAccent="DIVIDER"
-  subtitle="STEPFLOW HOUSE STYLE"
-  icon="user-round"
+  :title-tokens="[
+    { text: 'APIs,', x: 371.0, width: 241.2 },
+    { text: 'cloud', x: 635.0, width: 197.5 },
+    { text: 'systems,', x: 920.1, width: 413.4 },
+    { text: 'AI', accent: true, x: 1353.2, width: 99.9 },
+  ]"
 />
 
 <AutoAdvance />

@@ -2,12 +2,17 @@
 import { computed } from 'vue'
 import { heroTileLayout, type HeroTileOptions } from './stepflow/spine'
 import { orangeSpine, resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
-import { iconPath, ICON_FALLBACK } from './stepflow/icons'
+import { iconPath, ICON_FALLBACK, V7_MARKER_GLYPH } from './stepflow/icons'
+import { type TitleToken } from './stepflow/chrome'
 import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = withDefaults(defineProps<{
-  /** Lucide icon rendered dark inside the tile; unknown keys render the fallback. */
-  icon: string
+  /**
+   * Lucide icon rendered dark inside the tile; unknown keys render the
+   * fallback. Omitted → the traced V7 marker glyph (the v7 tile's cutout,
+   * art_mkVNxsft §4.2) at its measured box.
+   */
+  icon?: string
   /** Optional mono line beneath the tile. */
   label?: string
   /** Palette merged over the measured `orangeSpine` preset (the v7 tile color, verbatim). */
@@ -18,48 +23,71 @@ const props = withDefaults(defineProps<{
   title?: string
   /** Header tail rendered in chrome green (titleAccent convention). */
   titleAccent?: string
-  /** Secondary white header line at recording scale (report §2 chrome rule 4). */
-  subtitle?: string
+  /**
+   * Sheet-measured header tokens (art_mkVNxsft §4 Title row): one condensate
+   * entry per ink run, with per-token position/width. Supersedes the centered
+   * two-tone default when present.
+   */
+  titleTokens?: TitleToken[]
 }>(), { palette: () => ({}) })
 
 const p = computed(() => resolvePalette({ ...orangeSpine, ...props.palette }))
 const layout = computed(() => heroTileLayout(props.geometry))
 
-// White for label/subtitle text (title chrome lives in the shared
-// TitleChrome component).
+// All measured constants are 1920×1080 canvas px (art_mkVNxsft §4); k rescales
+// them for a custom viewBox height.
+const k = computed(() => layout.value.viewBox.height / 1080)
+
+// Sheet-measured header tokens, rescaled to the active viewBox.
+const headerTokens = computed<TitleToken[]>(() =>
+  (props.titleTokens ?? []).map((t) => ({
+    ...t,
+    x: t.x * k.value,
+    width: t.width * k.value,
+    // Absent per-token caps stay absent — they fall through to the chrome's
+    // family defaults downstream (0 would trip titleFontSize's guard).
+    capHeight: t.capHeight !== undefined ? t.capHeight * k.value : undefined,
+    capTop: t.capTop !== undefined ? t.capTop * k.value : undefined,
+  })),
+)
+
+// White for label text (title chrome lives in the shared TitleChrome component).
 const HEADER_FILL = '#ffffff'
 
 // Gradient id is component-unique (one HeroTile per slide by contract).
 const GLOW_ID = 'sf-hero-glow-gradient'
 
-// Halo stops (objectBoundingBox on the halo circle): plateau strength 0.32
-// held to 0.77R, exhausting by the measured 156px cutoff. Calibrated
-// empirically in report-faithful units (dark-red 24-40-lum mass of
-// non-black; reference target 6.9%): plateau end 0.735R measured 5.09%,
-// 0.90R measured 14.48%; linear interpolation puts 0.77R at ~6.9%.
+// Halo stops (objectBoundingBox on the halo circle), fitted to the settled
+// frame's horizontal profile through the tile center: ≈0.30 accent opacity at
+// the tile edge, linear to 0 by r≈161.5px (plateau held to 0.703R — the tile
+// covers the interior, so its exact value is invisible).
 const glowStops = [
-  { offset: 0, opacity: 0.32 },
-  { offset: 0.77, opacity: 0.32 },
+  { offset: 0, opacity: 0.3 },
+  { offset: 0.703, opacity: 0.3 },
   { offset: 1, opacity: 0 },
 ]
 
-// The secondary white header line rides one gap below the recording band at
-// ~40px glyphs on the 1080 canvas (primary header geometry lives in
-// TitleChrome).
-const headerType = computed(() => {
-  const h = layout.value.viewBox.height
-  return {
-    secondarySize: 53 * (h / 1080),
-    secondaryBaseline: 0.2106 * h,
-  }
+// The tile's corner radius, measured ≈55px at 1080 on the 227px tile.
+const TILE_RX = 0.2423
+
+// The cutout glyph occupies its measured ≈95×107.5 box (art_mkVNxsft §4.2),
+// centered on the tile. The v7 cutout renders pure black — the tile is cut
+// through to the deck background.
+const iconTransform = computed(() => {
+  const l = layout.value
+  const sx = l.iconW / V7_MARKER_GLYPH.width
+  const sy = l.iconH / V7_MARKER_GLYPH.height
+  return `translate(${fmt(l.cx - l.iconW / 2)} ${fmt(l.cy - l.iconH / 2)}) scale(${fmt(sx)} ${fmt(sy)})`
 })
 
-// The dark icon occupies ≈ 0.19 of the tile side (measured 46×48 inside 244).
+// Registry-icon override renders in the 24-unit Lucide space at ≈0.19 × tile
+// side (legacy contract).
 const ICON_BOX = 24
-const iconSize = computed(() => 0.19 * layout.value.size)
-const iconTransform = computed(() => {
-  const s = iconSize.value / ICON_BOX
-  return `translate(${fmt(layout.value.cx - iconSize.value / 2)} ${fmt(layout.value.cy - iconSize.value / 2)}) scale(${fmt(s)})`
+const lucideTransform = computed(() => {
+  const l = layout.value
+  const box = 0.19 * l.size
+  const s = box / ICON_BOX
+  return `translate(${fmt(l.cx - box / 2)} ${fmt(l.cy - box / 2)}) scale(${fmt(s)})`
 })
 
 // Label baseline rides one gap below the tile edge.
@@ -71,13 +99,14 @@ function fmt(n: number): string {
 
 // Unknown key renders the visible fallback (never undefined into v-html) and
 // names the bad key in dev so the author fixes the string.
-function resolveIcon(key: string): string {
-  const path = iconPath(key)
+const resolvedIcon = computed(() => {
+  if (!props.icon) return undefined
+  const path = iconPath(props.icon)
   if (!path && import.meta.env?.DEV) {
-    console.warn(`[HeroTile] unknown icon key "${key}" — rendering the fallback icon`)
+    console.warn(`[HeroTile] unknown icon key "${props.icon}" — rendering the fallback icon`)
   }
   return path ?? ICON_FALLBACK
-}
+})
 </script>
 
 <template>
@@ -99,7 +128,7 @@ function resolveIcon(key: string): string {
       </radialGradient>
     </defs>
 
-    <!-- Single click: tile + icon + label arrive together (one ~200ms event in v7). -->
+    <!-- Single click: tile + cutout + halo arrive together (one ~200ms event in v7). -->
     <g v-click="1" class="sf-hero">
       <!-- Ambient red halo under/around the tile (reveals with the tile). -->
       <circle
@@ -115,18 +144,30 @@ function resolveIcon(key: string): string {
         :y="fmt(layout.cy - layout.size / 2)"
         :width="fmt(layout.size)"
         :height="fmt(layout.size)"
-        :rx="fmt(layout.size * 0.1)"
+        :rx="fmt(layout.size * TILE_RX)"
         :fill="p.accent"
       />
+      <!--
+        Traced v7 cutout (ring / bar / splayed legs) in black — the recorded
+        glyph is a cutout to the black deck background, not a stroked icon.
+      -->
       <g
+        v-if="!resolvedIcon"
         class="sf-hero-icon"
         :transform="iconTransform"
+        color="#000000"
+        v-html="V7_MARKER_GLYPH.markup"
+      />
+      <g
+        v-else
+        class="sf-hero-icon"
+        :transform="lucideTransform"
         fill="none"
         :stroke="p.iconStroke"
         stroke-width="2"
         stroke-linecap="round"
         stroke-linejoin="round"
-        v-html="resolveIcon(props.icon)"
+        v-html="resolvedIcon"
       />
       <text
         v-if="label"
@@ -140,26 +181,17 @@ function resolveIcon(key: string): string {
       >{{ label }}</text>
     </g>
 
-    <!-- Shared title chrome: sheet-measured centered two-tone title
-         (HeroTile Title row: cap 70.8 in the band y55.7–126.5, centered ≈x912). -->
+    <!-- Shared title chrome: token mode when the slide carries measured runs
+         (green AI last at cap 70.8, band y55.7–126.5), centered two-tone
+         fallback otherwise. -->
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
       :cap-height="70.8"
       :cap-top="55.7"
       :center-x="912"
+      :tokens="headerTokens"
     />
-
-    <!-- Secondary white header line at recording scale (~40px at 1080). -->
-    <text
-      v-if="subtitle"
-      class="sf-hero-subtitle"
-      :x="layout.viewBox.width * 0.033"
-      :y="fmt(headerType.secondaryBaseline)"
-      :font-size="fmt(headerType.secondarySize)"
-      :fill="HEADER_FILL"
-      letter-spacing="0.06em"
-    >{{ subtitle }}</text>
   </svg>
 </template>
 

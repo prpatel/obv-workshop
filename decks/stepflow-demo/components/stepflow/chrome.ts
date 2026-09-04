@@ -43,6 +43,44 @@ export function titleBaseline(capTop: number, capHeight: number): number {
 }
 
 /**
+ * Measured x-height ratio of the deck's mono face: x-height pixels per
+ * font-size pixel. Lowercase-only title runs (VerticalSpine's white tail is
+ * specified as an x-height band, not a cap) are sized through this ratio —
+ * cap equivalence is then xHeight / X_HEIGHT_RATIO × CAP_HEIGHT_RATIO.
+ * JetBrains Mono's x-height ≈ 0.55em; validated against the settled v7 frame
+ * in the VerticalSpine fidelity loop.
+ */
+export const X_HEIGHT_RATIO = 0.55
+
+/** Font size that renders `xHeight` x-height pixels in the 1080 canvas. */
+export function titleFontSizeFromXHeight(xHeight: number): number {
+  if (!(xHeight > 0)) throw new RangeError(`xHeight must be positive, received ${xHeight}`)
+  return xHeight / X_HEIGHT_RATIO
+}
+
+/**
+ * One measured token of a family title. Exact-trace sheets sometimes pin each
+ * token's ink extent individually — the recordings set a condensed mono face,
+ * so a family header may need per-token position, width, and even size
+ * (VerticalSpine's green lead runs a taller cap on a lower baseline than its
+ * white tail). Each token renders as its own condensate-fitted <text>:
+ * `width` is the sheet-measured ink run, applied via textLength.
+ */
+export interface TitleToken {
+  text: string
+  /** Left edge of the token's ink run, 1920×1080 canvas px. */
+  x: number
+  /** Measured ink-run width the token is condensed to, canvas px. */
+  width: number
+  /** Render in chrome green instead of white. */
+  accent?: boolean
+  /** Per-token cap height; defaults to the chrome's `capHeight`. */
+  capHeight?: number
+  /** Per-token cap-band top; defaults to the chrome's `capTop`. */
+  capTop?: number
+}
+
+/**
  * The recordings' top-right badge: a small green pill rendered by the six
  * families whose exact-trace sheets document it (TileGrid, RatioStrip,
  * TwoBarCompare, MilestoneLanes, SegmentTimeline, ColumnRow). Measured

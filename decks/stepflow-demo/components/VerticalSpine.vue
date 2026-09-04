@@ -2,7 +2,8 @@
 import { computed } from 'vue'
 import { spineLayout, type SpineNode, type SpineOptions } from './stepflow/spine'
 import { chainBlue, orangeSpine, resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
-import { iconPath, ICON_FALLBACK } from './stepflow/icons'
+import { V7_MARKER_GLYPH } from './stepflow/icons'
+import { titleFontSize, type TitleToken } from './stepflow/chrome'
 import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = withDefaults(defineProps<{
@@ -10,7 +11,7 @@ const props = withDefaults(defineProps<{
   nodes: SpineNode[]
   /** Card-family palette, merged over the measured `chainBlue` preset. */
   palette?: StepFlowPaletteOverride
-  /** Spine-accent palette (marker + label rows), merged over `orangeSpine`. */
+  /** Spine-accent palette (glyph + label rows), merged over `orangeSpine`. */
   accentPalette?: StepFlowPaletteOverride
   /** Optional geometry overrides; defaults are the measured fractions. */
   geometry?: SpineOptions
@@ -18,102 +19,130 @@ const props = withDefaults(defineProps<{
   title?: string
   /** Header tail rendered in chrome green (titleAccent convention). */
   titleAccent?: string
-  /** Gray footer chrome: one short line per card column, revealed last. */
+  /**
+   * Sheet-measured header tokens (art_mkVNxsft §3 Title row): one condensate
+   * entry per ink run, with per-token position/width/cap band. Supersedes the
+   * centered two-tone default when present.
+   */
+  titleTokens?: TitleToken[]
+  /** Gray footer chrome: one short line per card column, revealed second-to-last. */
   footer?: { left: string; right: string }
 }>(), { palette: () => ({}), accentPalette: () => ({}) })
 
-// Cards read the cool chainBlue family; the marker + label rows read the v7
-// orange — two presets composed, one accentPalette prop to retune each side.
+// Cards read the cool chainBlue family; the axis glyph + label rows read the
+// v7 orange — two presets composed, one accentPalette prop to retune each side.
 const p = computed(() => resolvePalette({ ...chainBlue, ...props.palette }))
 const spine = computed(() => resolvePalette({ ...orangeSpine, ...props.accentPalette }))
 
-// Side-card slots are data-independent; center slots count marker + label rows.
+// Side-card slots are data-independent; center slots count glyph + label rows.
 const centerCount = computed(() => props.nodes.filter((n) => n.side === 'center').length)
 const layout = computed(() => spineLayout(centerCount.value, props.geometry))
 
-// Title chrome lives in the shared TitleChrome component (titleAccent
-// convention, README).
+// All measured constants are 1920×1080 canvas px (art_mkVNxsft §3); k rescales
+// them for a custom viewBox height.
+const k = computed(() => layout.value.viewBox.height / 1080)
+
+// Sheet-measured header tokens, rescaled to the active viewBox.
+const headerTokens = computed<TitleToken[]>(() =>
+  (props.titleTokens ?? []).map((t) => ({
+    ...t,
+    x: t.x * k.value,
+    width: t.width * k.value,
+    // Absent per-token caps stay absent — they fall through to the chrome's
+    // family defaults downstream (0 would trip titleFontSize's guard).
+    capHeight: t.capHeight !== undefined ? t.capHeight * k.value : undefined,
+    capTop: t.capTop !== undefined ? t.capTop * k.value : undefined,
+  })),
+)
 
 // Outlined-card plate (wave-1 report §3): near-black, never the accent fill.
 const CARD_PLATE = '#0b0a11'
-// Footer chrome tones, measured off the settled v7 frame (report §3).
-const FOOTER_RULE = '#202020'
-const FOOTER_LINE = '#a0a0a0'
+// Axis + footer chrome, sampled off the settled v7 frame (art_mkVNxsft §3):
+// orange stub, burnt-orange axis rule, cool-gray bottom rule, mid-gray lines.
+const STUB = '#bd521e'
+const AXIS_RULE = '#b35526'
+const FOOTER_RULE = '#403f48'
+const FOOTER_LINE = '#8b8a92'
 
-// Typography measured at source height 1144px (research §F6), rescaled with
-// the layout height. Header sized off the settled v7 spine frame (glyph run
-// y 52–153 at 1144: cap 8.83%h, baseline 13.4%h; JetBrains Mono renders
-// ~0.752·font-size as glyph height, so 0.0883/0.752 ≈ 0.1175·h — the
-// wave-1 generic 0.085·h size lands only ~6.4% cap). Captions go to 44px at
-// 1080-canvas scale, card-colored (report §3 fix list); the card title
-// fills the outlined plate so the card bbox ink lands near the measured
-// 42–45%.
+// Typography measured from the settled v7 spine frame (art_mkVNxsft §3),
+// expressed as cap heights and sized through the shared chrome ratio:
+// axis label cap 25.5, captions cap 38.7 (left card scales up ×1.2429 via
+// captionScale), gray footer lines cap 19.8. The label's tracking is set to
+// the measured 'DATA ENGINEERS' run (≈0.11em at the measured size).
 const type = computed(() => {
-  const h = layout.value.viewBox.height
-  const src = h / 1144
+  const scale = k.value
   return {
-    labelSize: 27 * src,
-    cardTitleSize: 105 * src,
-    captionSize: 44 * (h / 1080),
-    flankSize: 15 * src,
-    footerSize: 24 * (h / 1080),
+    labelSize: titleFontSize(25.5) * scale,
+    labelTracking: '0.11em',
+    captionSize: titleFontSize(38.7) * scale,
+    footerSize: titleFontSize(19.8) * scale,
   }
 })
 
-// Two-tone cards (report §3): the left card reads the family accent (the demo
-// seeds cyan #24cce5), the right card the accentAlt override (blue #3891e3).
-function cardTone(side: 'left' | 'right'): string {
-  return side === 'right' ? (p.value.accentAlt ?? p.value.accent) : p.value.accent
+// Card glyphs (art_mkVNxsft §3.4): solid tone strokes at full border
+// brightness — NOT dimmed. Left card: two full-width bars crossed by two
+// drop verticals; right card: two verticals piercing the outline plus two
+// inner verticals between the borders. Measured 1080-canvas px, scaled by k.
+interface StrokeRect { x: number; y: number; w: number; h: number }
+const CARD_GLYPHS: Record<'left' | 'right', { bars: StrokeRect[]; studs: StrokeRect[] }> = {
+  left: {
+    bars: [
+      { x: 403.0, y: 730.7, w: 130.0, h: 5.7 },
+      { x: 403.0, y: 765.1, w: 130.0, h: 5.7 },
+    ],
+    studs: [
+      { x: 445.5, y: 730.7, w: 9.4, h: 69.9 },
+      { x: 485.0, y: 730.7, w: 9.5, h: 69.9 },
+    ],
+  },
+  right: {
+    bars: [],
+    studs: [
+      { x: 1313.5, y: 709.4, w: 9.0, h: 79.3 },
+      { x: 1397.5, y: 709.4, w: 9.0, h: 79.3 },
+      { x: 1327.5, y: 728.8, w: 9.0, h: 41.6 },
+      { x: 1376.5, y: 728.8, w: 9.0, h: 41.6 },
+    ],
+  },
 }
 
-// Card icons render in a 24-unit Lucide space at ≈ 0.3 × card height.
-const ICON_BOX = 24
-function iconTransform(cx: number, cy: number, size: number): string {
-  const box = 0.3 * size
-  const s = box / ICON_BOX
-  return `translate(${fmt(cx - box / 2)} ${fmt(cy - box / 2)}) scale(${fmt(s)})`
+// Two-tone cards: the left card reads the family accent (cyan #21cfe9 in the
+// demo), the right card the accentAlt override (blue #3698fb).
+function cardTone(side: 'left' | 'right'): string {
+  return side === 'right' ? (p.value.accentAlt ?? p.value.accent) : p.value.accent
 }
 
 function fmt(n: number): string {
   return String(parseFloat(n.toFixed(4)))
 }
 
-// Unknown key renders the visible fallback (never undefined into v-html) and
-// names the bad key in dev so the author fixes the string.
-function resolveIcon(key: string): string {
-  const path = iconPath(key)
-  if (!path && import.meta.env?.DEV) {
-    console.warn(`[VerticalSpine] unknown icon key "${key}" — rendering the fallback icon`)
+/**
+ * Reveal choreography: one click per node in data order, with `withPrevious`
+ * folding a node into the previous node's click (the v7 recording reveals the
+ * axis glyph and its label together, beat 1 @2.83s).
+ */
+const clickOf = computed(() => {
+  const map = new Map<string, number>()
+  let next = 0
+  let prev = 0
+  for (const node of props.nodes) {
+    if (node.withPrevious && prev > 0) {
+      map.set(node.id, prev)
+    } else {
+      next += 1
+      prev = next
+      map.set(node.id, next)
+    }
   }
-  return path ?? ICON_FALLBACK
-}
+  return map
+})
+const revealGroups = computed(
+  () => new Set(clickOf.value.values()).size,
+)
 
-/**
- * Marker rhombus corners (solid diamond, measured 90×98 at source).
- */
-function markerPoints(cx: number, cy: number): string {
-  const { markerW: w, markerH: h } = layout.value
-  return `${fmt(cx)},${fmt(cy - h / 2)} ${fmt(cx + w / 2)},${fmt(cy)} ${fmt(cx)},${fmt(cy + h / 2)} ${fmt(cx - w / 2)},${fmt(cy)}`
-}
-
-/**
- * Flanking diamonds sit just outside the label text's measured run. Mono
- * advance ≈ 0.62em per glyph — an approximation (no DOM text measuring), good
- * enough for decorative glyphs and deterministic for tests.
- */
-function flankOffset(title: string): number {
-  const textHalfWidth = (title.length * 0.62 * type.value.labelSize) / 2
-  return textHalfWidth + 0.8 * type.value.labelSize + type.value.flankSize
-}
-
-function flankPoints(cx: number, cy: number): string {
-  const s = type.value.flankSize
-  return `${fmt(cx)},${fmt(cy - s / 2)} ${fmt(cx + s / 2)},${fmt(cy)} ${fmt(cx)},${fmt(cy + s / 2)} ${fmt(cx - s / 2)},${fmt(cy)}`
-}
-
-// Center slots are consumed in data order: the first center node is the
-// marker, subsequent ones are label rows — matching the measured top→bottom
-// rhythm (marker @3.0s → label row → cards).
+// Center slots are consumed in data order: the first center node is the axis
+// glyph, subsequent ones are label rows — the measured top→bottom rhythm
+// (glyph + label @2.83s, then the cards).
 interface CenterRow {
   node: SpineNode
   slot: { cx: number; cy: number }
@@ -127,6 +156,14 @@ const centerRows = computed<CenterRow[]>(() => {
 
 const slotById = computed(() => new Map(centerRows.value.map((r) => [r.node.id, r.slot])))
 
+// Axis glyph: the traced V7 marker (ring / bar / splayed legs), fitted to the
+// measured 85.7×93.5 box centered on its slot.
+function glyphTransform(cx: number, cy: number, w: number, h: number): string {
+  const sx = w / V7_MARKER_GLYPH.width
+  const sy = h / V7_MARKER_GLYPH.height
+  return `translate(${fmt(cx - w / 2)} ${fmt(cy - h / 2)}) scale(${fmt(sx)} ${fmt(sy)})`
+}
+
 const sideCards = computed(() => props.nodes.filter((n) => n.side === 'left' || n.side === 'right'))
 </script>
 
@@ -135,45 +172,38 @@ const sideCards = computed(() => props.nodes.filter((n) => n.side === 'left' || 
     class="vertical-spine"
     :viewBox="`0 0 ${layout.viewBox.width} ${layout.viewBox.height}`"
     role="img"
-    :aria-label="`${centerCount}-element spine diagram with ${sideCards.length} side cards`"
+    :aria-label="`${revealGroups}-step spine diagram with ${sideCards.length} side cards`"
   >
     <!-- One sibling group per node (never nested v-clicks): data order = click order. -->
     <g
-      v-for="(node, i) in nodes"
+      v-for="node in nodes"
       :key="node.id"
-      v-click="i + 1"
+      v-click="clickOf.get(node.id)"
       class="sf-spine-item"
     >
-      <!-- Center + empty title = the solid diamond marker. -->
-      <polygon
-        v-if="node.side === 'center' && node.title === ''"
+      <!-- Center + empty title = the traced axis glyph (no drawn spine line). -->
+      <g
+        v-if="node.side === 'center' && !node.title"
         class="sf-spine-marker"
-        :points="markerPoints(slotById.get(node.id)!.cx, slotById.get(node.id)!.cy)"
-        :fill="spine.accent"
+        :transform="glyphTransform(slotById.get(node.id)!.cx, slotById.get(node.id)!.cy, layout.iconW, layout.iconH)"
+        :color="spine.accent"
+        v-html="V7_MARKER_GLYPH.markup"
       />
 
-      <!-- Center + title = orange label row with flanking diamonds. -->
-      <template v-else-if="node.side === 'center'">
-        <polygon
-          v-for="side in [-1, 1]"
-          :key="side"
-          class="sf-spine-flank"
-          :points="flankPoints(slotById.get(node.id)!.cx + side * flankOffset(node.title), slotById.get(node.id)!.cy)"
-          :fill="p.accentAlt ?? spine.accent"
-        />
-        <text
-          class="sf-spine-label"
-          :x="slotById.get(node.id)!.cx"
-          :y="slotById.get(node.id)!.cy"
-          text-anchor="middle"
-          dominant-baseline="central"
-          :font-size="type.labelSize"
-          :fill="spine.accent"
-          letter-spacing="0.06em"
-        >{{ node.title }}</text>
-      </template>
+      <!-- Center + title = accent label row on the axis (no flanking diamonds). -->
+      <text
+        v-else-if="node.side === 'center'"
+        class="sf-spine-label"
+        :x="slotById.get(node.id)!.cx"
+        :y="slotById.get(node.id)!.cy"
+        text-anchor="middle"
+        dominant-baseline="central"
+        :font-size="type.labelSize"
+        :fill="spine.accent"
+        :letter-spacing="type.labelTracking"
+      >{{ node.title }}</text>
 
-      <!-- Side card: outlined plate with the title inside, caption beneath. -->
+      <!-- Side card: outlined plate with the measured glyph strokes, caption beneath. -->
       <template v-else>
         <rect
           class="sf-spine-card"
@@ -181,60 +211,52 @@ const sideCards = computed(() => props.nodes.filter((n) => n.side === 'left' || 
           :y="fmt(layout.cards[node.side].cy - layout.cards[node.side].h / 2)"
           :width="fmt(layout.cards[node.side].w)"
           :height="fmt(layout.cards[node.side].h)"
-          :rx="fmt(layout.viewBox.height * 0.012)"
+          :rx="fmt(9 * k)"
           :fill="CARD_PLATE"
           :stroke="cardTone(node.side)"
-          :stroke-width="fmt(5 * (layout.viewBox.height / 1144))"
+          :stroke-width="fmt(9 * k)"
         />
-        <g
-          v-if="node.icon"
-          class="sf-spine-card-icon"
-          :transform="iconTransform(layout.cards[node.side].cx, layout.cards[node.side].cy - layout.cards[node.side].h * 0.18, layout.cards[node.side].h)"
-          fill="none"
-          :stroke="cardTone(node.side)"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          v-html="resolveIcon(node.icon)"
-        />
-        <text
-          class="sf-spine-card-title"
-          :x="layout.cards[node.side].cx"
-          :y="node.icon ? layout.cards[node.side].cy + layout.cards[node.side].h * 0.2 : layout.cards[node.side].cy"
-          text-anchor="middle"
-          dominant-baseline="central"
-          :font-size="fmt(type.cardTitleSize * (node.titleScale ?? 1))"
-          :fill="cardTone(node.side)"
-          font-weight="800"
-          :textLength="fmt(layout.cards[node.side].w)"
-          lengthAdjust="spacingAndGlyphs"
-        >{{ node.title }}</text>
+        <g class="sf-spine-card-glyph" :fill="cardTone(node.side)">
+          <rect
+            v-for="(bar, bi) in CARD_GLYPHS[node.side].bars"
+            :key="`bar-${bi}`"
+            :x="fmt(bar.x * k)"
+            :y="fmt(bar.y * k)"
+            :width="fmt(bar.w * k)"
+            :height="fmt(bar.h * k)"
+          />
+          <rect
+            v-for="(stud, si) in CARD_GLYPHS[node.side].studs"
+            :key="`stud-${si}`"
+            :x="fmt(stud.x * k)"
+            :y="fmt(stud.y * k)"
+            :width="fmt(stud.w * k)"
+            :height="fmt(stud.h * k)"
+          />
+        </g>
         <text
           v-if="node.caption"
           class="sf-spine-caption"
-          :x="layout.cards[node.side].cx"
+          :x="fmt(layout.cards[node.side].cx)"
           :y="fmt(layout.cards[node.side].captionY)"
           text-anchor="middle"
-          :font-size="fmt(type.captionSize)"
+          dominant-baseline="central"
+          :font-size="fmt(type.captionSize * (node.captionScale ?? 1))"
           :fill="cardTone(node.side)"
+          :textLength="node.captionWidth !== undefined ? fmt(node.captionWidth * k) : undefined"
+          lengthAdjust="spacingAndGlyphs"
         >{{ node.caption }}</text>
       </template>
     </g>
 
     <!--
-      Footer chrome arrives as the final reveal group after the cards (measured
-      beats: bottom rows 4.4–5.8s): the dim 75%-wide rule centered on the axis
-      plus two short gray lines centered under the card columns.
+      Footer chrome (measured beats: gray lines 5.75–6.0s, axis chrome
+      6.17–7.17s): the two short gray lines centered under the card columns
+      arrive second-to-last; the axis chrome — orange stub, burnt-orange axis
+      rule crossing the axis, and the dim #403f48 bottom rule fading last —
+      closes the slide.
     -->
-    <g v-if="footer" v-click="nodes.length + 1" class="sf-spine-item sf-spine-footer">
-      <rect
-        class="sf-spine-footer-rule"
-        :x="fmt(layout.footer.ruleCx - layout.footer.ruleW / 2)"
-        :y="fmt(layout.footer.ruleCy - layout.footer.ruleH / 2)"
-        :width="fmt(layout.footer.ruleW)"
-        :height="fmt(layout.footer.ruleH)"
-        :fill="FOOTER_RULE"
-      />
+    <g v-if="footer" v-click="revealGroups + 1" class="sf-spine-item sf-spine-footer">
       <text
         class="sf-spine-footer-line"
         :x="fmt(layout.cards.left.cx)"
@@ -255,9 +277,36 @@ const sideCards = computed(() => props.nodes.filter((n) => n.side === 'left' || 
       >{{ footer.right }}</text>
     </g>
 
-    <!-- Shared title chrome: sheet-measured centered two-tone title
-         (VerticalSpine Title row: green SQL phrase first at cap 84, band
-         y48–132, centered ≈x916; per-token sizing is family detail). -->
+    <g v-click="revealGroups + 2" class="sf-spine-item sf-spine-axis-chrome">
+      <rect
+        class="sf-spine-axis-stub"
+        :x="fmt(layout.axis.stubCx - layout.axis.stubW / 2)"
+        :y="fmt(layout.axis.stubY)"
+        :width="fmt(layout.axis.stubW)"
+        :height="fmt(layout.axis.stubH)"
+        :fill="STUB"
+      />
+      <rect
+        class="sf-spine-axis-rule"
+        :x="fmt(layout.axis.ruleX1)"
+        :y="fmt(layout.axis.ruleY)"
+        :width="fmt(layout.axis.ruleX2 - layout.axis.ruleX1)"
+        :height="fmt(layout.axis.ruleH)"
+        :fill="AXIS_RULE"
+      />
+      <rect
+        class="sf-spine-footer-rule"
+        :x="fmt(layout.footer.ruleCx - layout.footer.ruleW / 2)"
+        :y="fmt(layout.footer.ruleCy - layout.footer.ruleH / 2)"
+        :width="fmt(layout.footer.ruleW)"
+        :height="fmt(layout.footer.ruleH)"
+        :fill="FOOTER_RULE"
+      />
+    </g>
+
+    <!-- Shared title chrome: token mode when the slide carries measured runs
+         (green SQL first at cap 84 on its own baseline), centered two-tone
+         fallback otherwise. -->
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
@@ -265,6 +314,7 @@ const sideCards = computed(() => props.nodes.filter((n) => n.side === 'left' || 
       :cap-top="48"
       :center-x="916"
       accent-first
+      :tokens="headerTokens"
     />
   </svg>
 </template>
@@ -282,7 +332,7 @@ const sideCards = computed(() => props.nodes.filter((n) => n.side === 'left' || 
 }
 
 /*
- * Measured motion (research §F6: per-element rises settle in ~130–250ms).
+ * Measured motion (art_mkVNxsft §3: per-element rises settle in ~130–250ms).
  * Transition lives on the destination state: forward reveal runs the rise,
  * the hidden state's transition:none makes backward nav instant — the locked
  * decision, zero JS. Scoped selectors (0,2,0 + attribute) beat Slidev's
