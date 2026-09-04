@@ -124,16 +124,16 @@ describe('HeroTile', () => {
     })
     const header = wrapper.find('.sf-hero-header')
 
-    // Report §2 chrome rule 4: primary header at recording scale (ref block
-    // y 0.056–0.119h); secondary line ~40px at 1080 beneath it.
-    expect(header.attributes('font-size')).toBe('91.8') // 0.085 × 1080
-    expect(header.attributes('y')).toBe('127.44') // 0.118 × 1080 baseline
+    // Measured off the settled v7 tile frame: primary glyph run y 60–154 at
+    // 1144 (cap 8.22%h, baseline 13.5%h); secondary line ~40px glyphs at 1080.
+    expect(header.attributes('font-size')).toBe('118.152') // 0.1094 × 1080
+    expect(header.attributes('y')).toBe('145.368') // 0.1346 × 1080 baseline
 
     const subtitle = wrapper.find('.sf-hero-subtitle')
     expect(subtitle.exists()).toBe(true)
     expect(subtitle.text()).toBe('STEPFLOW HOUSE STYLE')
-    expect(subtitle.attributes('font-size')).toBe('40')
-    expect(subtitle.attributes('y')).toBe('227.88') // (0.118 + 0.093) × 1080
+    expect(subtitle.attributes('font-size')).toBe('53')
+    expect(subtitle.attributes('y')).toBe('227.448') // (0.1346 + 0.076) × 1080
   })
 
   it('omits the secondary header line when no subtitle is passed', () => {

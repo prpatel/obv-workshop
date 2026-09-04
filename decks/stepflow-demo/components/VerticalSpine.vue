@@ -42,18 +42,19 @@ const FOOTER_RULE = '#202020'
 const FOOTER_LINE = '#a0a0a0'
 
 // Typography measured at source height 1144px (research §F6), rescaled with
-// the layout height. Wave-1 report §2 chrome rule 4 puts every family header
-// at recording scale (~79px band at 1144, cap 7.2–8.8%h) — the 0.085·h size
-// with the 0.112·h baseline reproduces the measured header block. Captions
-// go to 44px at 1080-canvas scale, card-colored (report §3 fix list); the
-// card title fills the outlined plate so the card bbox ink lands near the
-// measured 42–45%.
+// the layout height. Header sized off the settled v7 spine frame (glyph run
+// y 52–153 at 1144: cap 8.83%h, baseline 13.4%h; JetBrains Mono renders
+// ~0.752·font-size as glyph height, so 0.0883/0.752 ≈ 0.1175·h — the
+// wave-1 generic 0.085·h size lands only ~6.4% cap). Captions go to 44px at
+// 1080-canvas scale, card-colored (report §3 fix list); the card title
+// fills the outlined plate so the card bbox ink lands near the measured
+// 42–45%.
 const type = computed(() => {
   const h = layout.value.viewBox.height
   const src = h / 1144
   return {
-    headerSize: 0.085 * h,
-    headerBaseline: 0.112 * h,
+    headerSize: 0.1175 * h,
+    headerBaseline: 0.134 * h,
     labelSize: 27 * src,
     cardTitleSize: 105 * src,
     captionSize: 44 * (h / 1080),

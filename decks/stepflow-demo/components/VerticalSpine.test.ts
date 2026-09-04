@@ -148,8 +148,8 @@ describe('VerticalSpine', () => {
     const wrapper = mountSpine({ nodes: spineNodes, title: 'CENTER AXIS', titleAccent: 'RHYTHM' })
     const header = wrapper.find('.sf-spine-header')
 
-    expect(header.attributes('font-size')).toBe('91.8') // 0.085 × 1080
-    expect(header.attributes('y')).toBe('120.96') // 0.112 × 1080 baseline
+    expect(header.attributes('font-size')).toBe('126.9') // 0.1175 × 1080 — measured cap 8.83%h at ~0.752 glyph ratio
+    expect(header.attributes('y')).toBe('144.72') // 0.134 × 1080 baseline
   })
 
   it('applies the two-preset composition: chainBlue cards, orangeSpine spine, amber flanks', () => {

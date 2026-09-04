@@ -42,16 +42,18 @@ const glowStops = [
   { offset: 1, opacity: 0 },
 ]
 
-// Recording-scale header (wave-1 report §2 chrome rule 4): the primary cap
-// lands in the measured 7.2–8.8%h band (ref block y 0.056–0.119h); the
-// secondary white line rides one gap below at ~40px on the 1080 canvas.
+// Measured off the settled v7 tile frame: primary glyph run y 60–154 at
+// source height 1144 (cap 8.22%h, baseline 13.5%h); with the ~0.752
+// glyph/font ratio the size is 0.1094·h — the brief's 70–90px @1080 band
+// (top) rather than the wave-1 generic 0.085·h size, which lands ~6.4% cap.
+// The secondary line rides one gap below at ~40px glyphs on the 1080 canvas.
 const headerType = computed(() => {
   const h = layout.value.viewBox.height
   return {
-    primarySize: 0.085 * h,
-    primaryBaseline: 0.118 * h,
-    secondarySize: 40 * (h / 1080),
-    secondaryBaseline: (0.118 + 0.093) * h,
+    primarySize: 0.1094 * h,
+    primaryBaseline: 0.1346 * h,
+    secondarySize: 53 * (h / 1080),
+    secondaryBaseline: (0.1346 + 0.076) * h,
   }
 })
 
