@@ -14,6 +14,7 @@ import {
   type CompareBar,
   type DataTextBlock,
 } from './stepflow/compare'
+import { pinAttrs } from './stepflow/chrome'
 import { resolvePalette, statusAmber, type StepFlowPaletteOverride } from './stepflow/palettes'
 import { iconPath, ICON_FALLBACK } from './stepflow/icons'
 import TitleChrome from './stepflow/TitleChrome.vue'
@@ -288,8 +289,7 @@ function fmt(n: number): string {
           dominant-baseline="central"
           :font-size="type.labelSize"
           :fill="LABEL_COLOR"
-          :textLength="bar.labelLength ?? undefined"
-          :lengthAdjust="bar.labelLength != null ? 'spacingAndGlyphs' : undefined"
+          v-bind="pinAttrs(bar.label, type.labelSize, bar.labelLength ?? undefined)"
         >{{ bar.label }}</text>
         <text
           v-if="bar.sub"
@@ -311,8 +311,8 @@ function fmt(n: number): string {
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
-      :cap-height="53"
-      :cap-top="98"
+      :cap-height="53.2"
+      :cap-top="108"
       :center-x="962"
       :title-text-length="HEADLINE_TEXT_LENGTH"
       badge

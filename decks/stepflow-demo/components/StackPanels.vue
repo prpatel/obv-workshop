@@ -13,7 +13,7 @@ import {
 } from './stepflow/panels'
 import { resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
 import { iconPath, ICON_FALLBACK } from './stepflow/icons'
-import { CAP_HEIGHT_RATIO, CHROME_GREEN, TITLE_WHITE } from './stepflow/chrome'
+import { CAP_HEIGHT_RATIO, CHROME_GREEN, TITLE_WHITE, pinAttrs } from './stepflow/chrome'
 
 const props = withDefaults(defineProps<{
   /** The panel mosaic, in reveal order: TL → TR → BL → BR on the measured seed. */
@@ -47,12 +47,14 @@ function fill(tone: StackPanel['tone']): string {
 // measured extents — 'One' 324.9–518.9, 'unified environment' 545.3–1506.8 at
 // cap height 69.9, shared baseline ≈y127. The recording header is a
 // proportional face while the deck mono runs wider at equal cap (the chrome
-// foundation's systemic note), so each segment renders textLength +
-// spacingAndGlyphs: extent and the white→green split point land exactly.
+// foundation's systemic note), so each segment renders spacing-only textLength
+// pins: extent and the white→green split point land exactly. Glyphs never
+// squeeze — pins redistribute spacing only (generation-7 typography lock).
 const header = computed(() => {
   const { width } = layout.value.viewBox
   return {
-    fontSize: STACKPANELS_HEADER.capHeight / CAP_HEIGHT_RATIO,
+    leadFontSize: STACKPANELS_HEADER.leadCapHeight / CAP_HEIGHT_RATIO,
+    accentFontSize: STACKPANELS_HEADER.accentCapHeight / CAP_HEIGHT_RATIO,
     baseline: STACKPANELS_HEADER.baseline,
     lead: {
       x: STACKPANELS_HEADER.leadBox.xFrac * width,
@@ -230,9 +232,8 @@ const captionSpec = computed(() => {
         class="sf-chrome-lead"
         :x="header.lead.x"
         :y="header.baseline"
-        :font-size="header.fontSize"
-        :textLength="header.lead.w"
-        lengthAdjust="spacingAndGlyphs"
+        :font-size="header.leadFontSize"
+        v-bind="pinAttrs(title, header.leadFontSize, header.lead.w)"
         text-anchor="start"
         :fill="TITLE_WHITE"
       >{{ title }}</text>
@@ -241,9 +242,8 @@ const captionSpec = computed(() => {
         class="sf-chrome-accent"
         :x="header.accent.x"
         :y="header.baseline"
-        :font-size="header.fontSize"
-        :textLength="header.accent.w"
-        lengthAdjust="spacingAndGlyphs"
+        :font-size="header.accentFontSize"
+        v-bind="pinAttrs(titleAccent, header.accentFontSize, header.accent.w)"
         text-anchor="start"
         :fill="CHROME_GREEN"
       >{{ titleAccent }}</text>

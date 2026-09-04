@@ -19,11 +19,13 @@ export const TITLE_WHITE = '#ffffff'
 
 /**
  * Measured glyph cap-height ratio of the deck's mono face: cap pixels per
- * font-size pixel in the rendered 1920×1080 canvas (repo-measured for this
- * font stack — VerticalSpine report §2: "measured cap 8.83%h at ~0.752 glyph
- * ratio"). Font size for a sheet-measured cap height is capHeight / ratio.
+ * font-size pixel. JetBrains Mono's true cap ratio is 0.730 (cap height
+ * 0.730em); the deck previously used 0.752, measured off the pre-bundle
+ * fallback rendering. All generation-7 cap constants are glyph-core reads
+ * (per-column stem histograms on the settled reference frames), so they pair
+ * with THIS ratio now that the bundled face actually renders.
  */
-export const CAP_HEIGHT_RATIO = 0.752
+export const CAP_HEIGHT_RATIO = 0.730
 
 /** Font size that renders `capHeight` cap pixels in the 1080 canvas. */
 export function titleFontSize(capHeight: number): number {
@@ -57,6 +59,95 @@ export function titleFontSizeFromXHeight(xHeight: number): number {
   if (!(xHeight > 0)) throw new RangeError(`xHeight must be positive, received ${xHeight}`)
   return xHeight / X_HEIGHT_RATIO
 }
+
+/**
+ * JetBrains Mono advance width: 0.600em per character (monospace). Natural
+ * ink runs are predicted from this plus the bearing constant below.
+ */
+export const ADVANCE_RATIO = 0.6
+
+/**
+ * Combined left+right side bearing of a mono ink run, in em. Calibrated
+ * against the reference frames (StairChain "THE DATA": predicted 449px at
+ * cap 68.8 vs 426.7px measured — the recorded face is slightly more
+ * condensed than JBM, which the per-run pin logic absorbs).
+ */
+export const INK_BEARING_EM = 0.04
+
+/**
+ * Natural ink extent of a mono text run at the given font size, in px:
+ * n×advance minus the run's side bearings. Letter-spacing is NOT included —
+ * add (n−1)×letterSpacing×fontSize when tracking is applied.
+ */
+export function naturalInkExtent(text: string, fontSize: number): number {
+  if (text.length === 0) return 0
+  return text.length * ADVANCE_RATIO * fontSize - INK_BEARING_EM * fontSize
+}
+
+/**
+ * Pin threshold (fraction of the measured extent) below which a run renders
+ * at natural width: the deck renders JetBrains Mono natural and only pins
+ * spacing when the recorded face is more than 2% off — never the
+ * glyph-squeezing mode (glyphs must never squeeze).
+ */
+export const PIN_THRESHOLD = 0.02
+
+/**
+ * Whether a run needs a spacing-only textLength pin: |natural − measured|
+ * exceeds `threshold × measured`. Returns the pin value (the measured
+ * extent) or undefined for a natural render.
+ */
+export function spacingPin(
+  natural: number,
+  measured: number,
+  threshold: number = PIN_THRESHOLD,
+): number | undefined {
+  if (measured <= 0) return undefined
+  return Math.abs(natural - measured) > threshold * measured ? measured : undefined
+}
+
+/**
+ * Letter-spacing (em) that stretches or condenses a natural run to a
+ * measured ink extent: (measured − natural) / ((n−1) × fontSize). Runs
+ * within the pin threshold should NOT use this — they render natural.
+ */
+export function trackingForExtent(
+  text: string,
+  fontSize: number,
+  measured: number,
+): number {
+  if (text.length < 2) return 0
+  const natural = naturalInkExtent(text, fontSize)
+  return (measured - natural) / ((text.length - 1) * fontSize)
+}
+
+/**
+ * Resolve a run's pin in one call: the measured extent when the natural
+ * width misses it beyond the pin threshold, undefined for a natural render.
+ * `measured == null` (no sheet extent) always renders natural.
+ */
+export function inkPin(
+  text: string,
+  fontSize: number,
+  measured?: number,
+): number | undefined {
+  if (measured == null) return undefined
+  return spacingPin(naturalInkExtent(text, fontSize), measured)
+}
+/**
+ * Template-ready pin attributes for a measured text run: spread with
+ * `v-bind="pinAttrs(text, fontSize, measured)"`. Empty object = natural
+ * render; otherwise spacing-only textLength + lengthAdjust.
+ */
+export function pinAttrs(
+  text: string,
+  fontSize: number,
+  measured?: number,
+): { textLength?: number; lengthAdjust?: 'spacing' } {
+  const pin = inkPin(text, fontSize, measured)
+  return pin === undefined ? {} : { textLength: pin, lengthAdjust: 'spacing' }
+}
+
 
 /**
  * One measured token of a family title. Exact-trace sheets sometimes pin each

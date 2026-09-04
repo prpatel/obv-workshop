@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { spineLayout, type SpineNode, type SpineOptions } from './stepflow/spine'
 import { chainBlue, orangeSpine, resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
 import { V7_MARKER_GLYPH } from './stepflow/icons'
-import { titleFontSize, type TitleToken } from './stepflow/chrome'
+import { pinAttrs, titleFontSize, type TitleToken } from './stepflow/chrome'
 import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = withDefaults(defineProps<{
@@ -243,8 +243,7 @@ const sideCards = computed(() => props.nodes.filter((n) => n.side === 'left' || 
           dominant-baseline="central"
           :font-size="fmt(type.captionSize * (node.captionScale ?? 1))"
           :fill="cardTone(node.side)"
-          :textLength="node.captionWidth !== undefined ? fmt(node.captionWidth * k) : undefined"
-          lengthAdjust="spacingAndGlyphs"
+          v-bind="pinAttrs(node.caption, type.captionSize * (node.captionScale ?? 1), node.captionWidth !== undefined ? node.captionWidth * k : undefined)"
         >{{ node.caption }}</text>
       </template>
     </g>
@@ -310,8 +309,8 @@ const sideCards = computed(() => props.nodes.filter((n) => n.side === 'left' || 
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
-      :cap-height="84"
-      :cap-top="48"
+      :cap-height="68.8"
+      :cap-top="56.5"
       :center-x="916"
       accent-first
       :tokens="headerTokens"

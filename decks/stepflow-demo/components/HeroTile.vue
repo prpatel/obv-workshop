@@ -187,8 +187,8 @@ const resolvedIcon = computed(() => {
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
-      :cap-height="70.8"
-      :cap-top="55.7"
+      :cap-height="65"
+      :cap-top="60.3"
       :center-x="912"
       :tokens="headerTokens"
     />

@@ -41,13 +41,14 @@ const props = withDefaults(defineProps<{
 const layout = computed(() => schematicRowsLayout(props.data))
 
 // Sheet §2.2 title row: green 'Harder' ink x476.5–793.9 + white 'to maintain'
-// x816.5–1354.1 @1080 — combined extent 877.6, center 915.3, cap 78.4, top 48.1.
+// x816.5–1354.1 @1080 — combined extent 877.6, center 915.3; glyph-core cap
+// 62.2 (ascender band), top 63.1 (direct stem histograms on the settled frame).
 // The deck's mono runs wider at this cap height, so the extent is pinned via
-// TitleChrome's titleTextLength (SVG textLength + spacingAndGlyphs).
+// TitleChrome's titleTextLength (spacing-only pin; glyphs never squeeze).
 const TITLE = {
   textLength: 877.6,
-  capHeight: 78.4,
-  capTop: 48.1,
+  capHeight: 62.2,
+  capTop: 63.1,
   centerX: 915.3,
 } as const
 

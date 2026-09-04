@@ -45,8 +45,8 @@ export interface LaneBar {
   /** Optional dark caption rendered inside the bar, left-aligned (ref: the long bars carry mono captions). */
   text?: string
   /**
-   * Pinned caption ink extent in px at 1920 scale — SVG textLength +
-   * spacingAndGlyphs, matching the measured condensed-face extent the deck's
+   * Pinned caption ink extent in px at 1920 scale — a spacing-only SVG
+   * textLength pin, matching the measured condensed-face extent the deck's
    * mono face cannot hit naturally at the measured cap height.
    */
   textLength?: number

@@ -17,6 +17,7 @@ import {
   type FlowStatus,
   type TerminalLogData,
 } from './stepflow/nodeEdge'
+import { pinAttrs } from './stepflow/chrome'
 import { resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
 import TitleChrome from './stepflow/TitleChrome.vue'
 
@@ -338,8 +339,7 @@ function fmt(n: number): string {
         dominant-baseline="central"
         :font-size="tl.command.fontSize"
         :fill="tl.command.color"
-        :textLength="tl.command.textLength"
-        lengthAdjust="spacingAndGlyphs"
+        v-bind="pinAttrs(tl.command.text, tl.command.fontSize, tl.command.textLength)"
       >{{ tl.command.text }}</text>
       <rect
         class="sf-ne-cursor"
@@ -356,8 +356,7 @@ function fmt(n: number): string {
         dominant-baseline="central"
         :font-size="tl.stat.fontSize"
         :fill="tl.stat.color"
-        :textLength="tl.stat.textLength"
-        lengthAdjust="spacingAndGlyphs"
+        v-bind="pinAttrs(tl.stat.text, tl.stat.fontSize, tl.stat.textLength)"
       >{{ tl.stat.text }}</text>
     </g>
 
@@ -393,8 +392,8 @@ function fmt(n: number): string {
       :title="title"
       :title-accent="titleAccent"
       :title-text-length="titleTextLength"
-      :cap-height="77"
-      :cap-top="49"
+      :cap-height="68.8"
+      :cap-top="56.5"
       :center-x="914"
     />
   </svg>

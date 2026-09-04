@@ -44,7 +44,7 @@ import {
   type StripSegmentLayout,
 } from './stepflow/strip'
 import { resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
-import { titleFontSize } from './stepflow/chrome'
+import { pinAttrs, titleFontSize } from './stepflow/chrome'
 import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = withDefaults(defineProps<{
@@ -341,8 +341,7 @@ const chipGeom = computed(() => ({
           :font-size="TYPE.chipText"
           :fill="CHIP_TEXT_COLOR"
           font-weight="700"
-          :textLength="t.chip.ink1 - t.chip.ink0"
-          lengthAdjust="spacingAndGlyphs"
+          v-bind="pinAttrs(t.label, TYPE.chipText, t.chip.ink1 - t.chip.ink0)"
         >{{ t.label }}</text>
       </g>
       <text
@@ -374,8 +373,8 @@ const chipGeom = computed(() => ({
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
-      :cap-height="54"
-      :cap-top="107"
+      :cap-height="53.2"
+      :cap-top="108"
       :center-x="963"
       :title-text-length="1026"
       badge

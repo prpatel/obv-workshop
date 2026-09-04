@@ -51,8 +51,8 @@ const props = withDefaults(defineProps<{
   hFrac: 6 / 1080,
   x0Frac: 315 / 1920,
   x1Frac: 1460 / 1920,
-  capHeight: 54,
-  capTop: 122,
+  capHeight: 57,
+  capTop: 104.2,
 })
 
 // The family's measured trio — blue/cyan/red nodes and dim track — composed

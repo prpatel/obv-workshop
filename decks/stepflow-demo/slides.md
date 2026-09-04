@@ -190,7 +190,7 @@ canvasWidth: 1920
 <NodeEdge
   title="DATA MESH CORE"
   title-accent="PLATFORM"
-  :title-text-length="1105"
+  :title-text-length="1453"
   :palette="{ accent: '#33a5cd', accentAlt: '#e6b434', track: '#5a1e1e' }"
   :terminal-log="{ command: 'meshctl status --verbose', stat: 'nodes : 6 healthy · 2' }"
   :nodes="[
@@ -254,8 +254,8 @@ canvasWidth: 1920
 <VerticalSpine
   :palette="{ accent: '#21cfe9', accentAlt: '#3698fb' }"
   :title-tokens="[
-    { text: 'SQL', accent: true, x: 228.8, width: 188.4, capHeight: 84, capTop: 58.5 },
-    { text: 'and pipelines still matter', x: 439.0, width: 1163.8, capHeight: 72.3, capTop: 53.8 },
+    { text: 'SQL', accent: true, x: 229.9, width: 187.5, capHeight: 65.9, capTop: 60.3 },
+    { text: 'and pipelines still matter', x: 440.0, width: 1162.5, capHeight: 68.8, capTop: 56.5 },
   ]"
   :footer="{ left: 'QUERIES DRAFTED IN SECONDS', right: 'WHAT MOVES THE DATA EVERY DAY' }"
   :nodes="[

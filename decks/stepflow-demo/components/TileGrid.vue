@@ -279,8 +279,8 @@ function fmt(n: number): string {
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
-      :cap-height="78"
-      :cap-top="99"
+      :cap-height="54.8"
+      :cap-top="106.5"
       :center-x="962"
       :title-text-length="674"
       badge

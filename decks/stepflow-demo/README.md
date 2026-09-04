@@ -723,12 +723,12 @@ plateau over the left half (y≈470–680). These ship as
 terminal/log panel (Gaussian-feathered rects; static chrome, never
 click-bound). The sheet's "right third and bottom empty" is empty of CONTENT;
 the ambience is the recording's glow, measured where it actually is.
-(2) The deck's mono face runs ~37% wider than the recording's condensed face
-at cap 77 (title ink 1503px vs the reference's 1095px), so the slide pins the
-reference-measured ink extent via `TitleChrome`'s `titleTextLength` (SVG
-`textLength` + `lengthAdjust="spacingAndGlyphs"` — additive prop, undefined =
-natural mono width). Slide 4 passes `:title-text-length="1105"`; the captured
-title ink lands at x366–1458 vs the reference's x366–1461.
+(2) The deck's mono face runs wider than the recording's condensed face, so
+the slide pins the reference-measured ink extent via `TitleChrome`'s
+`titleTextLength` — a spacing-only SVG `textLength` pin (additive prop,
+undefined = natural mono width; glyphs are never squeezed). Slide 4 passes
+`:title-text-length="1453"`; the captured title ink lands at x190–1643 vs the
+reference's x190.3–1643.0.
 
 ## TileGrid measured-motion note (exact-trace rework)
 
