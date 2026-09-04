@@ -29,6 +29,11 @@ import {
   LANE_LABEL_TRACKING_EM,
   LANE_LABEL_X_FRAC,
   PLATE_FILL,
+  PLATE_H_FRAC,
+  PLATE_TOP_FILL,
+  PLATE_W_FRAC,
+  PLATE_X_FRAC,
+  PLATE_Y_FRAC,
   milestoneLanesLayout,
   type Lane,
   type MilestoneDiamond,
@@ -163,8 +168,15 @@ describe('measured constants — hand-computed to 1e-6', () => {
     expect(FOOTER_ROW_SIZE_PX).toBeCloseTo(26, 6)
   })
 
-  it('ambience: the settled field reads one neutral dim plate', () => {
+  it('ambience: a bounded dim plate behind the chart zone, brightening toward the top', () => {
+    // The plate spans the chart zone (x260–1660, y372–960 at 1080) — outside
+    // it the slide field is pure black (ref-sampled at the true settled frame).
+    expect(PLATE_X_FRAC).toBeCloseTo(260 / 1920, 6)
+    expect(PLATE_Y_FRAC).toBeCloseTo(372 / 1080, 6)
+    expect(PLATE_W_FRAC).toBeCloseTo(1400 / 1920, 6)
+    expect(PLATE_H_FRAC).toBeCloseTo(588 / 1080, 6)
     expect(PLATE_FILL).toBe('#0f0e11')
+    expect(PLATE_TOP_FILL).toBe('#19181d')
   })
 })
 
@@ -553,9 +565,13 @@ describe('MilestoneLanes component', () => {
     expect(ambience.exists()).toBe(true)
     expect(ambience.attributes('aria-hidden')).toBe('true')
     const plate = wrapper.find('rect.sf-ml-plate')
-    expect(plate.attributes('fill')).toBe('#0f0e11')
-    expect(Number(plate.attributes('x'))).toBe(0)
-    expect(Number(plate.attributes('width'))).toBeCloseTo(1920, 6)
+    // Bounded to the chart zone with the measured vertical gradient — the
+    // field outside the plate stays pure black.
+    expect(plate.attributes('fill')).toBe('url(#sf-ml-plate)')
+    expect(Number(plate.attributes('x'))).toBeCloseTo(260, 6)
+    expect(Number(plate.attributes('y'))).toBeCloseTo(372, 6)
+    expect(Number(plate.attributes('width'))).toBeCloseTo(1400, 6)
+    expect(Number(plate.attributes('height'))).toBeCloseTo(588, 6)
     // The settled reference carries none of the old decorations.
     expect(wrapper.find('rect.sf-ml-box').exists()).toBe(false)
     expect(wrapper.findAll('rect.sf-ml-wash')).toHaveLength(0)

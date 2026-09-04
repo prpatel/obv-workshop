@@ -31,6 +31,7 @@ import {
   FOOTER_ROW_SIZE_PX,
   DIAMOND_GLOW_OPACITY,
   PLATE_FILL,
+  PLATE_TOP_FILL,
   type LaneBarLayout,
   type Lane,
   type MilestoneDiamond,
@@ -227,19 +228,26 @@ function resolveIcon(key: string): string {
         <stop offset="0" stop-color="#f9bb21" stop-opacity="0.9" />
         <stop offset="1" stop-color="#f9bb21" stop-opacity="0" />
       </radialGradient>
+      <!-- The plate brightens toward the top (~#19181d at its top edge) and
+           settles to the flat dim tone by mid-height (ref-measured). -->
+      <linearGradient id="sf-ml-plate" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" :stop-color="PLATE_TOP_FILL" />
+        <stop offset="0.45" :stop-color="PLATE_FILL" />
+        <stop offset="1" :stop-color="PLATE_FILL" />
+      </linearGradient>
     </defs>
 
-    <!-- Dim ambience layer: a neutral dim plate across the chart field.
-         Static chrome — present from the first frame like the container
-         frame, no v-click, outside the accessibility tree (decorative). -->
+    <!-- Dim ambience layer: the plate spans the chart zone only — the slide
+         field outside it is pure black (ref-sampled at the true settled
+         frame). Static chrome: no v-click, outside the accessibility tree. -->
     <g class="sf-ml-ambience" aria-hidden="true">
       <rect
         class="sf-ml-plate"
-        x="0"
-        y="0"
-        :width="layout.viewBox.width"
-        :height="layout.viewBox.height"
-        :fill="PLATE_FILL"
+        :x="layout.plate.x"
+        :y="layout.plate.y"
+        :width="layout.plate.w"
+        :height="layout.plate.h"
+        fill="url(#sf-ml-plate)"
       />
     </g>
 

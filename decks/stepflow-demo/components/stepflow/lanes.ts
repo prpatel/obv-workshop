@@ -158,8 +158,15 @@ export const FOOTER_ROW_Y_FRAC = 868 / 1080
 export const FOOTER_ROW_X_FRAC = 392 / 1920
 export const FOOTER_ROW_SIZE_PX = 26
 
-/** Dim chart-field plate (the settled field reads a neutral dim tone, not void black). */
+/** Dim plate behind the chart zone — the settled field inside the plate is a
+ * neutral dim tone, not void black; outside the plate the field IS void black
+ * (the plate does NOT span the canvas). The plate brightens toward the top. */
+export const PLATE_X_FRAC = 260 / 1920
+export const PLATE_Y_FRAC = 372 / 1080
+export const PLATE_W_FRAC = 1400 / 1920
+export const PLATE_H_FRAC = 588 / 1080
 export const PLATE_FILL = '#0f0e11'
+export const PLATE_TOP_FILL = '#19181d'
 
 /** A rect state in px: one phase of a bar's three-phase motion. */
 export interface BarRectState {
@@ -230,6 +237,8 @@ export interface DiamondLayout {
 export interface MilestoneLanesLayout {
   lanes: LaneLayout[]
   diamonds: DiamondLayout[]
+  /** Dim plate behind the chart zone (gradient top → flat bottom). */
+  plate: { x: number; y: number; w: number; h: number }
   /** Total native v-clicks: reveal + re-proportion per bar, then the closing beat. */
   clickCount: number
   viewBox: Canvas
@@ -337,5 +346,11 @@ export function milestoneLanesLayout(data: MilestoneLanesData, viewBox: Canvas =
     }
   })
 
-  return { lanes, diamonds, clickCount: click * 2 + 1, viewBox }
+  const plate = {
+    x: PLATE_X_FRAC * viewBox.width,
+    y: PLATE_Y_FRAC * viewBox.height,
+    w: PLATE_W_FRAC * viewBox.width,
+    h: PLATE_H_FRAC * viewBox.height,
+  }
+  return { lanes, diamonds, plate, clickCount: click * 2 + 1, viewBox }
 }
