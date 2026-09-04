@@ -539,33 +539,53 @@ canvasWidth: 1920
 <!--
   Demo slide: RatioStrip — one proportional band with a two-phase build:
   click 1 pops the band at initial proportions (~120ms), click 2 re-flows the
-  teal region to its settled share in three bursts ~470ms apart (measured
-  99.10 / 99.57 / 99.83s), click 3 fades in the mint chip and the
-  tone-colored caption row. Measured from the source video's 95–101s strip
-  (report art_iHm120ov §RatioStrip, settled frame t=99.1s at 1920×1080): band
-  x 14.4–85.9%w × y 51.4–73.3%h; settled shares red 24.3% / teal 75.7% — the
-  red segment is the measured 334px = 17.4%w, and its salmon tail is the red
-  gradient's end (the earlier "amber segment" was a misread of that tail: no
-  amber exists in the source). The teal region is the bright left-to-right
-  gradient #76eec5→#1fd898 (no dark sub-band). A dark panel plate
-  (y≈331–440, x≈234–1685) and a white heading row sit above the band.
-  Initial proportions are [I]: the teal region starts at ~1/5 of its settled
-  share (the measured 22k→108k px re-flow), red holding the rest. All three
-  v-clicks are pure revealed-state transitions — backward nav snaps instantly.
+  mint + teal regions to their settled shares in three bursts ~1.1s apart
+  (measured 650 / 1783 / 3617ms after the burst trigger), click 3 sweeps the
+  chip labels left→right in two strokes (4567–4950ms clip time) and fades in
+  the caption row. Measured from the settled clip frame t≈5.97s at
+  1920×1080 (art_7bTnqSB3 §3; band x 14.4–85.9%w × y 51.4–73.3%h): settled
+  shares red 24% (330px, red→salmon gradient) / mint 11.3% (155px) / teal
+  64.7% (888px), with the mint and teal regions reading as ONE continuous
+  bright ramp #a0fbd9→#1ed496 (shared userSpaceOnUse field; the teal
+  gradient starts at the mint's left edge x605, crossing the x760 mint/teal
+  boundary with no discontinuity). Above the band: a two-tone panel —
+  #19181d plate bar y333–411 holding the mixed-case URL heading
+  'data.mrk.shop/workspace', then a #0f0e11 body field y412–936 — with the
+  gray caps row 'TIME IN ONE WORKING DAY' (y465–481) and a 9-tick
+  measurement row (4×25px, y510–534, pitch ≈171.6px, #3a3b42). Three dark
+  data-quality chips ride the band (#020404, y628–718): 'LATE DATA' |
+  'DUPLICATE ROWS' | 'WRONG TOTALS' with mint #21d697 labels, revealed last
+  in two left→right sweeps split at x1282. The caption row is the measured
+  pair 'CONNECTING TOOLS' (red #e94343, x277–609) + 'ACTUAL DATA PROBLEMS'
+  (mint #23d598, x1224–1643) at y836–858. TEXT CORRECTION: the sheet's
+  prose strings ('PLATFORM · 75.7%', 'COMPUTE UNITS · FY26', 'SHARE OF
+  COMPUTE', 'RUNTIME SHARE · FY26 SPLIT') do not appear in the source
+  video — its own band-right crop reads 'DUPLICATE ROWS'/'WRONG TOTALS';
+  the video is the scoring target, so this slide typesets the
+  video-verified strings. Initial proportions are [I]: the teal region
+  starts at ~1/5 of its settled share and the mint segment near-closed; red
+  holds the rest. All three v-clicks are pure revealed-state transitions
+  — backward nav snaps instantly.
 -->
 
 <div class="sf-demo-stage">
 
 <RatioStrip
-  title="RUNTIME"
-  title-accent="SHARE"
-  heading="SHARE OF TOTAL"
-  :palette="{ accentAlt: '#ec423f', accentTertiary: '#1cd798' }"
+  title="Less time"
+  title-accent="connecting tools"
+  heading="data.mrk.shop/workspace"
+  heading2="TIME IN ONE WORKING DAY"
+  :chips="['LATE DATA', 'DUPLICATE ROWS', 'WRONG TOTALS']"
+  caption="CONNECTING TOOLS"
+  caption-color="#e94343"
+  caption-right="ACTUAL DATA PROBLEMS"
+  :palette="{ accentAlt: '#ec423f' }"
   :y-frac="0.513889"
   :h-frac="0.219444"
   :segments="[
-    { id: 'sources', tone: 'alt', wFrac: 0.85, wFracFinal: 0.2434, label: 'INGEST' },
-    { id: 'platform', tone: 'tertiary', wFrac: 0.15, wFracFinal: 0.7566, label: 'PLATFORM' },
+    { id: 'sources', tone: 'alt', wFrac: 0.84, wFracFinal: 0.24 },
+    { id: 'mint', tone: 'mint', wFrac: 0.03, wFracFinal: 0.113 },
+    { id: 'platform', tone: 'tertiary', wFrac: 0.13, wFracFinal: 0.647 },
   ]"
 />
 
