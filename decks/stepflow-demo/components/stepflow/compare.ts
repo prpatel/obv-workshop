@@ -12,6 +12,16 @@
  * x214 (16.7%w, ending 49.2/51.1%w); icon chips 23×28 @x180 (y363/529); a
  * top-right chip 124×30 @983,202. The recording's palette is the statusAmber
  * preset verbatim — amber #f7ba20 accent, red #e5413f alternate.
+ *
+ * Fidelity rework (report art_iHm120ov §TwoBarCompare, ref frame t=168.7s read
+ * at 1920×1080): the bars already match the source within 1px — bar geometry
+ * here is unchanged. What the recording carries around them is text: a
+ * centered white + chrome-green headline row (caps y110–161), the big
+ * light-cyan #84eef8 data-text block (two ~29px-cap rows y411/485 plus a
+ * ~21px row y559, all left-anchored on the bar anchor), ~32px dark on-bar
+ * labels over ~28px gray under-bar notes, and the teal #1cd797 top-right
+ * chip. Those layers ship as the optional `dataText` / `subhead` props
+ * below.
  */
 
 /** One comparison bar. Both bars anchor at the shared `xFrac`; length is data. */
@@ -31,6 +41,18 @@ export interface CompareBar {
 }
 
 /**
+ * The big light-cyan data-text block above the bars — the family's largest
+ * text layer (report art_iHm120ov §TwoBarCompare: "the single largest missing
+ * element"). All rows are left-anchored on the shared bar anchor.
+ */
+export interface DataTextBlock {
+  /** Two headline rows at the measured ~29px-cap size. */
+  lines: [string, string]
+  /** Optional smaller third row (~21px cap) in bar 1's chip band. */
+  subline?: string
+}
+
+/**
  * The full TwoBarCompare diagram. `xFrac`, `barHFrac`, and `yFracs` default to
  * the measured composition (two bars); other bar counts must pass `yFracs`
  * explicitly — see `twoBarCompareLayout`.
@@ -46,6 +68,12 @@ export interface TwoBarCompareData {
   yFracs?: number[]
   /** Optional text for the top-right chip (measured position; reveals with the annotation click). */
   chip?: string
+  /** The big light-cyan data-text block above the bars (reveals with the annotation click). */
+  dataText?: DataTextBlock
+  /** Centered white headline row under the header band (measured y110–161 composition). */
+  subhead?: string
+  /** Chrome-green tail rendered after `subhead` (two-tone chrome convention). */
+  subheadAccent?: string
 }
 
 export interface Canvas {
@@ -80,6 +108,25 @@ export const TOP_CHIP_H_FRAC = 30 / 720
 export const LABEL_INSET_X_FRAC = 24 / 1280
 export const SUB_GAP_Y_FRAC = 14 / 720
 
+/**
+ * Data-text block, measured from the ref frame t=168.7s at 1920×1080 (report
+ * art_iHm120ov §TwoBarCompare): rows are left-anchored on the bar anchor with
+ * cap tops y411/485/559 and cap heights ~29/~29/~21px (≈40/40/29px font at
+ * the mono stack's 0.73 cap ratio) — baselines y440/514/580.
+ */
+export const DATA_TEXT_LINE_SIZE = 40
+export const DATA_TEXT_SUB_SIZE = 29
+export const DATA_TEXT_Y_FRACS: [number, number, number] = [440 / 1080, 514 / 1080, 580 / 1080]
+/** The measured light-cyan data-text tone (#84eef8 on the ref frame). */
+export const DATA_TEXT_COLOR = '#84eef8'
+/**
+ * Centered white + chrome-green headline row (ref t=168.7s: caps y110–161 →
+ * ~52px cap ≈ 71px font, baseline y161). Chrome, not a palette field — the
+ * green half is the deck's CHROME_GREEN.
+ */
+export const SUBHEAD_SIZE = 71
+export const SUBHEAD_Y_FRAC = 161 / 1080
+
 /** Resolved px geometry for one bar and its derived chip/label anchors. */
 export interface BarLayout {
   id: string
@@ -110,9 +157,27 @@ export interface TopChipLayout {
   h: number
 }
 
+/** One resolved data-text row: left-anchored on the bar anchor. */
+export interface DataTextLineLayout {
+  text: string
+  x: number
+  y: number
+  size: number
+}
+
+/** Resolved geometry of the centered headline row (x = canvas mid). */
+export interface SubheadLayout {
+  x: number
+  y: number
+  text: string
+  accent: string
+}
+
 export interface TwoBarCompareLayout {
   bars: BarLayout[]
   topChip: TopChipLayout
+  dataText: DataTextLineLayout[]
+  subhead: SubheadLayout | null
   viewBox: Canvas
 }
 
@@ -207,5 +272,20 @@ export function twoBarCompareLayout(data: TwoBarCompareData, viewBox: Canvas = {
     h: TOP_CHIP_H_FRAC * viewBox.height,
   }
 
-  return { bars, topChip, viewBox }
+  // Data-text rows share the bar anchor; sizes/baselines are measured constants.
+  const dataText: DataTextLineLayout[] = []
+  if (data.dataText) {
+    const sizes = [DATA_TEXT_LINE_SIZE, DATA_TEXT_LINE_SIZE, DATA_TEXT_SUB_SIZE]
+    ;[data.dataText.lines[0], data.dataText.lines[1], data.dataText.subline].forEach((text, i) => {
+      if (text !== undefined) {
+        dataText.push({ text, x: xFrac * viewBox.width, y: DATA_TEXT_Y_FRACS[i] * viewBox.height, size: sizes[i] })
+      }
+    })
+  }
+
+  const subhead: SubheadLayout | null = data.subhead
+    ? { x: viewBox.width / 2, y: SUBHEAD_Y_FRAC * viewBox.height, text: data.subhead, accent: data.subheadAccent ?? '' }
+    : null
+
+  return { bars, topChip, dataText, subhead, viewBox }
 }

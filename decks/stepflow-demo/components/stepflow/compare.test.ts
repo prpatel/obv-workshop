@@ -9,8 +9,14 @@ import {
   CHIP_GAP_Y_FRAC,
   CHIP_H_FRAC,
   CHIP_W_FRAC,
+  DATA_TEXT_COLOR,
+  DATA_TEXT_LINE_SIZE,
+  DATA_TEXT_SUB_SIZE,
+  DATA_TEXT_Y_FRACS,
   LABEL_INSET_X_FRAC,
   MEASURED_Y_FRACS,
+  SUBHEAD_SIZE,
+  SUBHEAD_Y_FRAC,
   SUB_GAP_Y_FRAC,
   TOP_CHIP_H_FRAC,
   TOP_CHIP_W_FRAC,
@@ -21,7 +27,16 @@ import {
 } from './compare'
 
 /** Slidev registers the v-click directive globally at runtime; the render tests stub it, capturing each element's click index. */
-function mountTwoBar(props: { bars: CompareBar[]; chip?: string; palette?: object; title?: string; titleAccent?: string }) {
+function mountTwoBar(props: {
+  bars: CompareBar[]
+  chip?: string
+  dataText?: { lines: [string, string]; subline?: string }
+  palette?: object
+  title?: string
+  titleAccent?: string
+  subhead?: string
+  subheadAccent?: string
+}) {
   return mount(TwoBarCompare, {
     props,
     global: {
@@ -75,6 +90,18 @@ describe('measured constants — hand-computed to 1e-6', () => {
   it('carries the derived annotation anchors', () => {
     expect(LABEL_INSET_X_FRAC).toBeCloseTo(0.01875, 6) // 24/1280
     expect(SUB_GAP_Y_FRAC).toBeCloseTo(0.0194444, 6) // 14/720
+  })
+
+  it('carries the rework data-text block and subhead at their measured values (ref t=168.7s)', () => {
+    expect(DATA_TEXT_LINE_SIZE).toBe(40) // ~29px cap
+    expect(DATA_TEXT_SUB_SIZE).toBe(29) // ~21px cap
+    expect(DATA_TEXT_COLOR).toBe('#84eef8')
+    // Cap tops y411/485/559 → baselines y440/514/580 on the 1080 basis.
+    expect(DATA_TEXT_Y_FRACS[0]).toBeCloseTo(440 / 1080, 6)
+    expect(DATA_TEXT_Y_FRACS[1]).toBeCloseTo(514 / 1080, 6)
+    expect(DATA_TEXT_Y_FRACS[2]).toBeCloseTo(580 / 1080, 6)
+    expect(SUBHEAD_SIZE).toBe(71) // ~52px cap centered headline
+    expect(SUBHEAD_Y_FRAC).toBeCloseTo(161 / 1080, 6) // baseline y161
   })
 })
 
@@ -130,6 +157,30 @@ describe('twoBarCompareLayout — resolved geometry', () => {
     expect(l.topChip.y).toBeCloseTo(202 / 720 * 1080, 6) // 303
     expect(l.topChip.w).toBeCloseTo(124 / 1280 * 1920, 6) // 186
     expect(l.topChip.h).toBeCloseTo(30 / 720 * 1080, 6) // 45
+  })
+
+  it('resolves the data-text rows left-anchored on the bar anchor at the measured baselines', () => {
+    const l = twoBarCompareLayout({ bars, dataText: { lines: ['A', 'B'], subline: 'C' } })
+
+    expect(l.dataText).toHaveLength(3)
+    l.dataText.forEach((line) => expect(line.x).toBeCloseTo(0.1671875 * 1920, 6)) // the shared bar anchor
+    expect(l.dataText[0]).toMatchObject({ text: 'A', y: 440, size: 40 })
+    expect(l.dataText[1]).toMatchObject({ text: 'B', y: 514, size: 40 })
+    expect(l.dataText[2]).toMatchObject({ text: 'C', size: 29 })
+    l.dataText.forEach((line, i) => expect(line.y).toBeCloseTo([440, 514, 580][i], 6))
+  })
+
+  it('omits the optional data-text subline and resolves an empty block when absent', () => {
+    const withoutSubline = twoBarCompareLayout({ bars, dataText: { lines: ['A', 'B'] } })
+    expect(withoutSubline.dataText).toHaveLength(2)
+    expect(twoBarCompareLayout({ bars }).dataText).toEqual([])
+  })
+
+  it('centers the subhead row at its measured baseline and drops it when absent', () => {
+    const l = twoBarCompareLayout({ bars, subhead: 'INFRA', subheadAccent: 'COST' })
+    expect(l.subhead).toMatchObject({ x: 960, text: 'INFRA', accent: 'COST' }) // canvas mid
+    expect(l.subhead!.y).toBeCloseTo(161, 6)
+    expect(twoBarCompareLayout({ bars }).subhead).toBeNull()
   })
 
   it('honors explicit geometry overrides and a non-measured bar count', () => {
@@ -217,9 +268,11 @@ describe('TwoBarCompare component', () => {
 
     expect(chips).toHaveLength(2)
     chips.forEach((chip) => {
-      expect(chip.attributes('stroke')).toBe('#f5f4f7')
-      expect(chip.attributes('fill')).toBe('none')
+      // Rework: solid family-amber plates, no outline stroke.
+      expect(chip.attributes('fill')).toBe('#f7ba20')
+      expect(chip.attributes('stroke')).toBeUndefined()
     })
+    icons.forEach((icon) => expect(icon.attributes('stroke')).toBe('#000000')) // dark strokes on amber
     // 'server' registry geometry: two stacked rects.
     expect(icons[0].html()).toContain('<rect')
     // 'cloud' registry geometry: the cloud path.
@@ -249,9 +302,51 @@ describe('TwoBarCompare component', () => {
     expect(annot.text()).toContain('SELF-MANAGED')
     expect(annot.text()).toContain('MANAGED')
     expect(annot.text()).toContain('Q3')
-    // The top chip is the dim track gray with white text.
-    expect(annot.find('.sf-tbc-topchip').attributes('fill')).toBe('#40424e')
+    // The top chip is the recording's teal plate with white text.
+    expect(annot.find('.sf-tbc-topchip').attributes('fill')).toBe('#1cd797')
     expect(annot.find('.sf-tbc-topchip-text').attributes('fill')).toBe('#ffffff')
+  })
+
+  it('renders the rework label classes: dark on-bar labels over the gray under-bar notes', () => {
+    const wrapper = mountTwoBar({ bars })
+    const label = wrapper.find('.sf-tbc-label')
+    const sub = wrapper.find('.sf-tbc-sub')
+
+    // ~2.4× the pre-rework rows: 32px on-bar (dark) over 28px under-bar (gray).
+    expect(Number(label.attributes('font-size'))).toBe(32)
+    expect(label.attributes('fill')).toBe('#000000')
+    expect(Number(sub.attributes('font-size'))).toBe(28)
+    expect(sub.attributes('fill')).toBe('#a6a8ae')
+  })
+
+  it('renders the big cyan data-text block on the annotation click and the subhead as always-visible chrome', () => {
+    const wrapper = mountTwoBar({
+      bars,
+      chip: 'FY26',
+      dataText: {
+        lines: ['1.9M VCPU INSTALLED', '0.12M VCPU HOURS ACROSS 12 CLUSTERS · Q3'],
+        subline: 'SELF-MANAGED RACKS VS MANAGED CLOUD REGIONS.',
+      },
+      subhead: 'INFRA',
+      subheadAccent: 'COST · FY26 SPLIT',
+    })
+
+    const lines = wrapper.findAll('.sf-tbc-dataline')
+    expect(lines).toHaveLength(3)
+    lines.forEach((line) => expect(line.attributes('fill')).toBe('#84eef8'))
+    expect(Number(lines[0].attributes('font-size'))).toBe(40)
+    expect(Number(lines[2].attributes('font-size'))).toBe(29)
+    // Rides the shared annotation click (click 3), like the other glyph rows.
+    expect(wrapper.find('.sf-tbc-annot').attributes('data-vclick')).toBe('3')
+
+    // Subhead is header chrome — always visible, centered, two-tone.
+    const subhead = wrapper.find('text.sf-tbc-subhead')
+    expect(subhead.exists()).toBe(true)
+    expect(subhead.attributes('text-anchor')).toBe('middle')
+    expect(Number(subhead.attributes('font-size'))).toBe(71)
+    expect(subhead.attributes('data-vclick')).toBeUndefined()
+    expect(subhead.text()).toContain('INFRA')
+    expect(subhead.html()).toContain('#66fb00')
   })
 
   it('renders no annotation layer when the diagram has no labels or chip', () => {
