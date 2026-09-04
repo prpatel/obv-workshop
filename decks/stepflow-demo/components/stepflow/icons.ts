@@ -80,6 +80,25 @@ const ICON_REGISTRY: Record<string, string> = {
   <path d="M20 14h2" />
   <path d="M15 13v2" />
   <path d="M9 13v2" />`,
+  // StackPanels TRANSFORM glyph (art_mkVNxsft §1.2; visual identification from
+  // the frame-440 crops: a stroke-outline funnel narrowing into a stem).
+  filter: `<path d="M10 20a1 1 0 0 0 .553.895l2 1A1 1 0 0 0 14 21v-7a2 2 0 0 1 .517-1.341L21.74 4.67A1 1 0 0 0 21 3H3a1 1 0 0 0-.742 1.67l7.225 7.989A2 2 0 0 1 10 14z" />`,
+  // StackPanels MONITORING glyph (art_mkVNxsft §1.2; visual identification
+  // from the frame-440 crops: a north-pointing plane squished into a wide,
+  // short box — the bottom notch merges into the center stroke at that scale).
+  'navigation-2': `<polygon points="12 2 19 21 12 17 5 21 12 2" />`,
+  // StackPanels INGESTION glyph (art_mkVNxsft §1.2 names it a "3×3 dash-grid
+  // glyph") — sheet-traced nine-dash grid; no exact Lucide equivalent at
+  // 1.40 (grip is nine dots, not dashes).
+  'dash-grid': `<path d="M3 5h4" />
+  <path d="M10 5h4" />
+  <path d="M17 5h4" />
+  <path d="M3 12h4" />
+  <path d="M10 12h4" />
+  <path d="M17 12h4" />
+  <path d="M3 19h4" />
+  <path d="M10 19h4" />
+  <path d="M17 19h4" />`,
 }
 
 // Visible generic fallback (Lucide "circle-help") for unknown keys, in the same
