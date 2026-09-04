@@ -17,6 +17,8 @@ const props = withDefaults(defineProps<{
   title?: string
   /** Header tail rendered in chrome green (titleAccent convention). */
   titleAccent?: string
+  /** Gray footer chrome: one short line per card column, revealed last. */
+  footer?: { left: string; right: string }
 }>(), { palette: () => ({}), accentPalette: () => ({}) })
 
 // Cards read the cool chainBlue family; the marker + label rows read the v7
@@ -33,21 +35,39 @@ const layout = computed(() => spineLayout(centerCount.value, props.geometry))
 const CHROME_GREEN = '#66fb00'
 const HEADER_FILL = '#ffffff'
 
-// Typography measured at source height 1144px (research §F6: label row ≈ 27px,
-// card title ≈ 40px, caption ≈ 24px), rescaled with the layout height; the
-// header matches StepFlow's house chrome scale (34px at 848).
+// Outlined-card plate (wave-1 report §3): near-black, never the accent fill.
+const CARD_PLATE = '#0b0a11'
+// Footer chrome tones, measured off the settled v7 frame (report §3).
+const FOOTER_RULE = '#202020'
+const FOOTER_LINE = '#a0a0a0'
+
+// Typography measured at source height 1144px (research §F6), rescaled with
+// the layout height. Header sized off the settled v7 spine frame (glyph run
+// y 52–153 at 1144: cap 8.83%h, baseline 13.4%h; JetBrains Mono renders
+// ~0.752·font-size as glyph height, so 0.0883/0.752 ≈ 0.1175·h — the
+// wave-1 generic 0.085·h size lands only ~6.4% cap). Captions go to 44px at
+// 1080-canvas scale, card-colored (report §3 fix list); the card title
+// fills the outlined plate so the card bbox ink lands near the measured
+// 42–45%.
 const type = computed(() => {
   const h = layout.value.viewBox.height
-  const chrome = h / 848
   const src = h / 1144
   return {
-    headerSize: 34 * chrome,
+    headerSize: 0.1175 * h,
+    headerBaseline: 0.134 * h,
     labelSize: 27 * src,
-    cardTitleSize: 40 * src,
-    captionSize: 24 * src,
+    cardTitleSize: 105 * src,
+    captionSize: 44 * (h / 1080),
     flankSize: 15 * src,
+    footerSize: 24 * (h / 1080),
   }
 })
+
+// Two-tone cards (report §3): the left card reads the family accent (the demo
+// seeds cyan #24cce5), the right card the accentAlt override (blue #3891e3).
+function cardTone(side: 'left' | 'right'): string {
+  return side === 'right' ? (p.value.accentAlt ?? p.value.accent) : p.value.accent
+}
 
 // Card icons render in a 24-unit Lucide space at ≈ 0.3 × card height.
 const ICON_BOX = 24
@@ -156,7 +176,7 @@ const sideCards = computed(() => props.nodes.filter((n) => n.side === 'left' || 
         >{{ node.title }}</text>
       </template>
 
-      <!-- Side card: rounded block with the title inside, caption beneath. -->
+      <!-- Side card: outlined plate with the title inside, caption beneath. -->
       <template v-else>
         <rect
           class="sf-spine-card"
@@ -165,14 +185,16 @@ const sideCards = computed(() => props.nodes.filter((n) => n.side === 'left' || 
           :width="fmt(layout.cards[node.side].w)"
           :height="fmt(layout.cards[node.side].h)"
           :rx="fmt(layout.viewBox.height * 0.012)"
-          :fill="p.accent"
+          :fill="CARD_PLATE"
+          :stroke="cardTone(node.side)"
+          :stroke-width="fmt(5 * (layout.viewBox.height / 1144))"
         />
         <g
           v-if="node.icon"
           class="sf-spine-card-icon"
           :transform="iconTransform(layout.cards[node.side].cx, layout.cards[node.side].cy - layout.cards[node.side].h * 0.18, layout.cards[node.side].h)"
           fill="none"
-          :stroke="p.iconStroke"
+          :stroke="cardTone(node.side)"
           stroke-width="2"
           stroke-linecap="round"
           stroke-linejoin="round"
@@ -184,9 +206,11 @@ const sideCards = computed(() => props.nodes.filter((n) => n.side === 'left' || 
           :y="node.icon ? layout.cards[node.side].cy + layout.cards[node.side].h * 0.2 : layout.cards[node.side].cy"
           text-anchor="middle"
           dominant-baseline="central"
-          :font-size="type.cardTitleSize"
-          fill="#ffffff"
-          letter-spacing="0.04em"
+          :font-size="fmt(type.cardTitleSize * (node.titleScale ?? 1))"
+          :fill="cardTone(node.side)"
+          font-weight="800"
+          :textLength="fmt(layout.cards[node.side].w)"
+          lengthAdjust="spacingAndGlyphs"
         >{{ node.title }}</text>
         <text
           v-if="node.caption"
@@ -194,18 +218,52 @@ const sideCards = computed(() => props.nodes.filter((n) => n.side === 'left' || 
           :x="layout.cards[node.side].cx"
           :y="fmt(layout.cards[node.side].captionY)"
           text-anchor="middle"
-          :font-size="type.captionSize"
-          :fill="p.accent"
+          :font-size="fmt(type.captionSize)"
+          :fill="cardTone(node.side)"
         >{{ node.caption }}</text>
       </template>
+    </g>
+
+    <!--
+      Footer chrome arrives as the final reveal group after the cards (measured
+      beats: bottom rows 4.4–5.8s): the dim 75%-wide rule centered on the axis
+      plus two short gray lines centered under the card columns.
+    -->
+    <g v-if="footer" v-click="nodes.length + 1" class="sf-spine-item sf-spine-footer">
+      <rect
+        class="sf-spine-footer-rule"
+        :x="fmt(layout.footer.ruleCx - layout.footer.ruleW / 2)"
+        :y="fmt(layout.footer.ruleCy - layout.footer.ruleH / 2)"
+        :width="fmt(layout.footer.ruleW)"
+        :height="fmt(layout.footer.ruleH)"
+        :fill="FOOTER_RULE"
+      />
+      <text
+        class="sf-spine-footer-line"
+        :x="fmt(layout.cards.left.cx)"
+        :y="fmt(layout.footer.lineY)"
+        text-anchor="middle"
+        :font-size="fmt(type.footerSize)"
+        :fill="FOOTER_LINE"
+        letter-spacing="0.06em"
+      >{{ footer.left }}</text>
+      <text
+        class="sf-spine-footer-line"
+        :x="fmt(layout.cards.right.cx)"
+        :y="fmt(layout.footer.lineY)"
+        text-anchor="middle"
+        :font-size="fmt(type.footerSize)"
+        :fill="FOOTER_LINE"
+        letter-spacing="0.06em"
+      >{{ footer.right }}</text>
     </g>
 
     <text
       v-if="title"
       class="sf-spine-header"
       :x="layout.viewBox.width * 0.033"
-      :y="layout.viewBox.height * 0.075"
-      :font-size="type.headerSize"
+      :y="fmt(type.headerBaseline)"
+      :font-size="fmt(type.headerSize)"
       :fill="HEADER_FILL"
       letter-spacing="0.06em"
     ><tspan>{{ title }}</tspan><tspan

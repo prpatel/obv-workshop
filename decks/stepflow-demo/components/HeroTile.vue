@@ -17,6 +17,8 @@ const props = withDefaults(defineProps<{
   title?: string
   /** Header tail rendered in chrome green (titleAccent convention). */
   titleAccent?: string
+  /** Secondary white header line at recording scale (report §2 chrome rule 4). */
+  subtitle?: string
 }>(), { palette: () => ({}) })
 
 const p = computed(() => resolvePalette({ ...orangeSpine, ...props.palette }))
@@ -26,6 +28,35 @@ const layout = computed(() => heroTileLayout(props.geometry))
 // never a palette field (README: title chrome convention).
 const CHROME_GREEN = '#66fb00'
 const HEADER_FILL = '#ffffff'
+
+// Gradient id is component-unique (one HeroTile per slide by contract).
+const GLOW_ID = 'sf-hero-glow-gradient'
+
+// Halo stops (objectBoundingBox on the halo circle): plateau strength 0.32
+// held to 0.77R, exhausting by the measured 156px cutoff. Calibrated
+// empirically in report-faithful units (dark-red 24-40-lum mass of
+// non-black; reference target 6.9%): plateau end 0.735R measured 5.09%,
+// 0.90R measured 14.48%; linear interpolation puts 0.77R at ~6.9%.
+const glowStops = [
+  { offset: 0, opacity: 0.32 },
+  { offset: 0.77, opacity: 0.32 },
+  { offset: 1, opacity: 0 },
+]
+
+// Measured off the settled v7 tile frame: primary glyph run y 60–154 at
+// source height 1144 (cap 8.22%h, baseline 13.5%h); with the ~0.752
+// glyph/font ratio the size is 0.1094·h — the brief's 70–90px @1080 band
+// (top) rather than the wave-1 generic 0.085·h size, which lands ~6.4% cap.
+// The secondary line rides one gap below at ~40px glyphs on the 1080 canvas.
+const headerType = computed(() => {
+  const h = layout.value.viewBox.height
+  return {
+    primarySize: 0.1094 * h,
+    primaryBaseline: 0.1346 * h,
+    secondarySize: 53 * (h / 1080),
+    secondaryBaseline: (0.1346 + 0.076) * h,
+  }
+})
 
 // The dark icon occupies ≈ 0.19 of the tile side (measured 46×48 inside 244).
 const ICON_BOX = 24
@@ -60,8 +91,28 @@ function resolveIcon(key: string): string {
     role="img"
     :aria-label="`hero tile diagram${label ? `: ${label}` : ''}`"
   >
+    <defs>
+      <radialGradient :id="GLOW_ID">
+        <stop
+          v-for="stop in glowStops"
+          :key="stop.offset"
+          :offset="stop.offset"
+          :stop-color="p.accent"
+          :stop-opacity="stop.opacity"
+        />
+      </radialGradient>
+    </defs>
+
     <!-- Single click: tile + icon + label arrive together (one ~200ms event in v7). -->
     <g v-click="1" class="sf-hero">
+      <!-- Ambient red halo under/around the tile (reveals with the tile). -->
+      <circle
+        class="sf-hero-glow"
+        :cx="fmt(layout.cx)"
+        :cy="fmt(layout.cy)"
+        :r="fmt(layout.glowR)"
+        :fill="`url(#${GLOW_ID})`"
+      />
       <rect
         class="sf-hero-tile"
         :x="fmt(layout.cx - layout.size / 2)"
@@ -97,15 +148,26 @@ function resolveIcon(key: string): string {
       v-if="title"
       class="sf-hero-header"
       :x="layout.viewBox.width * 0.033"
-      :y="layout.viewBox.height * 0.075"
-      :font-size="layout.viewBox.height * (34 / 848)"
+      :y="fmt(headerType.primaryBaseline)"
+      :font-size="fmt(headerType.primarySize)"
       :fill="HEADER_FILL"
       letter-spacing="0.06em"
     ><tspan>{{ title }}</tspan><tspan
         v-if="titleAccent"
-        :dx="layout.viewBox.height * (34 / 848) * 0.28"
+        :dx="headerType.primarySize * 0.28"
         :fill="CHROME_GREEN"
       >{{ titleAccent }}</tspan></text>
+
+    <!-- Secondary white header line at recording scale (~40px at 1080). -->
+    <text
+      v-if="subtitle"
+      class="sf-hero-subtitle"
+      :x="layout.viewBox.width * 0.033"
+      :y="fmt(headerType.secondaryBaseline)"
+      :font-size="fmt(headerType.secondarySize)"
+      :fill="HEADER_FILL"
+      letter-spacing="0.06em"
+    >{{ subtitle }}</text>
   </svg>
 </template>
 

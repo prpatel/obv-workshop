@@ -213,9 +213,12 @@ canvasWidth: 1920
   VerticalSpine demo (v7 family): the center axis is the rhythm — no drawn
   spine line. One click per element, top → bottom: the orange diamond marker,
   then the label row (with flanking diamonds), then the two side cards with
-  captions. Data order IS the click order; an empty title + side 'center'
-  renders the marker. AutoAdvance is renderless deck-level wiring (`a` key,
-  ?autoplay=N on the URL).
+  captions, and finally the gray footer row (per-column lines + dim rule).
+  Cards are outlined plates — cyan #24cce5 left, blue #3891e3 right via the
+  palette accentAlt — with big card-colored captions (wave-1 report §3).
+  Data order IS the click order; an empty title + side 'center' renders the
+  marker. AutoAdvance is renderless deck-level wiring (`a` key, ?autoplay=N
+  on the URL).
 -->
 
 <div class="sf-demo-stage">
@@ -223,11 +226,13 @@ canvasWidth: 1920
 <VerticalSpine
   title="CENTER AXIS"
   titleAccent="RHYTHM"
+  :palette="{ accent: '#24cce5', accentAlt: '#3891e3' }"
+  :footer="{ left: 'MEASURED FROM THE RECORDING', right: 'ONE CLICK PER ELEMENT' }"
   :nodes="[
     { id: 'marker', title: '', tone: 'alt', side: 'center' },
     { id: 'label', title: 'TRANSPARENCY IN ACTION', tone: 'alt', side: 'center' },
     { id: 'left-stat', title: '4X', caption: 'faster pipelines', tone: 'accent', side: 'left' },
-    { id: 'right-stat', title: '50%', caption: 'less toil', tone: 'accent', side: 'right' },
+    { id: 'right-stat', title: '50%', caption: 'less toil', tone: 'accent', side: 'right', titleScale: 0.76 },
   ]"
 />
 
@@ -248,9 +253,11 @@ canvasWidth: 1920
 
 <!--
   HeroTile demo (v7 segment 2): one solid orange tile dead on the spine axis
-  with a dark icon — the section-divider card. Single click; the label is
-  optional and omitted here to match the recording. Palette is the measured
-  orangeSpine preset verbatim (#f85721).
+  with a dark icon, ringed by a tight red halo that reveals with the tile —
+  the section-divider card. Single click; the label is optional and omitted
+  here to match the recording, while the secondary white header line rides
+  below the primary chrome at recording scale. Palette is the measured
+  orangeSpine preset verbatim (#f85721); the halo derives from the accent.
 -->
 
 <div class="sf-demo-stage">
@@ -258,6 +265,7 @@ canvasWidth: 1920
 <HeroTile
   title="SECTION"
   titleAccent="DIVIDER"
+  subtitle="STEPFLOW HOUSE STYLE"
   icon="user-round"
 />
 
