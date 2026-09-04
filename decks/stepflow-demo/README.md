@@ -40,11 +40,11 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (9) · VerticalSpine (4) · HeroTile (1) · SchematicRows (10) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (3) · SegmentTimeline (3) · StackPanels (4) · MilestoneLanes (5) · HexCluster (3)
+├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (13) · VerticalSpine (4) · HeroTile (1) · SchematicRows (10) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (3) · SegmentTimeline (3) · StackPanels (4) · MilestoneLanes (5) · HexCluster (3)
 ├─ components/
 │  ├─ StepFlow.vue                # the serpentine flow diagram (auto-imported by Slidev)
 │  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
-│  ├─ NodeEdge.vue                # free-position network diagram component (diagram-family spec)
+│  ├─ NodeEdge.vue                # bordered-square network diagram component (diagram-family spec)
 │  ├─ VerticalSpine.vue           # family built-in: center-axis rhythm (marker, label row, side cards)
 │  ├─ HeroTile.vue                # family built-in: single-click section-divider tile
 │  ├─ SchematicRows.vue           # terminal-style token listing with an embedded thin-line schematic
@@ -137,7 +137,7 @@ the deck style, not a palette field.
 
 | Field            | Type     | Fallback             | Consumed by                              |
 | ---------------- | -------- | -------------------- | ---------------------------------------- |
-| `accentAlt`      | `string` | — (stays undefined)  | status tones; NodeEdge red edges          |
+| `accentAlt`      | `string` | — (stays undefined)  | status tones; NodeEdge amber `alt` nodes |
 | `accentTertiary` | `string` | `accent`             | teal-green (`#1cd798` family): StackPanels green panel, HexCluster green icon and text |
 
 `accentTertiary` merges with the same override-wins rule as every top-level
@@ -172,7 +172,7 @@ inline on the demo slides; data order is the click order for every family.
 | --------------- | ------------------------------------------------------- | ----------------------------------- | --------------------------------------------- | ---------- | ----------- |
 | `StepFlow`      | `steps.ts` — `StepFlowStep[]`                           | 6 — one per step                    | `cyanOnBlack`                                 | 2          | —           |
 | `StairChain`    | `stair.ts` — `StairStep[]` + optional `StairCallout`    | 1 + one per block                   | `chainBlue`                                   | 3          | —           |
-| `NodeEdge`      | `nodeEdge.ts` — `NodeEdgeData` (nodes/edges/status)     | per node, then per edge, then per status | `cyanOnBlack` + `statusAmber` recording base | 4          | `database` · `cloud` |
+| `NodeEdge`      | `nodeEdge.ts` — `NodeEdgeData` (nodes/edges/status)     | per node, then per edge, then per status | `cyanOnBlack` + measured seed (`#33a5cd`/`#e6b434`/`#5a1e1e`) | 4          | — |
 | `VerticalSpine` | `spine.ts` — `SpineNode[]`; an empty-title center node renders the diamond marker, `side` picks the card slots | 4 — marker, label row, 2 side cards | `chainBlue` cards + `orangeSpine` spine/label | 5          | —           |
 | `HeroTile`      | `spine.ts` — `HeroTileData` (tile + icon + optional label on the spine axis) | 1 — tile, icon, label together | `orangeSpine` verbatim (`#f85721`)            | 6          | `user-round` |
 | `SchematicRows` | `rows.ts` — `SchematicRowsData` (rows + optional schematic) | one per row; schematic strokes share their attached row's click | override: v6-measured cool `#2f95b9` + amber `#f2ba1f` | 7          | —           |
@@ -306,36 +306,40 @@ amber tick markers spread across lanes on the final click. The palette
 defaults to the measured `statusAmber` preset verbatim: red bars are
 `tone: 'alt'`.
 
-## Family component: NodeEdge (`components/NodeEdge.vue`)
-
 The free-position node-edge network built-in, on the shared contract
-(v3 recording — research art_0AzKGXnD §F2, re-measured against frame crops).
-Node positions are **data**, never computed: `(xFrac, yFrac)` are
-canvas fractions of the 1920×1080 stage. Edges are polylines over the same
-fractions, drawn with the StepFlow dim-base + stacked accent-copy dashoffset
-draw; the optional status layer (solid blocks, outlined boxes, arrow glyphs)
-hangs off a node and reveals additively — the recording's amber→red swap is
-modeled **appearance-only** (locked deviation): nothing is ever removed.
+(src-3 recording — re-measured against the settle frame t=4.0, fidelity
+report art_v4jVdTnp §2, which corrects the earlier circular-outline read:
+those were the bounding boxes). Node positions are **data**, never computed:
+`(xFrac, yFrac)` are canvas fractions of the 1920×1080 stage. The node
+primitive is a ~100px SQUARE — a `#0b0a11` plate, a 6px tone-colored border,
+and a 3-line ~20px tone-colored label inside — plus the solid bright-red
+status square (`tone: 'status'`, ~102×149px, bright red reserved for status
+only). Edges are dim-red polylines over the same fractions (the palette
+`track`, ~6px) that pop in — measured at the recording's native fps, an edge
+reaches full ink 1–2 frames after onset (~55–80ms): a pop, not a dashoffset
+draw, and no dim base edge exists before reveal. The optional status layer
+(solid blocks, outlined boxes, arrow glyphs) hangs off a node and reveals
+additively — the recording's amber→red swap is modeled **appearance-only**
+(locked deviation): nothing is ever removed. Static chrome: a red ambient
+wash behind the network zone, the two-line terminal readout bottom-left, and
+the 7.2%h mono header.
 
-Choreography: one click per node (data order), then one per edge, then one per
-status element — all native `v-click`s, instant backward nav, reduced-motion
-freezes reveals.
+Choreography: one click per node (data order, ~70ms pop), then one per edge
+(~80ms pop), then one per status element — all native `v-click`s, instant
+backward nav, reduced-motion freezes reveals.
 
 ```md
 <NodeEdge
   title="DATA"
   title-accent="PLATFORM"
-  :palette="{ accent: '#349aea', accentAlt: '#e5413f' }"
+  :palette="{ accent: '#33a5cd', accentAlt: '#e6b434', track: '#5a1e1e' }"
+  :terminal="['LAST DEPLOY 14M AGO', 'VER 2.4.1']"
   :nodes="[
-    { id: 'ingest', xFrac: 0.6363, yFrac: 0.4017, tone: 'alt', label: 'INGEST' },
-    { id: 'catalog', xFrac: 0.7569, yFrac: 0.7723, tone: 'plain', icon: 'database' },
+    { id: 'ingest', xFrac: 0.515, yFrac: 0.524, tone: 'accent', label: ['INGEST', 'EVENTS', '12K/S'] },
+    { id: 'lag', xFrac: 0.159, yFrac: 0.605, tone: 'status', label: ['SLOW', '5M'] },
   ]"
   :edges="[
-    { from: 'ingest', to: 'catalog', status: true,
-      points: [[0.6363, 0.4476], [0.6363, 0.8462]] },
-  ]"
-  :status="[
-    { attach: 'catalog', text: 'SLOW 5m', tone: 'alt', kind: 'block' },
+    { from: 'ingest', to: 'lag', points: [[0.515, 0.524], [0.159, 0.605]] },
   ]"
 />
 ```
@@ -347,43 +351,45 @@ Component props:
 | `nodes`       | `FlowNode[]` (required)       | Free-position nodes; positions are data (canvas fractions)     |
 | `edges`       | `FlowEdge[]` (required)       | Polylines between node ids; fractions of the canvas            |
 | `status`      | `FlowStatus[]`                | Optional status layer, one click per element                   |
-| `palette`     | `Partial<StepFlowPalette>`    | Merged over the measured `cyanOnBlack` preset (`statusAmber` is the recording's base) |
-| `title`       | `string`                      | Mono header line rendered top-left (e.g. `DATA`)               |
+| `palette`     | `Partial<StepFlowPalette>`    | Merged over the measured `cyanOnBlack` preset (the demo seeds the recording's `#33a5cd`/`#e6b434`/`#5a1e1e`) |
+| `title`       | `string`                      | Mono header line rendered top-left at 7.2%h (e.g. `DATA`)      |
 | `titleAccent` | `string`                      | Header tail rendered in chrome green (two-tone chrome)         |
+| `terminal`    | `string[]`                    | White mono readout lines, bottom-left (one row each)           |
 
 Data contract (exported from `components/stepflow/nodeEdge.ts`; the exact shape
 an MCP agent writes):
 
 ```ts
 interface FlowNode {
-  id: string                       // stable key — edge endpoints + status attachment
-  xFrac: number                    // circle-center x, canvas fraction [0, 1]
-  yFrac: number                    // circle-center y, canvas fraction [0, 1]
-  tone: 'accent' | 'alt' | 'plain' // accent/alt stroke; plain = chrome white + icon
-  icon?: string                    // key into the icon registry (plain nodes)
-  label?: string                   // short label rendered inside the circle
+  id: string                        // stable key — edge endpoints + status attachment
+  xFrac: number                     // square-center x, canvas fraction [0, 1]
+  yFrac: number                     // square-center y, canvas fraction [0, 1]
+  tone: 'accent' | 'alt' | 'plain' | 'status'
+  // accent/alt/plain = bordered plate; 'status' = solid bright-red status square
+  label?: string | string[]         // label lines rendered inside the square (tone-colored)
 }
 interface FlowEdge {
-  from: string                     // FlowNode.id
-  to: string                       // FlowNode.id
-  points: [number, number][]       // polyline vertices, canvas fractions
-  status?: boolean                 // red status edge → dim base + accentAlt draw
+  from: string                      // FlowNode.id
+  to: string                        // FlowNode.id
+  points: [number, number][]        // polyline vertices, canvas fractions — pops in dim red
 }
 interface FlowStatus {
-  attach: string                   // FlowNode.id this element hangs off
-  text: string                     // short label inside block/outline, under the arrow
-  tone: 'alt' | 'accent'           // palette role of the element's fill/stroke
+  attach: string                    // FlowNode.id this element hangs off
+  text: string                      // short label inside block/outline, under the arrow
+  tone: 'alt' | 'accent'            // palette role of the element's fill/stroke
   kind: 'block' | 'outline' | 'arrow'
 }
 ```
 
-Layout rules an author can rely on: nodes render as ~48px-radius outlined
-circles (measured 5.0%w); block/outline status elements hang left of their
-node, arrows hang below; edges must reference known node ids and stay inside
-the canvas — violations throw `RangeError` (at build/authoring time), never
-render blank. `polylinePath`/`polylineLength` now live in `paths.ts`, shared
-by the NodeEdge edges and the SchematicRows schematic (the extraction
-triggered when SchematicRows became the third consumer).
+Layout rules an author can rely on: nodes render as ~96px squares (5.0%w,
+rx 10, 6px border; the status square is ~102×149px); block/outline status
+elements hang left of their node, arrows hang below; edges must reference
+known node ids and stay inside the canvas — violations throw `RangeError`
+(at build/authoring time), never render blank. `polylinePath` lives in
+`paths.ts`, shared with the SchematicRows schematic (the extraction
+triggered when SchematicRows became the third consumer); the dashoffset-era
+`polylineLength` no longer has a NodeEdge consumer (edges pop, they don't
+draw) and remains exported from `paths.ts` for SchematicRows.
 
 ## Family component: SchematicRows (`components/SchematicRows.vue`)
 
@@ -408,20 +414,6 @@ Locked deviation: the recording's continuous auto-run (a typewriter effect) is
 re-paced to one click per row — no typewriter is built. Layout constants: row
 pitch 5.8%h, first row 31.5%h, code margin 6.5%w, indent step 4.1%w, mono size
 2.5%h — all re-measured from the settled v6 frame.
-
-The optional **highlight band** (`highlight: { row, xFrac?, wFrac?, hFrac? }`)
-is the recording's dim "current line": a `#0a2830 → #000020 → #002000`
-gradient rect behind one row (measured t=14.1 defaults: 59.37%w × 5.2%h
-starting at 2.65%w), centered on that row's glyph box and fading in on the
-attached row's click with the shared 150ms fade and instant backward snap.
-Unknown row ids and out-of-range fractions throw `RangeError`, like every
-geometry input.
-
-The demo slide's seed (slide 7) is re-transcribed for the wave-1 fidelity
-rework (report art_v4jVdTnp §5): ten 60–110-char rows reaching ~94% of the
-canvas width, token tones weighted white > green > amber > blue to the
-measured t=14.1 masses (42,920 / 14,008 / 8,419 / 3,210 px). Typography is
-unchanged — the deficit was data, not glyphs.
 
 #### HexCluster — hexagon cluster (v5)
 
@@ -492,7 +484,7 @@ spacing only), so a varied recorded rhythm is encoded as its mean cadence.
 | 3 | StairChain | 7 | 0.3–0.6 s/click (~300 ms block stagger early, 0.4–0.6 s late) | `4` | ≈0.57 s/click |
 | 4 | NodeEdge | 9 | 0.3–0.9 s/click, mean ≈0.55 s (wave-1 family band) | `5` | ≈0.56 s/click |
 | 5 | VerticalSpine | 4 | ~1.2–1.5 s between phases (marker 0.4 s → bottom rows 5.8 s) | `5` | 1.25 s/click |
-| 7 | SchematicRows | 10 | 0.3–0.5 s/row | `4` | 0.4 s/row |
+| 7 | SchematicRows | 8 | 0.3–0.5 s/row | `4` | 0.5 s/row |
 | 8 | TwoBarCompare | 3 | ≥1.5 s between bars | `5` | ≈1.67 s/click |
 | 10 | TileGrid | 6 | ≈1.45 s/tile (measured 27.32→28.77 s) | `8.7` | 1.45 s/tile |
 | 12 | SegmentTimeline | 3 | node pop ≈140ms, then ≈2.4s fill sweep per segment (measured 10–90% over 2.55s) | `7.5` | 2.5 s/click |

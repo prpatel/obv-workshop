@@ -1,8 +1,19 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { nodeEdgeLayout, type FlowEdge, type FlowNode, type FlowStatus } from './stepflow/nodeEdge'
+import { computed, useId } from 'vue'
+import {
+  EDGE_STROKE,
+  LABEL_PITCH_FRAC,
+  LABEL_SIZE_FRAC,
+  NODE_PLATE,
+  NODE_RX,
+  NODE_STROKE,
+  STATUS_RED,
+  nodeEdgeLayout,
+  type FlowEdge,
+  type FlowNode,
+  type FlowStatus,
+} from './stepflow/nodeEdge'
 import { resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
-import { iconPath, ICON_FALLBACK } from './stepflow/icons'
 
 const props = withDefaults(defineProps<{
   /** Free-position nodes; positions are data (canvas fractions), never computed. */
@@ -17,19 +28,24 @@ const props = withDefaults(defineProps<{
   title?: string
   /** Header tail rendered in chrome green after `title` (two-tone chrome convention). */
   titleAccent?: string
+  /** Terminal readout lines, bottom-left (the recording's "LAST DEPLOY 14m AGO" row). */
+  terminal?: string[]
 }>(), { status: () => [], palette: () => ({}) })
 
 const p = computed(() => resolvePalette(props.palette))
 const layout = computed(() => nodeEdgeLayout({ nodes: props.nodes, edges: props.edges, status: props.status }))
+const washId = useId()
 
-// Node tones map to palette roles; the plain tone is chrome white (measured
-// node stroke #f5f4f7) — chrome, not a palette field, like the header fill.
+// Node tones map to palette roles; the plain tone is chrome white (the
+// recording's white-bordered node) — chrome, not a palette field, like the
+// header fill. The status tone is the solid bright-red status square.
 const PLAIN_STROKE = '#f5f4f7'
 const CHROME_GREEN = '#66fb00'
 
 function toneColor(tone: FlowNode['tone']): string {
   if (tone === 'accent') return p.value.accent
   if (tone === 'alt') return p.value.accentAlt ?? p.value.accent
+  if (tone === 'status') return STATUS_RED
   return PLAIN_STROKE
 }
 
@@ -38,31 +54,28 @@ function statusColor(tone: FlowStatus['tone']): string {
   return toneColor(tone)
 }
 
-// Icons render in a 24-unit Lucide space; the icon box fits the inner square
-// chip measured inside plain nodes (~40px of the 66px square).
-const ICON_BOX = 24
-const ICON_SIZE = 40
-function iconTransform(cx: number, cy: number): string {
-  const s = ICON_SIZE / ICON_BOX
-  return `translate(${fmt(cx - ICON_SIZE / 2)} ${fmt(cy - ICON_SIZE / 2)}) scale(${fmt(s)})`
+// Round to 4 decimals so computed px values render clean (0.072 × 1080 → 77.76, not 77.75999999999999).
+function round4(n: number): number {
+  return Number(n.toFixed(4))
 }
 
-// Unknown key renders the visible fallback (never undefined into v-html) and
-// names the bad key in dev so the author fixes the string.
-function resolveIcon(key: string): string {
-  const path = iconPath(key)
-  if (!path && import.meta.env?.DEV) {
-    console.warn(`[NodeEdge] unknown icon key "${key}" — rendering the fallback icon`)
-  }
-  return path ?? ICON_FALLBACK
-}
-
-// Typography on the StepFlow scale: 34px title at source height 848, rescaled
-// so custom viewBox sizes stay proportional (StepFlow.vue pattern).
+// Typography on the recording's chrome scale: the header cap measures 7.2%h
+// (82px at the 1144-tall source), node labels ~20px with ~26px line pitch at
+// 1080 — all as height fractions so custom viewBox sizes stay proportional.
 const type = computed(() => {
-  const k = layout.value.viewBox.height / 848
-  return { titleSize: 34 * k, labelSize: 13, statusSize: 15 }
+  const h = layout.value.viewBox.height
+  return {
+    titleSize: round4(0.072 * h),
+    labelSize: round4(LABEL_SIZE_FRAC * h),
+    labelPitch: round4(LABEL_PITCH_FRAC * h),
+    terminalSize: round4(0.0209 * h),
+  }
 })
+
+// Vertical label line centers: n lines pitched around the square center.
+function labelY(cy: number, line: number, count: number): number {
+  return round4(cy + (line - (count - 1) / 2) * type.value.labelPitch)
+}
 
 // Chunky down-arrow glyph for status kind 'arrow', centered on (cx, cy).
 function arrowPath(cx: number, cy: number, h: number): string {
@@ -76,10 +89,6 @@ function arrowPath(cx: number, cy: number, h: number): string {
 function fmt(n: number): string {
   return String(parseFloat(n.toFixed(4)))
 }
-
-function px(n: number): string {
-  return `${fmt(n)}px`
-}
 </script>
 
 <template>
@@ -89,93 +98,85 @@ function px(n: number): string {
     role="img"
     :aria-label="`${nodes.length}-node network diagram`"
   >
-    <!-- Dim base edges: the full polylines, always visible. -->
-    <path
-      v-for="(edge, j) in layout.edges"
-      :key="`base-${j}`"
-      class="sf-ne-edge-base"
-      :d="edge.d"
-      fill="none"
-      :stroke="p.track"
-      :stroke-width="6"
-      stroke-linecap="round"
-      stroke-linejoin="round"
+    <defs>
+      <!--
+        Red ambient wash behind the network zone (the recording's red haze).
+        Tuned to the report's census: the haze's visible ink must sit almost
+        entirely in the glow band (lum 41-110, chroma>25) at ~19% of
+        non-black, with only a thin 24-41 tail — hence the steep falloff.
+      -->
+      <radialGradient :id="washId" cx="50%" cy="50%" r="50%">
+        <stop offset="0" stop-color="#781e1e" stop-opacity="1" />
+        <stop offset="0.21" stop-color="#781e1e" stop-opacity="0.68" />
+        <stop offset="0.45" stop-color="#781e1e" stop-opacity="0.40" />
+        <stop offset="0.68" stop-color="#781e1e" stop-opacity="0.06" />
+        <stop offset="1" stop-color="#781e1e" stop-opacity="0" />
+      </radialGradient>
+    </defs>
+
+    <!-- Ambient layer: static chrome, not click-bound. -->
+    <ellipse
+      class="sf-ne-wash"
+      :cx="layout.viewBox.width * 0.635"
+      :cy="layout.viewBox.height * 0.68"
+      :rx="layout.viewBox.width * 0.16"
+      :ry="layout.viewBox.height * 0.215"
+      :fill="`url(#${washId})`"
     />
 
     <!--
-      Reveal binding (StepFlow.vue pattern, spike art_7Q2OtXCm): one stacked
-      accent copy per edge, pre-set via --sf-drawn to draw the whole polyline.
-      Status edges draw in accentAlt (the red status color); plain edges in
-      accent. Slidev toggles each copy's OWN slidev-vclick-hidden class —
-      hidden = fully retracted + transition:none (backward nav snaps),
-      revealed = 300ms ease-out draw.
+      Edges: one dim-red polyline per edge, revealed as a fast pop. Measured
+      from the src-3 recording at native fps: the probe zone is empty until the
+      edge's onset frame and the edge reaches full ink 1–2 frames later (~55–80ms)
+      — a pop, not a stroke draw, and no dim base edge exists before reveal.
     -->
     <path
       v-for="(edge, j) in layout.edges"
-      :key="`fill-${j}`"
+      :key="`edge-${j}`"
       v-click="nodes.length + j + 1"
-      class="sf-ne-edge-fill"
+      class="sf-ne-edge"
       :d="edge.d"
       fill="none"
-      :stroke="edge.status ? (p.accentAlt ?? p.accent) : p.accent"
-      :stroke-width="6"
+      :stroke="p.track"
+      :stroke-width="EDGE_STROKE"
       stroke-linecap="round"
       stroke-linejoin="round"
-      :style="{ '--sf-len': px(edge.length), '--sf-drawn': px(edge.length) }"
     />
 
-    <!-- One group per node: outline circle (+ inner chip + icon on plain nodes)
-         or its label, arriving on click i + 1. -->
+    <!-- One group per node: the bordered plate square with its 3-line
+         tone-colored label inside (or the solid bright-red status square),
+         arriving on click i + 1. -->
     <g
       v-for="(node, i) in layout.nodes"
       :key="node.id"
       v-click="i + 1"
       class="sf-ne-node"
     >
-      <circle
-        class="sf-ne-node-ring"
-        :cx="node.cx"
-        :cy="node.cy"
-        :r="node.r"
-        fill="none"
+      <rect
+        class="sf-ne-node-plate"
+        :x="node.cx - node.w / 2"
+        :y="node.cy - node.h / 2"
+        :width="node.w"
+        :height="node.h"
+        :rx="NODE_RX"
+        :fill="node.tone === 'status' ? STATUS_RED : NODE_PLATE"
         :stroke="toneColor(node.tone)"
-        :stroke-width="3"
+        :stroke-width="NODE_STROKE"
       />
-      <template v-if="node.tone === 'plain' && node.icon">
-        <!-- Measured inner square chip behind the icon (v3 white node). -->
-        <rect
-          class="sf-ne-node-chip"
-          :x="node.cx - node.r * 0.6875"
-          :y="node.cy - node.r * 0.6875"
-          :width="node.r * 1.375"
-          :height="node.r * 1.375"
-          rx="6"
-          fill="none"
-          :stroke="toneColor(node.tone)"
-          :stroke-width="3"
-        />
-        <g
-          class="sf-ne-node-icon"
-          :transform="iconTransform(node.cx, node.cy)"
-          fill="none"
-          :stroke="p.iconStroke"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          v-html="resolveIcon(node.icon)"
-        />
-      </template>
       <text
-        v-else-if="node.label"
+        v-if="node.label.length"
         class="sf-ne-node-label"
-        :x="node.cx"
-        :y="node.cy"
         text-anchor="middle"
-        dominant-baseline="central"
         :font-size="type.labelSize"
-        :fill="PLAIN_STROKE"
-        letter-spacing="0.08em"
-      >{{ node.label }}</text>
+        :fill="node.tone === 'status' ? '#000000' : toneColor(node.tone)"
+        letter-spacing="0.04em"
+      ><tspan
+        v-for="(line, l) in node.label"
+        :key="l"
+        :x="node.cx"
+        :y="labelY(node.cy, l, node.label.length)"
+        dominant-baseline="central"
+      >{{ line }}</tspan></text>
     </g>
 
     <!-- Status layer: one click per element, after nodes and edges. The
@@ -205,7 +206,7 @@ function px(n: number): string {
         rx="8"
         fill="none"
         :stroke="statusColor(el.tone)"
-        :stroke-width="3"
+        stroke-width="3"
       />
       <path
         v-else
@@ -218,7 +219,7 @@ function px(n: number): string {
         :y="el.cy"
         text-anchor="middle"
         dominant-baseline="central"
-        :font-size="type.statusSize"
+        :font-size="type.labelSize"
         :fill="el.kind === 'block' ? '#000000' : statusColor(el.tone)"
         letter-spacing="0.06em"
       >{{ el.text }}</text>
@@ -227,17 +228,30 @@ function px(n: number): string {
         :x="el.cx"
         :y="el.cy + el.h / 2 + 24"
         text-anchor="middle"
-        :font-size="type.statusSize"
+        :font-size="type.labelSize"
         :fill="statusColor(el.tone)"
         letter-spacing="0.06em"
       >{{ el.text }}</text>
     </g>
 
+    <!-- Terminal readout, bottom-left: the recording's white mono row. -->
+    <text
+      v-for="(line, l) in terminal"
+      :key="`terminal-${l}`"
+      class="sf-ne-terminal"
+      :x="layout.viewBox.width * 0.087"
+      :y="layout.viewBox.height * (0.738 + 0.026 * l)"
+      dominant-baseline="central"
+      :font-size="type.terminalSize"
+      fill="#ffffff"
+      letter-spacing="0.05em"
+    >{{ line }}</text>
+
     <text
       v-if="title"
       class="header"
       :x="layout.viewBox.width * 0.033"
-      :y="layout.viewBox.height * 0.075"
+      :y="layout.viewBox.height * 0.12"
       :font-size="type.titleSize"
       fill="#ffffff"
       letter-spacing="0.06em"
@@ -258,60 +272,55 @@ function px(n: number): string {
 }
 
 /*
- * Measured motion (visual-spec §9 pattern). Transition is taken from the
- * destination state: forward reveal runs the draw/fade, the hidden state's
- * transition:none makes backward nav instant — the locked decision, zero JS.
- * Scoped selectors (0,2,0 + attribute) beat Slidev's built-in
- * .slidev-vclick-target { transition: all .1s ease } — no source-order reliance.
+ * Measured motion (visual-spec §9 pattern; pops re-measured from the src-3
+ * recording at native fps — status square full in ~2–3 frames, edges in 1–2).
+ * Transition is taken from the destination state: forward reveal runs the pop,
+ * the hidden state's transition:none makes backward nav instant — the locked
+ * decision, zero JS. Scoped selectors (0,2,0 + attribute) beat Slidev's
+ * built-in .slidev-vclick-target { transition: all .1s ease }.
  */
-.sf-ne-edge-fill {
-  stroke-dasharray: var(--sf-len);
-  /* Dash phase: a --sf-len dash at offset o paints the span [0, len − o], so
-   * the offset must be the REMAINING length. Each edge carries its full
-   * analytic length in both vars — revealed = offset 0 = the whole polyline.
-   */
-  stroke-dashoffset: calc(var(--sf-len) - var(--sf-drawn));
-  transition:
-    stroke-dashoffset 300ms cubic-bezier(0, 0, 0.2, 1),
-    opacity 120ms ease-out;
+.sf-ne-edge {
+  transition: opacity 80ms ease-out;
 }
 
-.sf-ne-edge-fill.slidev-vclick-hidden {
-  stroke-dashoffset: var(--sf-len);
+.sf-ne-edge.slidev-vclick-hidden {
+  opacity: 0;
   transition: none;
 }
 
 .sf-ne-node {
-  transition: opacity 150ms ease-out;
+  transition: opacity 70ms ease-out;
 }
 
 .sf-ne-node.slidev-vclick-hidden {
+  opacity: 0;
   transition: none;
 }
 
-.sf-ne-node-ring {
+.sf-ne-node-plate {
   transform-box: fill-box;
   transform-origin: center;
-  transition: transform 120ms cubic-bezier(0, 0, 0.2, 1), opacity 150ms ease-out;
+  transition: transform 70ms cubic-bezier(0, 0, 0.2, 1);
 }
 
-.sf-ne-node.slidev-vclick-hidden .sf-ne-node-ring {
-  transform: scale(0.6);
+.sf-ne-node.slidev-vclick-hidden .sf-ne-node-plate {
+  transform: scale(0.92);
   transition: none;
 }
 
 .sf-ne-status {
-  transition: opacity 150ms ease-out;
+  transition: opacity 70ms ease-out;
 }
 
 .sf-ne-status.slidev-vclick-hidden {
+  opacity: 0;
   transition: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sf-ne-edge-fill,
+  .sf-ne-edge,
   .sf-ne-node,
-  .sf-ne-node-ring,
+  .sf-ne-node-plate,
   .sf-ne-status {
     transition: none;
   }

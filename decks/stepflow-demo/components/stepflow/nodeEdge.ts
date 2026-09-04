@@ -3,41 +3,47 @@
  *
  * Free-position network: node positions are DATA (canvas fractions), never
  * computed — the recording's network is hand-placed. Edges are polylines over
- * the same fractions; their analytic lengths drive the StepFlow dim-base +
- * stacked accent-copy dashoffset draw. Pure and SSR-safe: no DOM access, no
- * mutation of the inputs.
+ * the same fractions, revealed as fast opacity pops. Pure and SSR-safe: no DOM
+ * access, no mutation of the inputs.
  *
- * Measured from the v3 recording (research art_0AzKGXnD §F2, re-verified this
- * session against frame crops): ~100px-diameter circular node outlines
- * (5.0%w — the earlier "square nodes" read was the bounding box), thin ~6px
- * edges, one tall red status run, and a status layer of block/outline/arrow
- * elements. The recording's amber→red swap is modeled appearance-only: the
- * status layer reveals additively, one click per element.
+ * Primitive re-measured against the src-3 recording settle frame (t=4.0,
+ * fidelity report art_v4jVdTnp §2, which corrects the earlier "circular
+ * outline" read — those were the bounding boxes): nodes are ~100px SQUARES —
+ * a #0b0a11 plate, ~6px colored border, and a 3-line ~20px tone-colored label
+ * INSIDE — plus one taller solid bright-red status square. Edges are dim red
+ * (the palette track), ~6px; bright red is reserved for the status square.
+ *
+ * The v3 recording's status overlay (block/outline/arrow hung off a node)
+ * remains part of the contract, one click per element after nodes and edges.
  */
 
-import { polylineLength, polylinePath } from './paths'
+import { polylinePath } from './paths'
 
-// The helpers live in `./paths` since SchematicRows became the third consumer
-// (rule of three); re-exported so existing `./nodeEdge` imports keep working.
-export { polylineLength, polylinePath }
+// The helper lives in `./paths` (shared with SchematicRows); re-exported so
+// existing `./nodeEdge` imports keep working.
+export { polylinePath }
 
-/** A free-position node. `(xFrac, yFrac)` is the circle CENTER as a canvas fraction. */
+/** A free-position node. `(xFrac, yFrac)` is the square CENTER as a canvas fraction. */
 export interface FlowNode {
   /** Stable key — edge endpoints, status attachment, and test selectors. */
   id: string
-  /** Circle-center x as a fraction of the canvas width. */
+  /** Center x as a fraction of the canvas width. */
   xFrac: number
-  /** Circle-center y as a fraction of the canvas height. */
+  /** Center y as a fraction of the canvas height. */
   yFrac: number
-  /** Palette role: `accent` | `alt` stroke, or `plain` chrome-white with a dark icon. */
-  tone: 'accent' | 'alt' | 'plain'
-  /** Key into the icon registry (`iconPath`); unknown keys render the fallback. */
-  icon?: string
-  /** Short label rendered inside the circle (plain/icon nodes may omit it). */
-  label?: string
+  /**
+   * Palette role: `accent`/`alt` borders map to the palette fields, `plain` is
+   * chrome white, and `status` renders the solid bright-red status square.
+   */
+  tone: 'accent' | 'alt' | 'plain' | 'status'
+  /**
+   * Label lines rendered INSIDE the square, one per line (~20px, tone-colored).
+   * A single string is one line; the recording's nodes carry three.
+   */
+  label?: string | string[]
 }
 
-/** A polyline edge. `points` are canvas fractions; `status` edges draw in `accentAlt` (red). */
+/** A polyline edge. `points` are canvas fractions; edges render in the palette track (dim red). */
 export interface FlowEdge {
   /** Id of the start node (`FlowNode.id`). */
   from: string
@@ -45,8 +51,6 @@ export interface FlowEdge {
   to: string
   /** Polyline vertices as canvas fractions, first → last. */
   points: [number, number][]
-  /** Red status edge → dim base + accentAlt draw; plain edges draw in `accent`. */
-  status?: boolean
 }
 
 /**
@@ -77,10 +81,19 @@ export interface Canvas {
   height: number
 }
 
-/** Measured node geometry, v3 recording (fractions of the 1920×1080 canvas). */
-export const NODE_R_FRAC = 0.025 // circle radius ≈ 48px (diameter ≈ 5.0%w)
-export const NODE_STROKE = 3 // outline stroke, px
-export const EDGE_STROKE = 6 // measured thin edge stroke ≈ 6px at 2038w
+/** Measured node geometry, src-3 settle frame (fractions of the 1920×1080 canvas). */
+export const NODE_SIZE_FRAC = 0.05 // square side ≈ 96px at 1920 (≈101px at the recording's native 2038w)
+export const NODE_RX = 10 // plate corner radius
+export const NODE_STROKE = 6 // measured colored border 6–8px at native scale
+export const NODE_PLATE = '#0b0a11' // near-black plate under the border
+export const EDGE_STROKE = 6 // measured thin edge stroke ≈ 6px
+/** Bright red is reserved for the status square (a convention constant, like the chrome green). */
+export const STATUS_RED = '#ec413f'
+/** Measured status-square geometry: 108×158 at the recording's native 2038×1144. */
+export const STATUS_SQUARE = { w: 102, h: 149 } as const
+/** Label metrics inside a square: ~20px glyphs, ~26px line pitch at 1080. */
+export const LABEL_SIZE_FRAC = 20 / 1080
+export const LABEL_PITCH_FRAC = 26 / 1080
 
 /**
  * Convert canvas-fraction points to absolute px in the given viewBox.
@@ -99,25 +112,29 @@ export function edgePoints(points: [number, number][], viewBox: Canvas = { width
   })
 }
 
+/** Normalize the label into one string per rendered line. */
+export function labelLines(label: string | string[] | undefined): string[] {
+  if (!label) return []
+  return Array.isArray(label) ? label : [label]
+}
+
 /** Resolved px geometry for one node, ready to render. */
 export interface NodeLayout {
   id: string
   cx: number
   cy: number
-  r: number
+  /** Square side (status squares are taller than wide). */
+  w: number
+  h: number
   tone: FlowNode['tone']
-  icon?: string
-  label?: string
+  label: string[]
 }
 
 /** Resolved px geometry for one edge, ready to render. */
 export interface EdgeLayout {
   from: string
   to: string
-  status: boolean
   d: string
-  /** Analytic length — the dashoffset draw distance (`--sf-drawn`). */
-  length: number
 }
 
 /** Resolved px geometry for one status element, ready to render. */
@@ -143,7 +160,7 @@ export interface NodeEdgeLayout {
 export const STATUS_BLOCK = { w: 100, h: 150 } as const
 export const STATUS_OUTLINE = { w: 100, h: 170 } as const
 export const STATUS_ARROW = { w: 64, h: 100 } as const
-/** Gap between a status element and its node's circle edge. */
+/** Gap between a status element and its node's square edge. */
 export const STATUS_GAP = 20
 
 /**
@@ -157,13 +174,13 @@ export const STATUS_GAP = 20
  *   `nodes.length + edges.length + k + 1` — nodes in data order, then edges,
  *   then the status layer one element per click.
  * - Status geometry derives from the attached node: block/outline hang to the
- *   LEFT of the circle, the arrow hangs BELOW it.
+ *   LEFT of the square, the arrow hangs BELOW it.
  */
 export function nodeEdgeLayout(data: NodeEdgeData, viewBox: Canvas = { width: 1920, height: 1080 }): NodeEdgeLayout {
   if (data.nodes.length === 0) {
     throw new RangeError('NodeEdge needs at least one node')
   }
-  const r = NODE_R_FRAC * viewBox.width
+  const side = NODE_SIZE_FRAC * viewBox.width
   const byId = new Map<string, FlowNode>()
   for (const node of data.nodes) {
     if (!(node.xFrac >= 0 && node.xFrac <= 1) || !(node.yFrac >= 0 && node.yFrac <= 1)) {
@@ -176,10 +193,10 @@ export function nodeEdgeLayout(data: NodeEdgeData, viewBox: Canvas = { width: 19
     id: node.id,
     cx: node.xFrac * viewBox.width,
     cy: node.yFrac * viewBox.height,
-    r,
+    w: node.tone === 'status' ? STATUS_SQUARE.w : side,
+    h: node.tone === 'status' ? STATUS_SQUARE.h : side,
     tone: node.tone,
-    icon: node.icon,
-    label: node.label,
+    label: labelLines(node.label),
   }))
 
   const edges: EdgeLayout[] = data.edges.map((edge) => {
@@ -190,7 +207,7 @@ export function nodeEdgeLayout(data: NodeEdgeData, viewBox: Canvas = { width: 19
       throw new RangeError(`edge references unknown node "${edge.to}"`)
     }
     const pts = edgePoints(edge.points, viewBox)
-    return { from: edge.from, to: edge.to, status: edge.status ?? false, d: polylinePath(pts), length: polylineLength(pts) }
+    return { from: edge.from, to: edge.to, d: polylinePath(pts) }
   })
 
   const status: StatusLayout[] = (data.status ?? []).map((el) => {
@@ -200,15 +217,17 @@ export function nodeEdgeLayout(data: NodeEdgeData, viewBox: Canvas = { width: 19
     }
     const cx = node.xFrac * viewBox.width
     const cy = node.yFrac * viewBox.height
+    const halfW = (node.tone === 'status' ? STATUS_SQUARE.w : side) / 2
     if (el.kind === 'block') {
-      // Solid block hangs left of the circle, vertically centered on it.
-      return { ...el, cx: cx - r - STATUS_GAP - STATUS_BLOCK.w / 2, cy, w: STATUS_BLOCK.w, h: STATUS_BLOCK.h }
+      // Solid block hangs left of the square, vertically centered on it.
+      return { ...el, cx: cx - halfW - STATUS_GAP - STATUS_BLOCK.w / 2, cy, w: STATUS_BLOCK.w, h: STATUS_BLOCK.h }
     }
     if (el.kind === 'outline') {
-      return { ...el, cx: cx - r - STATUS_GAP - STATUS_OUTLINE.w / 2, cy, w: STATUS_OUTLINE.w, h: STATUS_OUTLINE.h }
+      return { ...el, cx: cx - halfW - STATUS_GAP - STATUS_OUTLINE.w / 2, cy, w: STATUS_OUTLINE.w, h: STATUS_OUTLINE.h }
     }
-    // Arrow glyph hangs below the circle.
-    return { ...el, cx, cy: cy + r + STATUS_GAP + STATUS_ARROW.h / 2, w: STATUS_ARROW.w, h: STATUS_ARROW.h }
+    // Arrow glyph hangs below the square.
+    const halfH = (node.tone === 'status' ? STATUS_SQUARE.h : side) / 2
+    return { ...el, cx, cy: cy + halfH + STATUS_GAP + STATUS_ARROW.h / 2, w: STATUS_ARROW.w, h: STATUS_ARROW.h }
   })
 
   return { nodes, edges, status, viewBox }
