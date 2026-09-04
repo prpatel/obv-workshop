@@ -172,7 +172,7 @@ canvasWidth: 1920
 <div class="sf-demo-stage">
 
 <NodeEdge
-  title="DATA"
+  title="DATA MESH CORE"
   title-accent="PLATFORM"
   :palette="{ accent: '#33a5cd', accentAlt: '#e6b434', track: '#5a1e1e' }"
   :terminal="['LAST DEPLOY 14M AGO', 'VER 2.4.1']"

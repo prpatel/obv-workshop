@@ -99,21 +99,28 @@ function fmt(n: number): string {
     :aria-label="`${nodes.length}-node network diagram`"
   >
     <defs>
-      <!-- Red ambient wash behind the network zone (the recording's red haze). -->
+      <!--
+        Red ambient wash behind the network zone (the recording's red haze).
+        Tuned to the report's census: the haze's visible ink must sit almost
+        entirely in the glow band (lum 41-110, chroma>25) at ~19% of
+        non-black, with only a thin 24-41 tail — hence the steep falloff.
+      -->
       <radialGradient :id="washId" cx="50%" cy="50%" r="50%">
-        <stop offset="0" stop-color="#781e1e" stop-opacity="0.9" />
-        <stop offset="0.55" stop-color="#5a1a1a" stop-opacity="0.5" />
-        <stop offset="1" stop-color="#3a1212" stop-opacity="0" />
+        <stop offset="0" stop-color="#781e1e" stop-opacity="1" />
+        <stop offset="0.21" stop-color="#781e1e" stop-opacity="0.68" />
+        <stop offset="0.45" stop-color="#781e1e" stop-opacity="0.40" />
+        <stop offset="0.68" stop-color="#781e1e" stop-opacity="0.06" />
+        <stop offset="1" stop-color="#781e1e" stop-opacity="0" />
       </radialGradient>
     </defs>
 
     <!-- Ambient layer: static chrome, not click-bound. -->
     <ellipse
       class="sf-ne-wash"
-      :cx="layout.viewBox.width * 0.47"
-      :cy="layout.viewBox.height * 0.64"
-      :rx="layout.viewBox.width * 0.44"
-      :ry="layout.viewBox.height * 0.5"
+      :cx="layout.viewBox.width * 0.635"
+      :cy="layout.viewBox.height * 0.68"
+      :rx="layout.viewBox.width * 0.16"
+      :ry="layout.viewBox.height * 0.215"
       :fill="`url(#${washId})`"
     />
 
