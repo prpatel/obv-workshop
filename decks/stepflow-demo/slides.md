@@ -630,23 +630,29 @@ canvasWidth: 1920
 ---
 
 <!--
-  Demo slide: each click draws one hexagon outline and fades in its inner content
-  (three v-clicks, owned by the component). Node data is inline so MCP write-back
-  and hand edits follow the same path. AutoAdvance is renderless deck-level wiring
-  (see the StepFlow demo slide for the ?autoplay=N / a-key contract).
+  Demo slide: each click pops one hexagon outline in (~60ms) and fades in its
+  inner content (three v-clicks, owned by the component). Geometry ships the
+  recording's SETTLED state — the V re-flows to a single row after its build-up
+  (fidelity rework: centers 24.8/47.5/70.3%w, cy 0.603·h, span 13.4–81.7%w).
+  Node data is inline so MCP write-back and hand edits follow the same path;
+  captions carry '\n' row breaks rendered as multi-row cell text. AutoAdvance
+  is renderless deck-level wiring (see the StepFlow demo slide for the
+  ?autoplay=N / a-key contract).
 -->
 
 <div class="sf-hex-stage">
 
 <HexCluster
-  title="THE MODERN DATA STACK"
-  titleAccent="AT A GLANCE"
-  arrangement="v"
-  :palette="{ accent: '#349aea', accentTertiary: '#20c88c' }"
+  title="MODERN DATA STACK"
+  titleAccent="█"
+  legend="01"
+  arrangement="row"
+  :geometry="{ centerXFrac: 0.475, pitchXFrac: 0.2275, topFrac: 0.603 }"
+  :palette="{ accent: '#349aea', accentTertiary: '#23d498' }"
   :nodes="[
-    { id: 'sources', title: 'SOURCES', caption: 'streams, lakes & warehouses', icon: 'database' },
-    { id: 'models', title: 'TRANSFORM', caption: 'sql models compiled in git', icon: 'braces' },
-    { id: 'agents', title: 'AI AGENTS', caption: 'agents act on trusted data', icon: 'bot', tone: 'tertiary' },
+    { id: 'sources', title: 'SOURCES', caption: 'streams, lakes\n& warehouses', icon: 'database' },
+    { id: 'models', title: 'TRANSFORM', caption: 'sql models\ncompiled in git', icon: 'braces' },
+    { id: 'agents', title: 'AI AGENTS', caption: 'agents act on\ntrusted data', icon: 'bot', tone: 'tertiary' },
   ]"
 />
 

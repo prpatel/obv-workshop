@@ -163,6 +163,14 @@ describe('hexLayout — options', () => {
     const dropped = hexLayout(3, 'v', { dropFrac: 0.1 })
     expect(dropped.cells[2].cy).toBeCloseTo(587.412 + 108, 6)
   })
+
+  it('exposes the cluster axis for centered chrome', () => {
+    // The fidelity rework centers the header/rule/legend on the cluster axis —
+    // the v5 recording's chrome centers at ≈ 47.6%w, not the canvas center.
+    expect(hexLayout(3).axisX).toBeCloseTo(960, 6)
+    const row = hexLayout(3, 'row', { centerXFrac: 0.475 })
+    expect(row.axisX).toBeCloseTo(0.475 * 1920, 6)
+  })
 })
 
 describe('hexLayout — validation and determinism', () => {

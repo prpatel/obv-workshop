@@ -55,7 +55,7 @@ decks/stepflow-demo/
 │  ├─ SegmentTimeline.vue         # family built-in: proportional sweep bar with milestone ticks
 │  ├─ StackPanels.vue             # family built-in: measured panel mosaic (sweep band + pop panels)
 │  ├─ MilestoneLanes.vue          # family built-in: four-lane Gantt/milestone chart (offset bars + tick markers)
-│  ├─ HexCluster.vue              # family built-in: hexagon cluster (outline draw + content fade)
+│  ├─ HexCluster.vue              # family built-in: hexagon cluster (outline pop + content fade)
 │  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance + per-slide durationSec beats
 │  └─ stepflow/
 │     ├─ geometry.ts              # pure serpentine layout math (viewBox-relative)
@@ -138,7 +138,7 @@ the deck style, not a palette field.
 | Field            | Type     | Fallback             | Consumed by                              |
 | ---------------- | -------- | -------------------- | ---------------------------------------- |
 | `accentAlt`      | `string` | — (stays undefined)  | status tones; NodeEdge red edges          |
-| `accentTertiary` | `string` | `accent`             | teal-green (`#1cd798` family): StackPanels green panel, HexCluster green icon |
+| `accentTertiary` | `string` | `accent`             | teal-green (`#1cd798` family): StackPanels green panel, HexCluster green icon and text |
 
 `accentTertiary` merges with the same override-wins rule as every top-level
 field. When omitted it resolves absent, and consumers read
@@ -398,21 +398,33 @@ pitch 5.8%h, first row 31.5%h, code margin 6.5%w, indent step 4.1%w, mono size
 
 #### HexCluster — hexagon cluster (v5)
 
-One cell per node; each click draws one cell's full outline (stroke-draw, the
-StepFlow dashoffset pattern) and fades in its inner title, caption, and icon on
-the same click — the two-phase pattern.
+One cell per node; each click pops one cell's outline in (~60ms ease-out
+opacity/scale arrival — the v5 recording's one-frame pop, not a stroke draw)
+and fades in its inner title, caption rows, and icon on the same click — the
+two-phase pattern. The recording's settled state is a single TANGENT row
+(the V re-flows after its build-up); the demo slide ships that composition
+via `arrangement: 'row'` + the measured geometry overrides below.
 
 | Prop | Type | Purpose |
 | ---- | ---- | ------- |
 | `nodes` | `HexNodeData[]` (required) | One entry per cell: `id`, `title`, `caption`, `icon`, `tone?` |
 | `palette` | `Partial<StepFlowPalette>` | Merged over the measured `cyanOnBlack` preset — pass `{ accent: '#349aea', accentTertiary: '#20c88c' }` for the measured chainBlue/teal combination |
 | `geometry` | `HexOptions` | Optional fraction overrides: `hexRFrac`, `pitchXFrac`, `dropFrac`, `topFrac`, `centerXFrac`, `strokeFrac` |
-| `arrangement` | `'v' \| 'row'` | Honeycomb V (default, the recording's shape) or a single row |
-| `title` | `string` | Mono header line (white) |
+| `arrangement` | `'v' \| 'row'` | Honeycomb V (the build-up shape) or a single row — the recording's settled state |
+| `geometry` note | — | The settled row ships `{ centerXFrac: 0.475, pitchXFrac: 0.2275, topFrac: 0.603 }` (measured: centers 24.8/47.5/70.3%w, cy 0.603·h, span 13.4–81.7%w) |
+| `title` | `string` | Mono header line (white, oversized recording type ≈ 0.112·h, centered on the cluster axis) |
 | `titleAccent` | `string` | Header tail in chrome green (the convention above) |
+| `legend` | `string` | Short amber (`#ebb92a`, measured) legend line above the center column's top vertex |
 
-`tone: 'tertiary'` renders that cell's icon in `accentTertiary ?? accent` (the
-teal-green icon in the recording); other cells' icons stay in the accent.
+Captions may carry `\n` breaks — each becomes one ~34px tone-colored text row
+(the v5 cells hold multi-row text; no gray inside the outlines). Header chrome
+also ships a white bottom rule: 67.8%w × ≈6px at y 0.8944·h, centered on the
+cluster axis (measured x 13.7–81.5%w, y 1023–1029 at native 1144 height).
+
+`tone: 'tertiary'` renders that cell's icon AND text rows in
+`accentTertiary ?? accent` (the teal-green icon and text in the recording);
+other cells' icon and text stay in the accent — the v5 cells carry
+tone-colored text, no gray inside the outlines.
 Geometry lives in `components/stepflow/hex.ts` (pure, SSR-safe, analytic
 perimeter = 6·R); the demo slide is slide 15 with inline seed data.
 
