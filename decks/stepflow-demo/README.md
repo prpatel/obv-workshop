@@ -50,7 +50,7 @@ decks/stepflow-demo/
 │  ├─ SchematicRows.vue           # terminal-style token listing with an embedded thin-line schematic
 │  ├─ TwoBarCompare.vue           # family built-in: two left-anchored comparison bars (icon chips + annotation click)
 │  ├─ ColumnRow.vue               # family built-in: tone-coded column row (rising columns + label rows)
-│  ├─ TileGrid.vue                # family built-in: tone-coded icon-tile grid (row-major build)
+│  ├─ TileGrid.vue                # family built-in: hex-tile grid with glow, connector track, and label rows (row-major build)
 │  ├─ RatioStrip.vue              # family built-in: proportional band with a live re-proportion (wave 2)
 │  ├─ SegmentTimeline.vue         # family built-in: proportional sweep bar with milestone ticks
 │  ├─ StackPanels.vue             # family built-in: measured panel mosaic (sweep band + pop panels)
@@ -178,7 +178,7 @@ inline on the demo slides; data order is the click order for every family.
 | `SchematicRows` | `rows.ts` — `SchematicRowsData` (rows + optional schematic) | one per row; schematic strokes share their attached row's click | override: v6-measured cool `#2f95b9` + amber `#f2ba1f` | 7          | —           |
 | `TwoBarCompare` | `compare.ts` — `CompareBar[]` + `TwoBarCompareData` (bars/xFrac/barHFrac/yFracs) | 3 — bar 1, bar 2, then one shared annotation click for labels/chips | `statusAmber` (the component's family default) | 8          | —           |
 | `ColumnRow`     | `columns.ts` — `ColumnRowData` (columns + `yFrac`/`hFrac` + optional `labelRows`) | 5 columns left→right, then the label rows | `cyanOnBlack` base + token mix (`orangeSpine`/`statusAmber` accents, `accentTertiary` teal) | 9          | —           |
-| `TileGrid`      | `tiles.ts` — `TileGridData` (tiles/cols + tile & pitch fracs; per-tile `tone`/`wFrac`/`hFrac` overrides) | 6 — one per tile, row-major | `cyanOnBlack` (matrix/row tones via `accentAlt`/`accentTertiary` + status/plain constants) | 10         | `cpu` · `boxes` · `layers` (candidates; fallback covers a wrong guess) |
+| `TileGrid`      | `tiles.ts` — `TileGridData` (tiles/cols + tile & pitch fracs; per-tile `tone`/`wFrac`/`hFrac`/`mini` overrides) | 6 — one per tile, row-major | `cyanOnBlack` (measured hex core `#1ed0e8` + matrix/row tones via `accentAlt`/`accentTertiary` + status/plain constants) | 10         | `cpu` · `boxes` · `layers` (candidates; fallback covers a wrong guess) |
 | `RatioStrip`    | `strip.ts` — `RatioStripData` (segments + `yFrac`/`hFrac` + optional caption) | 2 — build at initial proportions, then re-proportion + captions | `statusAmber` + `accentTertiary` recording base — hue decision in the notes below | 11         | —           |
 | `SegmentTimeline` | `timeline.ts` — `TimelineSegment[]` (`tone` is `'accent'` or `'alt'`, optional proportional `wFrac`) + `TimelineTick[]` (`xFrac`, `label`) | 3 — one sweep per segment, then the labels layer | `chainBlue` + `orangeSpine` composed (no preset added) | 12         | —           |
 | `StackPanels`   | `panels.ts` — `StackPanel[]` + optional `caption`       | one per panel + one label click     | `cyanOnBlack` + `accentTertiary`              | 13         | —           |
@@ -259,11 +259,18 @@ interface RatioStripData {
 
 TileGrid authoring notes: tiles lay out row-major from `x0Frac`/`y0Frac` with
 uniform `pitchXFrac`/`pitchYFrac` steps and `tileWFrac`/`tileHFrac` defaults —
-geometry is a pure SSR-safe module with fraction and canvas-bound validation.
-One click per tile in data order. The measured matrix (research src 57–60s:
-tone-coded 3×3 incl. amber/red/plain) and flat-row (107–110s: eight tiles in
-two tone groups of four) are seed-data arrangements, not extra components;
-unknown icon keys render the visible fallback icon and warn in dev.
+geometry is a pure SSR-safe module with fraction and canvas-bound validation
+(`hexPath` draws the pointed left-right hexagon inside each box; `tileTrackLines`
+resolves the per-row connector track). Wave-2 measured anatomy (report
+art_iHm120ov §TileGrid): saturated `#1ed0e8` hex cores (~0.825 × 0.93 of the
+box) under a blurred glow halo, a ~12px `#353642` track through tile centers,
+a `#a0ecfb` sheen dash at the first tile's lit vertex, ~40px near-black icons
+(stroke ≈3px at 1920), and below-tile double label rows — cyan `mini` over the
+white label, both ~16px. One click per tile in data order. The measured matrix
+(research src 57–60s: tone-coded 3×3 incl. amber/red/plain) and flat-row
+(107–110s: eight tiles in two tone groups of four) are seed-data arrangements,
+not extra components; unknown icon keys render the visible fallback icon and
+warn in dev.
 
 SegmentTimeline authoring notes: `segments` are proportional shares of the measured bar —
 authored `wFrac` values (fractions of the source canvas width) are normalized to fill the span
