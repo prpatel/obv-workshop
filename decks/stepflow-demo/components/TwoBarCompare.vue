@@ -2,8 +2,14 @@
 import { computed } from 'vue'
 import {
   DATA_TEXT_COLOR,
+  LABEL_COLOR,
+  LEGEND_COLOR,
+  MARK_BOX,
+  MARK_COLOR,
+  MINT_COLOR,
   RULE_COLOR,
-  SUBHEAD_SIZE,
+  SIDE_RAILS,
+  TOP_BAND,
   twoBarCompareLayout,
   type CompareBar,
   type DataTextBlock,
@@ -17,18 +23,14 @@ const props = withDefaults(defineProps<{
   bars: CompareBar[]
   /** Optional text for the top-right chip (reveals with the annotation click). */
   chip?: string
-  /** The big light-cyan data-text block above the bars (reveals with the annotation click). */
+  /** The annotation text block around the bars (reveals with the annotation click). */
   dataText?: DataTextBlock
   /** Partial palette merged over the family's measured `statusAmber` preset. */
   palette?: StepFlowPaletteOverride
-  /** Mono header line, e.g. 'INFRA'. */
+  /** White lead of the centered two-tone headline (TitleChrome band). */
   title?: string
-  /** Header tail rendered in chrome green after `title` (two-tone chrome convention). */
+  /** Chrome-green tail rendered after `title` (two-tone chrome convention). */
   titleAccent?: string
-  /** Centered white headline row under the header band (measured composition). */
-  subhead?: string
-  /** Chrome-green tail rendered after `subhead` (two-tone chrome convention). */
-  subheadAccent?: string
 }>(), { palette: () => ({}) })
 
 // statusAmber is this family's locked recording base (accent = amber, accentAlt
@@ -44,13 +46,12 @@ const layout = computed(() => twoBarCompareLayout({
   bars: props.bars,
   chip: props.chip,
   dataText: props.dataText,
-  subhead: props.subhead,
-  subheadAccent: props.subheadAccent,
 }))
 
-// Icon chips carry the family amber with dark icon strokes, the top chip the
-// recording's teal plate — measured ref tones, not chrome constants anymore.
-const CHROME_GREEN = '#66fb00'
+// Headline condensation: the ref headline's measured ink extent is x565–1359
+// (793px); TitleChrome.titleTextLength pins the advance there — the sheet's
+// "condensed subhead face" without a separate type face (PR #42 mechanism).
+const HEADLINE_TEXT_LENGTH = 796
 
 function toneColor(tone: CompareBar['tone']): string {
   return tone === 'accent' ? p.value.accent : p.value.accentAlt ?? p.value.accent
@@ -141,67 +142,154 @@ function fmt(n: number): string {
     </g>
 
     <!--
-      Annotation layer: the data-text block, the glyphs on/under each bar and
-      the top-right chip — one shared click after the bars (the recording's
-      labels arrive late, ColumnRow-style). Hidden entirely until that click.
+      Annotation layer: the ambient frame (dim band + side rails), the legend
+      row, the data-text block, the glyphs on/under each bar and the top-right
+      chip — one shared click after the bars (the recording's labels arrive
+      late). Hidden entirely until that click; the static layers fade in
+      together, the on-bar labels fade later on the recording's windows.
     -->
     <g
-      v-if="layout.bars.some((b) => b.label || b.sub) || chip || layout.dataText.length || layout.caption || layout.note || layout.rules.length"
+      v-if="layout.bars.some((b) => b.label || b.sub) || chip || layout.dataText.length || layout.legend || layout.caption || layout.note || layout.rules.length"
       v-click="layout.bars.length + 1"
       class="sf-tbc-annot"
     >
-      <text
-        v-for="(line, i) in layout.dataText"
-        :key="`data-${i}`"
-        class="sf-tbc-dataline"
-        :x="line.x"
-        :y="line.y"
-        :font-size="line.size"
-        :fill="DATA_TEXT_COLOR"
-        font-weight="700"
-        letter-spacing="0.04em"
-      >{{ line.text }}</text>
-      <!-- Divider rules + the between-the-bars caption/note rows: the second
-           evidence pass's measured layers (ref t=168.7s y722/752/789/970). -->
-      <rect
-        v-for="(rule, i) in layout.rules"
-        :key="`rule-${i}`"
-        class="sf-tbc-rule"
-        :x="rule.x"
-        :y="rule.y"
-        :width="rule.w"
-        :height="rule.h"
-        :fill="RULE_COLOR"
-      />
-      <text
-        v-if="layout.caption"
-        class="sf-tbc-caption"
-        :x="layout.caption.x"
-        :y="layout.caption.y"
-        :font-size="layout.caption.size"
-        :fill="p.subtext"
-        letter-spacing="0.06em"
-      >{{ layout.caption.text }}</text>
-      <text
-        v-if="layout.note"
-        class="sf-tbc-note"
-        :x="layout.note.x"
-        :y="layout.note.y"
-        :font-size="layout.note.size"
-        fill="#ffffff"
-        font-weight="700"
-        letter-spacing="0.06em"
-      >{{ layout.note.text }}</text>
-      <template v-for="bar in layout.bars" :key="`annot-${bar.id}`">
+      <g class="sf-tbc-annot-core">
+        <!-- Ambient frame: measured dim band above the legend + side rails. -->
+        <rect
+          class="sf-tbc-topband"
+          :x="TOP_BAND.x"
+          :y="TOP_BAND.y"
+          :width="TOP_BAND.w"
+          :height="TOP_BAND.h"
+          :fill="TOP_BAND.fill"
+        />
+        <rect
+          v-for="(rail, i) in SIDE_RAILS"
+          :key="`rail-${i}`"
+          class="sf-tbc-rail"
+          :x="rail.x"
+          :y="rail.y"
+          :width="rail.w"
+          :height="rail.h"
+          :fill="rail.fill"
+        />
+        <!-- Legend: three tone chips on the measured pitch + gray caps text. -->
+        <template v-if="layout.legend">
+          <rect
+            v-for="(chipRect, i) in layout.legend.chips"
+            :key="`legend-chip-${i}`"
+            class="sf-tbc-legend-chip"
+            :x="chipRect.x"
+            :y="chipRect.y"
+            :width="chipRect.w"
+            :height="chipRect.h"
+            :fill="chipRect.fill"
+          />
+          <text
+            class="sf-tbc-legend-text"
+            :x="layout.legend.text.x"
+            :y="layout.legend.text.y"
+            :font-size="layout.legend.text.size"
+            :fill="LEGEND_COLOR"
+            letter-spacing="0.1em"
+          >{{ layout.legend.text.text }}</text>
+        </template>
+        <text
+          v-for="(line, i) in layout.dataText"
+          :key="`data-${i}`"
+          class="sf-tbc-dataline"
+          :x="line.x"
+          :y="line.y"
+          :font-size="line.size"
+          :fill="DATA_TEXT_COLOR"
+          font-weight="700"
+        >{{ line.text }}</text>
+        <!-- Divider rules + the between-the-bars caption/mint rows: the
+             second/third evidence passes' measured layers (ref t=168.7s
+             y722/752/789/970). -->
+        <rect
+          v-for="(rule, i) in layout.rules"
+          :key="`rule-${i}`"
+          class="sf-tbc-rule"
+          :x="rule.x"
+          :y="rule.y"
+          :width="rule.w"
+          :height="rule.h"
+          :fill="RULE_COLOR"
+        />
+        <text
+          v-if="layout.caption"
+          class="sf-tbc-caption"
+          :x="layout.caption.x"
+          :y="layout.caption.y"
+          :font-size="layout.caption.size"
+          :fill="p.subtext"
+          letter-spacing="0.15em"
+        >{{ layout.caption.text }}</text>
+        <!-- Mint note row: the traced teal mark (glyph unresolved at 1080p —
+             traced from the ref bitmap: stem + crossed arms + hourglass X)
+             introduces the mint sentence. -->
+        <template v-if="layout.note">
+          <path
+            class="sf-tbc-mark"
+            :d="`M ${MARK_BOX.x + 20} ${MARK_BOX.y} L ${MARK_BOX.x + 20} ${MARK_BOX.y + MARK_BOX.h}
+                 M ${MARK_BOX.x + 5} ${MARK_BOX.y + 10} L ${MARK_BOX.x + 34} ${MARK_BOX.y + 38}
+                 M ${MARK_BOX.x + 34} ${MARK_BOX.y + 10} L ${MARK_BOX.x + 5} ${MARK_BOX.y + 38}
+                 M ${MARK_BOX.x + 36} ${MARK_BOX.y + 2} L ${MARK_BOX.x + MARK_BOX.w} ${MARK_BOX.y + 44}
+                 M ${MARK_BOX.x + MARK_BOX.w} ${MARK_BOX.y + 2} L ${MARK_BOX.x + 36} ${MARK_BOX.y + 44}`"
+            fill="none"
+            :stroke="MARK_COLOR"
+            stroke-width="5"
+          />
+          <text
+            class="sf-tbc-note"
+            :x="layout.note.x"
+            :y="layout.note.y"
+            :font-size="layout.note.size"
+            :fill="MINT_COLOR"
+            font-weight="700"
+            letter-spacing="0.02em"
+          >{{ layout.note.text }}</text>
+        </template>
+        <template v-if="chip">
+          <rect
+            class="sf-tbc-topchip"
+            :x="layout.topChip.x"
+            :y="layout.topChip.y"
+            :width="layout.topChip.w"
+            :height="layout.topChip.h"
+            rx="6"
+            :fill="p.accentTertiary ?? p.accent"
+          />
+          <text
+            class="sf-tbc-topchip-text"
+            :x="layout.topChip.x + layout.topChip.w / 2"
+            :y="layout.topChip.y + layout.topChip.h / 2"
+            text-anchor="middle"
+            dominant-baseline="central"
+            :font-size="type.chipSize"
+            fill="#ffffff"
+            letter-spacing="0.08em"
+          >{{ chip }}</text>
+        </template>
+      </g>
+
+      <!--
+        On-bar labels fade LATER than the static annotation layers — the
+        recording's measured windows: label 1 at 2800–2983ms, label 2 at
+        7467–7667ms (delay + fade) over the already-settled composition.
+      -->
+      <template v-for="(bar, bi) in layout.bars" :key="`annot-${bar.id}`">
         <text
           v-if="bar.label"
-          class="sf-tbc-label"
+          :class="['sf-tbc-label', `sf-tbc-label-${bi + 1}`]"
           :x="bar.labelX"
           :y="bar.labelY"
           dominant-baseline="central"
           :font-size="type.labelSize"
-          :fill="p.iconStroke"
-          letter-spacing="0.06em"
+          :fill="LABEL_COLOR"
+          :textLength="bar.labelLength ?? undefined"
+          :lengthAdjust="bar.labelLength != null ? 'spacingAndGlyphs' : undefined"
         >{{ bar.label }}</text>
         <text
           v-if="bar.sub"
@@ -214,55 +302,19 @@ function fmt(n: number): string {
           letter-spacing="0.06em"
         >{{ bar.sub }}</text>
       </template>
-      <template v-if="chip">
-        <rect
-          class="sf-tbc-topchip"
-          :x="layout.topChip.x"
-          :y="layout.topChip.y"
-          :width="layout.topChip.w"
-          :height="layout.topChip.h"
-          rx="6"
-          :fill="p.accentTertiary ?? p.accent"
-        />
-        <text
-          class="sf-tbc-topchip-text"
-          :x="layout.topChip.x + layout.topChip.w / 2"
-          :y="layout.topChip.y + layout.topChip.h / 2"
-          text-anchor="middle"
-          dominant-baseline="central"
-          :font-size="type.chipSize"
-          fill="#ffffff"
-          letter-spacing="0.08em"
-        >{{ chip }}</text>
-      </template>
     </g>
 
-    <!--
-      Centered two-tone headline row — header chrome like the title, always
-      visible (measured ref composition: white lead + chrome-green tail,
-      baseline y161 at 1080p).
-    -->
-    <text
-      v-if="layout.subhead"
-      class="sf-tbc-subhead"
-      :x="layout.subhead.x"
-      :y="layout.subhead.y"
-      text-anchor="middle"
-      :font-size="SUBHEAD_SIZE"
-      fill="#ffffff"
-      font-weight="700"
-      letter-spacing="0.04em"
-    >{{ layout.subhead.text }}<tspan v-if="layout.subhead.accent" :fill="CHROME_GREEN">&nbsp;{{ layout.subhead.accent }}</tspan></text>
-
-    <!-- Shared title chrome: sheet-measured centered two-tone title
-         (TwoBarCompare Title row: cap 53 in the band y98–151, centered ≈x962)
-         plus the recording badge its sheet documents. -->
+    <!-- Shared title chrome: the ref frame's single headline row — centered
+         two-tone title (TwoBarCompare Title row: cap 53 in the band y98–151,
+         centered ≈x962) condensed to the measured x565–1359 extent, plus the
+         recording badge its sheet documents. -->
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
       :cap-height="53"
       :cap-top="98"
       :center-x="962"
+      :title-text-length="HEADLINE_TEXT_LENGTH"
       badge
     />
   </svg>
@@ -282,10 +334,17 @@ function fmt(n: number): string {
 
 /*
  * Measured motion (visual-spec §9 pattern). Transition is taken from the
- * destination state: forward reveal runs the pop, the hidden state's
+ * destination state: forward reveal runs the fades, the hidden state's
  * transition:none makes backward nav instant — the locked decision, zero JS.
  * Scoped selectors (0,2,0 + attribute) beat Slidev's built-in
  * .slidev-vclick-target { transition: all .1s ease } — no source-order reliance.
+ *
+ * The annotation GROUP flips state instantly; its children own the fades.
+ * The static layers fade together on the click; the two on-bar labels fade
+ * later on the recording's measured windows (2800–2983ms / 7467–7667ms) —
+ * intra-click CSS delays, not clicks (the sheet locks ?clicks=3 with the
+ * labels visible in the settled state), so AutoAdvance's stepScheduleMs
+ * does not apply here and there are no hand-rolled timers.
  */
 .sf-tbc-bar {
   transition: opacity 150ms ease-out;
@@ -307,17 +366,37 @@ function fmt(n: number): string {
 }
 
 .sf-tbc-annot {
+  transition: none;
+}
+
+.sf-tbc-annot-core {
   transition: opacity 150ms ease-out;
 }
 
-.sf-tbc-annot.slidev-vclick-hidden {
+.sf-tbc-label {
+  /* Label 1: fade window 2800–2983ms after the annotation click (delay +
+   * duration) — the composition settles first, the label arrives late. */
+  transition: opacity 183ms ease-out;
+  transition-delay: 2800ms;
+}
+
+.sf-tbc-label-2 {
+  /* Label 2: fade window 7467–7667ms after the annotation click. */
+  transition-duration: 200ms;
+  transition-delay: 7467ms;
+}
+
+.sf-tbc-annot.slidev-vclick-hidden .sf-tbc-annot-core,
+.sf-tbc-annot.slidev-vclick-hidden .sf-tbc-label {
   transition: none;
+  opacity: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .sf-tbc-bar,
   .sf-tbc-bar-rect,
-  .sf-tbc-annot {
+  .sf-tbc-annot-core,
+  .sf-tbc-label {
     transition: none;
   }
 }

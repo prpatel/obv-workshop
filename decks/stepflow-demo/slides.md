@@ -371,30 +371,38 @@ canvasWidth: 1920
   Demo slide: TwoBarCompare — two large left-anchored comparison bars from the
   wave-2 recording (src 161–169s). Bar 1 (red, tone 'alt') pops whole on click
   1, bar 2 (amber, tone 'accent') on click 2, and one shared annotation click
-  reveals the big light-cyan data-text block, the glyph rows on/under the
-  bars, and the top-right chip (click 3). Bar lengths are the measured wFracs
-  (bar 1 ends 49.2%w, bar 2 51.1%w); the shared anchor, bar height, and bar
-  tops default to the module's measured composition. The centered INFRA COST
-  subhead carries the ref frame's headline row; the INFRA COST title is the
-  family's top-left header chrome (removing it regresses the composition's
-  measured extents — census pass 2). Palette: statusAmber verbatim — the
-  component's family default, so no palette prop is needed. AutoAdvance is renderless deck-level wiring:
-  the `a` key toggles a hands-free run and ?autoplay=N in the URL starts one
-  on slide enter.
+  reveals the legend row, the SQL data-text block, the divider rules, the
+  caption/mint rows, the on-bar labels, and the top-right chip (click 3).
+  Bar lengths are the measured wFracs (bar 1 ends 49.2%w, bar 2 51.1%w); the
+  shared anchor, bar height, and bar tops default to the module's measured
+  composition. Strings are the ref frame's third-pass read (settled frame,
+  2026-09-04): the wave-2 sheet's spec-derived strings appear nowhere in the
+  source recording, so the slide typesets the frame's actual SQL/backfill
+  content. The headline row is the shared TitleChrome (title + title-accent,
+  cap 53 / top 98, condensed via title-text-length to the measured
+  x565–1359 extent). Palette: statusAmber verbatim — the component's family
+  default, so no palette prop is needed. AutoAdvance is renderless
+  deck-level wiring: the `a` key toggles a hands-free run and ?autoplay=N in
+  the URL starts one on slide enter.
 -->
 
 <div class="sf-demo-stage">
 
 <TwoBarCompare
-  title="INFRA"
-  title-accent=" COST"
-  chip="FY26"
-  subhead="INFRA"
-  subhead-accent=" COST · FY26 SPLIT"
-  :data-text="{ lines: ['1.9M VCPU INSTALLED', '0.12M VCPU HOURS ACROSS 12 CLUSTERS · Q3'], subline: 'SELF-MANAGED RACKS VS MANAGED CLOUD REGIONS.', caption: 'RACK-SPACE VS MGMT OVERHEAD', note: 'SELF-MANAGED VS MANAGED CLOUD', rules: true }"
+  title="Is it"
+  title-accent=" actually correct?"
+  chip="GENERATED"
+  :data-text="{
+    legend: 'mart_revenue.sql',
+    lines: ['select c.id, sum(o.total)', 'from customers c join orders o on c.id = o.customer_id'],
+    subline: 'join refunds r on r.order_id = o.id group by 1',
+    caption: 'SUGGESTED PIPELINE DESIGN',
+    note: 'backfill the whole table every night',
+    rules: true,
+  }"
   :bars="[
-    { id: 'on-prem', wFrac: 0.325, tone: 'alt', icon: 'server', label: 'ON-PREM', sub: 'SELF-MANAGED' },
-    { id: 'cloud', wFrac: 0.34375, tone: 'accent', icon: 'cloud', label: 'CLOUD', sub: 'MANAGED' },
+    { id: 'red-bar', wFrac: 0.325, tone: 'alt', icon: 'server', label: 'EVERY CUSTOMER COMES BACK TWICE' },
+    { id: 'amber-bar', wFrac: 0.34375, tone: 'accent', icon: 'cloud', label: 'THIS BACKFILLS THE SAME DAY TWICE' },
   ]"
 />
 
