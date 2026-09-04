@@ -39,7 +39,11 @@ const blockClick = (i: number): number => i + 1 + (props.callout ? 1 : 0)
 const type = computed(() => {
   const height = layout.value.viewBox.height
   return {
-    headerSize: 34 * (height / 848),
+    // Recording-scale chrome (wave-1 systemic cause 4: family headers run
+    // 7.2-8.8%h in the sources vs the shared 34px@848 ~= 4%h formula). The
+    // census white target (>=0.5x ref 0.94%) is unreachable with labels
+    // alone; 5.6%h is the smallest bump that clears it below ref scale.
+    headerSize: 0.0555 * height,
     labelSize: 0.037 * height,
     captionSize: 0.022 * height,
     calloutSize: 0.055 * height,

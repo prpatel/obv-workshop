@@ -242,6 +242,9 @@ describe('StairChain', () => {
     const withAccent = mountStairChain({ steps, title: 'THE DATA ENGINEERING', titleAccent: 'LIFECYCLE' })
     expect(withAccent.find('.header').text()).toContain('THE DATA ENGINEERING')
     expect(withAccent.find('.header').text()).toContain('LIFECYCLE')
+    // Recording-scale chrome: 0.0555 x 1080 = 59.94px (wave-1 systemic
+    // cause 4; census white target). Up from the shared 34px@848 formula.
+    expect(Number(withAccent.find('.header').attributes('font-size'))).toBeCloseTo(59.94, 6)
     expect(withAccent.html()).toContain('#66fb00')
 
     const withoutAccent = mountStairChain({ steps, title: 'PLAIN HEADER' })
