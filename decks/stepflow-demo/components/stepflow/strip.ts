@@ -21,10 +21,22 @@
  * ramp (#a0fbd9 → #1ed496 sampled at the region edges, no discontinuity at
  * x760), so the mint and teal segments sample one shared gradient field —
  * the sheet's per-region medians are that ramp's slice medians. Above the
- * band: a dark panel plate y331–469 (x234–1685) with a 13px gray heading
- * row inside, a 16px gray second heading row under it, and a 9-tick
- * measurement row y509–534. In-band dark display text and the red caption
- * row complete the settled frame (constants below).
+ * band: a two-tone panel — a #19181d plate bar y333–411 (x234–1685) holding
+ * the URL heading, then a #0f0e11 body field y412–936 — with the gray
+ * 'TIME IN ONE WORKING DAY' caps row and a 9-tick measurement row
+ * (y510–534) between plate and band. Three dark data-quality chips ride
+ * the band and a two-line caption row completes the settled frame
+ * (constants below).
+ *
+ * TEXT CORRECTION (OCR + 1px mask reads of the settled frame): the
+ * sheet's prose strings ('RUNTIME SHARE · FY26 SPLIT', 'PLATFORM ·
+ * 75.7%', 'COMPUTE UNITS · FY26', 'SHARE OF COMPUTE') do NOT appear in
+ * the source video — the sheet's own band-right evidence crop reads
+ * 'DUPLICATE ROWS' / 'WRONG TOTALS'. The video is the scoring target;
+ * the measured strings are title 'Less time connecting tools' (white
+ * lead + green tail), URL 'data.mrk.shop/workspace', 'TIME IN ONE
+ * WORKING DAY', chips 'LATE DATA' / 'DUPLICATE ROWS' / 'WRONG TOTALS',
+ * captions 'CONNECTING TOOLS' (red) / 'ACTUAL DATA PROBLEMS' (mint).
  *
  * Pure and SSR-safe: no DOM access, no mutation of the inputs.
  */
@@ -76,60 +88,101 @@ export const BAND_X1_FRAC = 1099 / 1280 // 0.85859375
 /** Caption-row baseline — measured glyph band y836–858, caps sit on the baseline. */
 export const CAPTION_Y_FRAC = 858 / 1080 // 0.794444
 
-/** Caption ink: measured red (sheet #e84442; slide passes it via `caption-color`). */
-export const CAPTION_COLOR = '#e84442'
+/** Caption cap height (measured 23px band) → font size via the chrome ratio. */
+export const CAPTION_CAP_PX = 23
 
-/** Measured panel plate above the band: y331–469 (h139), x234–1685. */
+/** Left caption ink: measured red `CONNECTING TOOLS`, x277–609. */
+export const CAPTION_COLOR = '#e94343'
+export const CAPTION_X_FRAC = 277 / 1920
+export const CAPTION_WIDTH_PX = 332
+
+/** Right caption ink: measured mint `ACTUAL DATA PROBLEMS`, x1224–1643. */
+export const CAPTION_RIGHT_COLOR = '#23d598'
+export const CAPTION_RIGHT_X_FRAC = 1224 / 1920
+export const CAPTION_RIGHT_WIDTH_PX = 419
+
+/**
+ * Measured panel chrome above the band, two stacked surfaces at x234–1685:
+ * the #19181d plate bar y333–411 (79px) and the #0f0e11 body field
+ * y412–936 that hosts the heading-2 row, ticks, band, and captions.
+ */
 export const PLATE_X0_FRAC = 234 / 1920
 export const PLATE_X1_FRAC = 1685 / 1920
-export const PLATE_Y_FRAC = 331 / 1080
-export const PLATE_H_FRAC = 139 / 1080
+export const PLATE_Y_FRAC = 333 / 1080
+export const PLATE_H_FRAC = 79 / 1080
+export const BODY_FIELD_Y_FRAC = 412 / 1080
+export const BODY_FIELD_BOTTOM_FRAC = 936 / 1080
+export const BODY_FIELD_COLOR = '#0f0e11'
 
 /**
- * Plate heading row 1 (inside the plate, sheet §3.2): gray tracked caps,
- * cap ≈13px, mask band y361–384, x259–708. Baseline at the band bottom
- * (chrome convention); cap height → font size via the shared chrome ratio.
+ * Plate heading row 1 (inside the plate bar): the URL-style path
+ * `data.mrk.shop/workspace` — MIXED case, gray, ink x369–708, ascender
+ * band y364–380 over the measured baseline 380 (descenders reach 384).
+ * Width pinned via textLength (the deck mono runs wider than the
+ * reference's condensed face).
  */
-export const HEADING1_X_FRAC = 259 / 1920
-export const HEADING1_BASELINE_FRAC = 383 / 1080
-export const HEADING1_CAP_PX = 13
-export const HEADING1_WIDTH_PX = 449
+export const HEADING1_X_FRAC = 369 / 1920
+export const HEADING1_BASELINE_FRAC = 380 / 1080
+export const HEADING1_CAP_PX = 17
+export const HEADING1_WIDTH_PX = 339
 
 /** Heading row color: measured gray of both heading rows (glyph interiors). */
-export const HEADING_COLOR = '#a8a8b8'
+export const HEADING_COLOR = '#a4a4b0'
 
 /**
- * Heading row 2 (under the plate, sheet §3.2): `COMPUTE UNITS · FY26`,
- * gray caps cap ≈16px, band y465–480, x276–672 (19 glyph components ✅).
+ * Heading row 2 (in the body field): `TIME IN ONE WORKING DAY`, gray
+ * caps, band y465–481 (cap 17px), x276–672 — position and metrics match
+ * the sheet's row; string verified against the frame by OCR.
  */
 export const HEADING2_X_FRAC = 276 / 1920
-export const HEADING2_BASELINE_FRAC = 480 / 1080
-export const HEADING2_CAP_PX = 16
+export const HEADING2_BASELINE_FRAC = 481 / 1080
+export const HEADING2_CAP_PX = 17
 export const HEADING2_WIDTH_PX = 396
 
 /**
- * Tick measurement row (sheet §3.2): 9 ticks 4×26px, y509–534, #3a3b42.
- * X-centers as measured (the first eight sit on a 171.57px pitch; the
- * ninth reads at 1639 — 13px left of the pitch, reproduced as measured).
+ * Tick measurement row: 9 ticks 4×25px at y510–534, #3a3b42. X-centers
+ * as measured (the first eight sit on a ≈171.6px pitch; the ninth reads
+ * at 1640.5 — 12px left of the pitch, reproduced as measured).
  */
-export const TICK_X_CENTERS: readonly number[] = [280, 451.6, 623.1, 794.7, 966.3, 1137.9, 1309.4, 1481, 1639]
-export const TICK_Y_FRAC = 509 / 1080
+export const TICK_X_CENTERS: readonly number[] = [281, 452.5, 624.5, 795.5, 967.5, 1139, 1310.5, 1482.5, 1640.5]
+export const TICK_Y_FRAC = 510 / 1080
 export const TICK_W_PX = 4
-export const TICK_H_PX = 26
+export const TICK_H_PX = 25
 export const TICK_COLOR = '#3a3b42'
 
 /**
- * In-band dark display text (sheet §3.2, digits verified against
- * ratiostrip-band-right): bbox x706–1659, cap band y628–718 (cap ≈90px,
- * ~38% of band height), #0a0a0a bold condensed. Sweep split at x1282 —
- * the measured two-sweep reveal breaks between `·` and the digits.
+ * Three dark data-quality chips riding the band at settled positions
+ * (the sheet read this region as ONE 90px dark display-text row; 1px
+ * mask renders show three rounded #020404 boxes y628–718 with small
+ * mint labels inside — 'LATE DATA' | 'DUPLICATE ROWS' | 'WRONG
+ * TOTALS', confirmed by OCR of the frame and of the sheet's own
+ * band-right crop). Chip geometry is absolute 1920×1080 px: box
+ * x-extents and label ink extents (labels sit ≈24px inside the box's
+ * left edge, cap band y663–683). The reveal sweeps split at x1282 —
+ * between the second and third boxes, matching the measured windows.
  */
-export const IN_BAND_X_FRAC = 706 / 1920
-export const IN_BAND_RIGHT_FRAC = 1659 / 1920
-export const IN_BAND_CAP_TOP_PX = 628
-export const IN_BAND_CAP_PX = 90
-export const IN_BAND_SWEEP_SPLIT_FRAC = 1282 / 1920
-export const IN_BAND_COLOR = '#0a0a0a'
+export interface StripChip {
+  /** Chip box x-extent (1920-canvas px). */
+  x0: number
+  x1: number
+  /** Label ink x-extent (1920-canvas px); textLength pins it. */
+  ink0: number
+  ink1: number
+}
+
+export const CHIP_Y_FRAC = 628 / 1080
+export const CHIP_H_PX = 90
+export const CHIP_FILL = '#020404'
+export const CHIP_RADIUS_PX = 12
+export const CHIP_TEXT_COLOR = '#21d697'
+export const CHIP_TEXT_CAP_PX = 20
+export const CHIP_TEXT_BASELINE_FRAC = 683 / 1080
+export const CHIP_SWEEP_SPLIT_FRAC = 1282 / 1920
+export const CHIPS: readonly StripChip[] = [
+  { x0: 706, x1: 917, ink0: 730, ink1: 890 },
+  { x0: 944, x1: 1251, ink0: 969, ink1: 1224 },
+  { x0: 1278, x1: 1547, ink0: 1302, ink1: 1520 },
+]
 
 /**
  * Shared mint→teal gradient field: ONE continuous ramp across both the

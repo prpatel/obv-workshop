@@ -533,36 +533,44 @@ canvasWidth: 1920
   click 1 pops the band at initial proportions (~120ms), click 2 re-flows the
   mint + teal regions to their settled shares in three bursts ~1.1s apart
   (measured 650 / 1783 / 3617ms after the burst trigger), click 3 sweeps the
-  in-band display text left→right in two strokes (4567–4950ms clip time) and
-  fades in the red caption row. Measured from the exact-trace sheet's settled
-  clip frame t≈5.97s at 1920×1080 (art_7bTnqSB3 §3; band x 14.4–85.9%w × y
-  51.4–73.3%h): settled shares red 24% (330px, red→salmon gradient) / mint
-  11.3% (155px) / teal 64.7% (888px), with the mint and teal regions reading
-  as ONE continuous bright ramp #a0fbd9→#1ed496 (shared userSpaceOnUse
-  field; the teal gradient starts at the mint's left edge x605, crossing the
-  x760 mint/teal boundary with no discontinuity). Above the band: a dark
-  panel plate x234–1685 × y331–469 (139px tall) with a gray 13px-cap tracked
-  heading row inside (y361–384), a gray 16px-cap second heading row
-  'COMPUTE UNITS · FY26' under the plate (y465–480, verified from crop), and
-  a 9-tick measurement row (4×26px, pitch ≈171.6px, #3a3b42). The in-band
-  display text 'PLATFORM · 75.7%' is #0a0a0a 90px caps spanning x706–1659,
-  revealed last in two left→right sweeps split at x1282. The caption row is
-  the measured red 'SHARE OF COMPUTE' 22px caps at y836–858. Initial
-  proportions are [I]: the teal region starts at ~1/5 of its settled share
-  and the mint segment near-closed; red holds the rest. All three v-clicks
-  are pure revealed-state transitions — backward nav snaps instantly.
+  chip labels left→right in two strokes (4567–4950ms clip time) and fades in
+  the caption row. Measured from the settled clip frame t≈5.97s at
+  1920×1080 (art_7bTnqSB3 §3; band x 14.4–85.9%w × y 51.4–73.3%h): settled
+  shares red 24% (330px, red→salmon gradient) / mint 11.3% (155px) / teal
+  64.7% (888px), with the mint and teal regions reading as ONE continuous
+  bright ramp #a0fbd9→#1ed496 (shared userSpaceOnUse field; the teal
+  gradient starts at the mint's left edge x605, crossing the x760 mint/teal
+  boundary with no discontinuity). Above the band: a two-tone panel —
+  #19181d plate bar y333–411 holding the mixed-case URL heading
+  'data.mrk.shop/workspace', then a #0f0e11 body field y412–936 — with the
+  gray caps row 'TIME IN ONE WORKING DAY' (y465–481) and a 9-tick
+  measurement row (4×25px, y510–534, pitch ≈171.6px, #3a3b42). Three dark
+  data-quality chips ride the band (#020404, y628–718): 'LATE DATA' |
+  'DUPLICATE ROWS' | 'WRONG TOTALS' with mint #21d697 labels, revealed last
+  in two left→right sweeps split at x1282. The caption row is the measured
+  pair 'CONNECTING TOOLS' (red #e94343, x277–609) + 'ACTUAL DATA PROBLEMS'
+  (mint #23d598, x1224–1643) at y836–858. TEXT CORRECTION: the sheet's
+  prose strings ('PLATFORM · 75.7%', 'COMPUTE UNITS · FY26', 'SHARE OF
+  COMPUTE', 'RUNTIME SHARE · FY26 SPLIT') do not appear in the source
+  video — its own band-right crop reads 'DUPLICATE ROWS'/'WRONG TOTALS';
+  the video is the scoring target, so this slide typesets the
+  video-verified strings. Initial proportions are [I]: the teal region
+  starts at ~1/5 of its settled share and the mint segment near-closed; red
+  holds the rest. All three v-clicks are pure revealed-state transitions
+  — backward nav snaps instantly.
 -->
 
 <div class="sf-demo-stage">
 
 <RatioStrip
-  title="RUNTIME SHARE"
-  title-accent="· FY26 SPLIT"
-  heading="SHARE OF TOTAL"
-  heading2="COMPUTE UNITS · FY26"
-  band-text="PLATFORM · 75.7%"
-  caption="SHARE OF COMPUTE"
-  caption-color="#e84442"
+  title="Less time"
+  title-accent="connecting tools"
+  heading="data.mrk.shop/workspace"
+  heading2="TIME IN ONE WORKING DAY"
+  :chips="['LATE DATA', 'DUPLICATE ROWS', 'WRONG TOTALS']"
+  caption="CONNECTING TOOLS"
+  caption-color="#e94343"
+  caption-right="ACTUAL DATA PROBLEMS"
   :palette="{ accentAlt: '#ec423f' }"
   :y-frac="0.513889"
   :h-frac="0.219444"

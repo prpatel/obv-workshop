@@ -12,12 +12,25 @@ import {
   HEADING2_WIDTH_PX,
   HEADING2_X_FRAC,
   HEADING_COLOR,
-  IN_BAND_CAP_PX,
-  IN_BAND_CAP_TOP_PX,
-  IN_BAND_COLOR,
-  IN_BAND_RIGHT_FRAC,
-  IN_BAND_SWEEP_SPLIT_FRAC,
-  IN_BAND_X_FRAC,
+  BODY_FIELD_BOTTOM_FRAC,
+  BODY_FIELD_COLOR,
+  BODY_FIELD_Y_FRAC,
+  CAPTION_CAP_PX,
+  CAPTION_COLOR,
+  CAPTION_RIGHT_COLOR,
+  CAPTION_RIGHT_WIDTH_PX,
+  CAPTION_RIGHT_X_FRAC,
+  CAPTION_WIDTH_PX,
+  CAPTION_X_FRAC,
+  CHIP_FILL,
+  CHIP_H_PX,
+  CHIP_RADIUS_PX,
+  CHIP_SWEEP_SPLIT_FRAC,
+  CHIP_TEXT_BASELINE_FRAC,
+  CHIP_TEXT_CAP_PX,
+  CHIP_TEXT_COLOR,
+  CHIP_Y_FRAC,
+  CHIPS,
   MINT_SETTLE_DELAY_MS,
   RED_GRADIENT_END,
   TICK_COLOR,
@@ -31,7 +44,7 @@ import {
   type StripSegmentLayout,
 } from './stepflow/strip'
 import { resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
-import { titleBaseline, titleFontSize } from './stepflow/chrome'
+import { titleFontSize } from './stepflow/chrome'
 import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = withDefaults(defineProps<{
@@ -55,8 +68,10 @@ const props = withDefaults(defineProps<{
   heading?: string
   /** Heading row 2 under the plate — gray tracked caps (16px cap). */
   heading2?: string
-  /** In-band dark display text, e.g. 'PLATFORM · 75.7%' (digits sheet-verified). */
-  bandText?: string
+  /** Data-quality chip labels, left→right, riding the band ('LATE DATA', …). */
+  chips?: string[]
+  /** Right caption line at the band's right edge (measured mint 'ACTUAL DATA PROBLEMS'). */
+  captionRight?: string
 }>(), { palette: () => ({}) })
 
 const p = computed(() => resolvePalette(props.palette))
@@ -76,7 +91,6 @@ const PLAIN_FILL = '#f5f4f7'
 // discontinuity at the x760 boundary — the sheet's per-region medians are
 // that ramp's slice medians).
 const PLATE_FILL = '#19181d'
-const MINT_TEXT = '#70e8c0'
 
 // Tone fills: `alt` ramps per-rect (objectBoundingBox — the click-1 wide copy
 // carries the full red→salmon ramp across itself); `mint` and `tertiary`
@@ -89,15 +103,6 @@ function toneFill(seg: StripSegmentLayout): string {
   return PLAIN_FILL
 }
 
-// Caption labels adopt their segment's tone family (measured: the red label
-// under the red segment, mint/green text under the teal region); accent stays
-// the accent, plain stays chrome-dim.
-function labelColor(seg: StripSegmentLayout): string {
-  if (seg.tone === 'alt') return p.value.accentAlt ?? p.value.accent
-  if (seg.tone === 'mint' || seg.tone === 'tertiary') return MINT_TEXT
-  if (seg.tone === 'accent') return p.value.accent
-  return p.value.subtext
-}
 
 // The shared field spans the first mint/tertiary segment's final left edge to
 // the band's right edge — the measured ramp's extent.
@@ -130,19 +135,28 @@ function tealBursts(seg: StripSegmentLayout): number[] {
 const TYPE = {
   heading1: titleFontSize(HEADING1_CAP_PX),
   heading2: titleFontSize(HEADING2_CAP_PX),
-  caption: titleFontSize(22),
-  bandText: titleFontSize(IN_BAND_CAP_PX),
+  caption: titleFontSize(CAPTION_CAP_PX),
+  chipText: titleFontSize(CHIP_TEXT_CAP_PX),
 }
 
-// In-band display text geometry: measured ink box x706–1659, two-sweep reveal
-// split at x1282 (between '·' and the digits — the measured sweep windows).
-const bandTextGeom = computed(() => ({
-  x: IN_BAND_X_FRAC * layout.value.viewBox.width,
-  width: (IN_BAND_RIGHT_FRAC - IN_BAND_X_FRAC) * layout.value.viewBox.width,
-  split: IN_BAND_SWEEP_SPLIT_FRAC * layout.value.viewBox.width,
-  sweepTop: IN_BAND_CAP_TOP_PX - 8,
-  sweepHeight: IN_BAND_CAP_PX + 24,
-  baseline: titleBaseline(IN_BAND_CAP_TOP_PX, IN_BAND_CAP_PX),
+// Chip labels resolve against the measured chip table (three boxes; extra
+// labels would render at 0-width and are not a supported input).
+const chipTexts = computed(() =>
+  (props.chips ?? []).map((label, i) => ({ label, chip: CHIPS[i] ?? { x0: 0, x1: 0, ink0: 0, ink1: 0 } })),
+)
+
+// Chip geometry: absolute 1920×1080 px boxes riding the band; the label
+// baseline is measured (cap band y663–683). Two sweep clip rects reveal the
+// labels left→right, split at x1282 between boxes 2 and 3.
+const chipGeom = computed(() => ({
+  top: CHIP_Y_FRAC * layout.value.viewBox.height,
+  height: CHIP_H_PX,
+  baseline: CHIP_TEXT_BASELINE_FRAC * layout.value.viewBox.height,
+  split: CHIP_SWEEP_SPLIT_FRAC * layout.value.viewBox.width,
+  sweepX: CHIPS[0].x0 - 4,
+  sweepEnd: CHIPS[CHIPS.length - 1].x1 + 4,
+  sweepTop: 655,
+  sweepHeight: 36,
 }))
 </script>
 
@@ -190,6 +204,14 @@ const bandTextGeom = computed(() => ({
       :width="layout.plate.w"
       :height="layout.plate.h"
       :fill="PLATE_FILL"
+    />
+    <rect
+      class="sf-rs-bodyfield"
+      :x="layout.plate.x"
+      :y="BODY_FIELD_Y_FRAC * layout.viewBox.height"
+      :width="layout.plate.w"
+      :height="(BODY_FIELD_BOTTOM_FRAC - BODY_FIELD_Y_FRAC) * layout.viewBox.height"
+      :fill="BODY_FIELD_COLOR"
     />
     <text
       v-if="heading"
@@ -272,73 +294,90 @@ const bandTextGeom = computed(() => ({
           fill="url(#sf-rs-field)"
         />
       </template>
+
+      <!-- Data-quality chips: fixed settled positions, riding the final band. -->
+      <rect
+        v-for="(chip, i) in CHIPS"
+        :key="`chip-${i}`"
+        class="sf-rs-chip"
+        :x="chip.x0"
+        :y="chipGeom.top"
+        :width="chip.x1 - chip.x0"
+        :height="chipGeom.height"
+        :rx="CHIP_RADIUS_PX"
+        :fill="CHIP_FILL"
+      />
     </g>
 
-    <!-- Caption row + in-band display text (click 3): the in-band text is
-         clipped by two rects whose widths sweep left→right at the measured
-         delays; the clipPath lives inside the group so the hidden-state
-         selectors reach it. -->
+    <!-- Caption row + chip labels (click 3): the labels are clipped by two
+         rects whose widths sweep left→right at the measured delays; the
+         clipPath lives inside the group so the hidden-state selectors reach it. -->
     <g v-click="3" class="sf-rs-text">
       <defs>
         <clipPath id="sf-rs-band-sweep">
           <rect
             class="sf-rs-sweep sf-rs-sweep0"
-            :x="bandTextGeom.x"
-            :y="bandTextGeom.sweepTop"
-            :width="bandTextGeom.split - bandTextGeom.x"
-            :height="bandTextGeom.sweepHeight"
+            :x="chipGeom.sweepX"
+            :y="chipGeom.sweepTop"
+            :width="chipGeom.split - chipGeom.sweepX"
+            :height="chipGeom.sweepHeight"
           />
           <rect
             class="sf-rs-sweep sf-rs-sweep1"
-            :x="bandTextGeom.split"
-            :y="bandTextGeom.sweepTop"
-            :width="bandTextGeom.x + bandTextGeom.width - bandTextGeom.split"
-            :height="bandTextGeom.sweepHeight"
+            :x="chipGeom.split"
+            :y="chipGeom.sweepTop"
+            :width="chipGeom.sweepEnd - chipGeom.split"
+            :height="chipGeom.sweepHeight"
           />
         </clipPath>
       </defs>
-      <text
-        v-if="bandText"
-        class="sf-rs-bandtext"
-        :x="bandTextGeom.x"
-        :y="bandTextGeom.baseline"
-        :font-size="TYPE.bandText"
-        :fill="IN_BAND_COLOR"
-        font-weight="700"
-        :textLength="bandTextGeom.width"
-        lengthAdjust="spacingAndGlyphs"
-        clip-path="url(#sf-rs-band-sweep)"
-      >{{ bandText }}</text>
-      <text
-        v-for="seg in layout.segments.filter((s) => s.label)"
-        :key="`label-${seg.id}`"
-        class="sf-rs-caption"
-        :x="seg.x1"
-        :y="layout.captionY"
-        :font-size="TYPE.caption"
-        :fill="labelColor(seg)"
-        letter-spacing="0.08em"
-      >{{ seg.label }}</text>
+      <g clip-path="url(#sf-rs-band-sweep)">
+        <text
+          v-for="t in chipTexts"
+          :key="`chip-label-${t.label}`"
+          class="sf-rs-bandtext"
+          :x="t.chip.ink0"
+          :y="chipGeom.baseline"
+          :font-size="TYPE.chipText"
+          :fill="CHIP_TEXT_COLOR"
+          font-weight="700"
+          :textLength="t.chip.ink1 - t.chip.ink0"
+          lengthAdjust="spacingAndGlyphs"
+        >{{ t.label }}</text>
+      </g>
       <text
         v-if="caption"
         class="sf-rs-caption"
-        :x="layout.band.x"
+        :x="CAPTION_X_FRAC * layout.viewBox.width"
         :y="layout.captionY"
         :font-size="TYPE.caption"
-        :fill="captionColor ?? p.subtext"
-        letter-spacing="0.08em"
+        :fill="captionColor ?? CAPTION_COLOR"
+        :textLength="CAPTION_WIDTH_PX"
+        lengthAdjust="spacing"
       >{{ caption }}</text>
+      <text
+        v-if="captionRight"
+        class="sf-rs-caption"
+        :x="CAPTION_RIGHT_X_FRAC * layout.viewBox.width"
+        :y="layout.captionY"
+        :font-size="TYPE.caption"
+        :fill="CAPTION_RIGHT_COLOR"
+        :textLength="CAPTION_RIGHT_WIDTH_PX"
+        lengthAdjust="spacing"
+      >{{ captionRight }}</text>
     </g>
 
-    <!-- Shared title chrome: sheet-measured centered two-tone title
-         (RatioStrip Title row: cap 43 in the band y98–141, centered ≈x963)
-         plus the recording badge its sheet documents. -->
+    <!-- Shared title chrome: frame-measured centered two-tone title
+         ('Less time' + green 'connecting tools': cap 54 at y107–160, ink
+         x450–1476 pinned via titleTextLength, centered ≈x963) plus the
+         recording badge its sheet documents. -->
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
-      :cap-height="43"
-      :cap-top="98"
+      :cap-height="54"
+      :cap-top="107"
       :center-x="963"
+      :title-text-length="1026"
       badge
     />
   </svg>
@@ -409,6 +448,11 @@ const bandTextGeom = computed(() => ({
 .sf-rs-final.slidev-vclick-hidden .sf-rs-seg1,
 .sf-rs-final.slidev-vclick-hidden .sf-rs-burst {
   width: 0;
+  transition: none;
+}
+
+.sf-rs-final.slidev-vclick-hidden .sf-rs-chip {
+  opacity: 0;
   transition: none;
 }
 

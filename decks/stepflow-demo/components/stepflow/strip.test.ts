@@ -9,7 +9,16 @@ import {
   BAND_X1_FRAC,
   BURST_DELAYS_MS,
   BURST_WFRACS,
+  BODY_FIELD_BOTTOM_FRAC,
+  BODY_FIELD_COLOR,
+  BODY_FIELD_Y_FRAC,
+  CAPTION_CAP_PX,
   CAPTION_COLOR,
+  CAPTION_RIGHT_COLOR,
+  CAPTION_RIGHT_WIDTH_PX,
+  CAPTION_RIGHT_X_FRAC,
+  CAPTION_WIDTH_PX,
+  CAPTION_X_FRAC,
   CAPTION_Y_FRAC,
   HEADING1_BASELINE_FRAC,
   HEADING1_CAP_PX,
@@ -19,13 +28,16 @@ import {
   HEADING2_CAP_PX,
   HEADING2_WIDTH_PX,
   HEADING2_X_FRAC,
+  CHIP_FILL,
+  CHIP_H_PX,
+  CHIP_RADIUS_PX,
+  CHIP_SWEEP_SPLIT_FRAC,
+  CHIP_TEXT_BASELINE_FRAC,
+  CHIP_TEXT_CAP_PX,
+  CHIP_TEXT_COLOR,
+  CHIP_Y_FRAC,
+  CHIPS,
   HEADING_COLOR,
-  IN_BAND_CAP_PX,
-  IN_BAND_CAP_TOP_PX,
-  IN_BAND_COLOR,
-  IN_BAND_RIGHT_FRAC,
-  IN_BAND_SWEEP_SPLIT_FRAC,
-  IN_BAND_X_FRAC,
   MINT_SETTLE_DELAY_MS,
   PLATE_H_FRAC,
   PLATE_X0_FRAC,
@@ -111,54 +123,70 @@ describe('measured constants — hand-computed to 1e-6', () => {
     expect(BAND_X1_FRAC - BAND_X0_FRAC).toBeCloseTo(0.714844, 6) // 915/1280 = 71.5%w
   })
 
-  it('caption row sits on the measured glyph band bottom y858', () => {
+  it('caption row sits on the measured glyph band bottom y858; left red + right mint pair', () => {
     expect(CAPTION_Y_FRAC).toBeCloseTo(0.794444, 6)
     expect(CAPTION_Y_FRAC * 1080).toBeCloseTo(858, 6)
-    expect(CAPTION_COLOR).toBe('#e84442')
+    expect(CAPTION_CAP_PX).toBe(23)
+    expect(CAPTION_COLOR).toBe('#e94343')
+    expect(CAPTION_X_FRAC * 1920).toBeCloseTo(277, 6)
+    expect(CAPTION_WIDTH_PX).toBe(332)
+    expect(CAPTION_RIGHT_COLOR).toBe('#23d598')
+    expect(CAPTION_RIGHT_X_FRAC * 1920).toBeCloseTo(1224, 6)
+    expect(CAPTION_RIGHT_WIDTH_PX).toBe(419)
   })
 
-  it('panel plate spans the measured x234–1685 × y331–469 (139px tall)', () => {
+  it('panel chrome: plate bar y333–411 + body field y412–936 at x234–1685', () => {
     expect(PLATE_X0_FRAC * 1920).toBeCloseTo(234, 6)
     expect(PLATE_X1_FRAC * 1920).toBeCloseTo(1685, 6)
-    expect(PLATE_Y_FRAC * 1080).toBeCloseTo(331, 6)
-    expect(PLATE_H_FRAC * 1080).toBeCloseTo(139, 6)
+    expect(PLATE_Y_FRAC * 1080).toBeCloseTo(333, 6)
+    expect(PLATE_H_FRAC * 1080).toBeCloseTo(79, 6)
+    expect(BODY_FIELD_Y_FRAC * 1080).toBeCloseTo(412, 6)
+    expect(BODY_FIELD_BOTTOM_FRAC * 1080).toBeCloseTo(936, 6)
+    expect(BODY_FIELD_COLOR).toBe('#0f0e11')
   })
 
-  it('plate heading row 1: gray tracked caps, cap 13px, band y361–384, x259–708', () => {
-    expect(HEADING1_X_FRAC * 1920).toBeCloseTo(259, 6)
-    expect(HEADING1_BASELINE_FRAC * 1080).toBeCloseTo(383, 6)
-    expect(HEADING1_CAP_PX).toBe(13)
-    expect(HEADING1_WIDTH_PX).toBe(449)
-    expect(HEADING_COLOR).toBe('#a8a8b8')
+  it('plate heading row 1: mixed-case URL, cap 17px, baseline 380, ink x369–708', () => {
+    expect(HEADING1_X_FRAC * 1920).toBeCloseTo(369, 6)
+    expect(HEADING1_BASELINE_FRAC * 1080).toBeCloseTo(380, 6)
+    expect(HEADING1_CAP_PX).toBe(17)
+    expect(HEADING1_WIDTH_PX).toBe(339)
+    expect(HEADING_COLOR).toBe('#a4a4b0')
   })
 
-  it('heading row 2: gray tracked caps, cap 16px, band y465–480, x276–672', () => {
+  it('heading row 2: gray caps, cap 17px, band y465–481, x276–672', () => {
     expect(HEADING2_X_FRAC * 1920).toBeCloseTo(276, 6)
-    expect(HEADING2_BASELINE_FRAC * 1080).toBeCloseTo(480, 6)
-    expect(HEADING2_CAP_PX).toBe(16)
+    expect(HEADING2_BASELINE_FRAC * 1080).toBeCloseTo(481, 6)
+    expect(HEADING2_CAP_PX).toBe(17)
     expect(HEADING2_WIDTH_PX).toBe(396)
   })
 
-  it('tick row: 9 measured x-centers (first 8 on a 171.57px pitch, 9th at 1639), 4×26px at y509', () => {
+  it('tick row: 9 measured x-centers (first 8 on a ≈171.6px pitch, 9th at 1640.5), 4×25px at y510', () => {
     expect(TICK_X_CENTERS).toHaveLength(9)
-    expect(TICK_X_CENTERS[0]).toBe(280)
-    expect(TICK_X_CENTERS[7]).toBeCloseTo(1481, 1)
-    expect(TICK_X_CENTERS[8]).toBe(1639)
+    expect(TICK_X_CENTERS[0]).toBe(281)
+    expect(TICK_X_CENTERS[7]).toBeCloseTo(1482.5, 1)
+    expect(TICK_X_CENTERS[8]).toBe(1640.5)
     // First-eight pitch matches the sheet's ≈171.6 reading.
-    expect((TICK_X_CENTERS[7] - TICK_X_CENTERS[0]) / 7).toBeCloseTo(171.57, 1)
-    expect(TICK_Y_FRAC * 1080).toBeCloseTo(509, 6)
+    expect((TICK_X_CENTERS[7] - TICK_X_CENTERS[0]) / 7).toBeCloseTo(171.64, 1)
+    expect(TICK_Y_FRAC * 1080).toBeCloseTo(510, 6)
     expect(TICK_W_PX).toBe(4)
-    expect(TICK_H_PX).toBe(26)
+    expect(TICK_H_PX).toBe(25)
     expect(TICK_COLOR).toBe('#3a3b42')
   })
 
-  it('in-band display text: ink box x706–1659, cap band y628–718 (cap 90px), sweep split x1282', () => {
-    expect(IN_BAND_X_FRAC * 1920).toBeCloseTo(706, 6)
-    expect(IN_BAND_RIGHT_FRAC * 1920).toBeCloseTo(1659, 6)
-    expect(IN_BAND_CAP_TOP_PX).toBe(628)
-    expect(IN_BAND_CAP_PX).toBe(90)
-    expect(IN_BAND_SWEEP_SPLIT_FRAC * 1920).toBeCloseTo(1282, 6)
-    expect(IN_BAND_COLOR).toBe('#0a0a0a')
+  it('chip row: three #020404 boxes y628–718 with mint labels, sweep split x1282', () => {
+    expect(CHIP_Y_FRAC * 1080).toBeCloseTo(628, 6)
+    expect(CHIP_H_PX).toBe(90)
+    expect(CHIP_FILL).toBe('#020404')
+    expect(CHIP_RADIUS_PX).toBe(12)
+    expect(CHIP_TEXT_COLOR).toBe('#21d697')
+    expect(CHIP_TEXT_CAP_PX).toBe(20)
+    expect(CHIP_TEXT_BASELINE_FRAC * 1080).toBeCloseTo(683, 6)
+    expect(CHIP_SWEEP_SPLIT_FRAC * 1920).toBeCloseTo(1282, 6)
+    expect(CHIPS).toEqual([
+      { x0: 706, x1: 917, ink0: 730, ink1: 890 },
+      { x0: 944, x1: 1251, ink0: 969, ink1: 1224 },
+      { x0: 1278, x1: 1547, ink0: 1302, ink1: 1520 },
+    ])
   })
 
   it('shared mint→teal field: measured continuous ramp endpoints', () => {
@@ -207,12 +235,12 @@ describe('ratioStripLayout — band geometry (demo seed)', () => {
     expect(l.captionY).toBeCloseTo(858, 6)
   })
 
-  it('resolves the measured panel plate: x234, y331, 1451×139', () => {
+  it('resolves the measured panel plate bar: x234, y333, 1451×79', () => {
     const l = ratioStripLayout(data())
     expect(l.plate.x).toBeCloseTo(234, 6)
-    expect(l.plate.y).toBeCloseTo(331, 6)
+    expect(l.plate.y).toBeCloseTo(333, 6)
     expect(l.plate.w).toBeCloseTo(1451, 6)
-    expect(l.plate.h).toBeCloseTo(139, 6)
+    expect(l.plate.h).toBeCloseTo(79, 6)
   })
 
   it('click-1 state: segments at the initial proportions, contiguous left → right', () => {
@@ -387,40 +415,46 @@ describe('RatioStrip component', () => {
     expect(Number(field.attributes('x2'))).toBeCloseTo(1648.5, 4)
   })
 
-  it('renders the measured panel plate, gray tracked heading rows, and tick row as static chrome', () => {
-    const wrapper = mountRatioStrip({ ...data(), heading: 'SHARE OF TOTAL', heading2: 'COMPUTE UNITS · FY26' })
+  it('renders the two-tone panel, URL heading row, gray caps row, and tick row as static chrome', () => {
+    const wrapper = mountRatioStrip({ ...data(), heading: 'data.mrk.shop/workspace', heading2: 'TIME IN ONE WORKING DAY' })
     const plate = wrapper.find('rect.sf-rs-plate')
     expect(plate.attributes('fill')).toBe('#19181d')
     expect(Number(plate.attributes('x'))).toBeCloseTo(234, 4)
-    expect(Number(plate.attributes('y'))).toBeCloseTo(331, 4)
+    expect(Number(plate.attributes('y'))).toBeCloseTo(333, 4)
     expect(Number(plate.attributes('width'))).toBeCloseTo(1451, 4)
-    expect(Number(plate.attributes('height'))).toBeCloseTo(139, 4)
-    // Row 1: gray 13px-cap caps inside the plate, spread over the measured 449px.
+    expect(Number(plate.attributes('height'))).toBeCloseTo(79, 4)
+    // The #0f0e11 body field continues below the plate bar through the captions.
+    const body = wrapper.find('rect.sf-rs-bodyfield')
+    expect(body.attributes('fill')).toBe('#0f0e11')
+    expect(Number(body.attributes('y'))).toBeCloseTo(412, 4)
+    expect(Number(body.attributes('height'))).toBeCloseTo(936 - 412, 4)
+    expect(Number(body.attributes('x'))).toBeCloseTo(234, 4)
+    // Row 1: gray mixed-case URL inside the plate, ink pinned to the measured 339px.
     const heading = wrapper.find('text.sf-rs-heading')
-    expect(heading.text()).toBe('SHARE OF TOTAL')
-    expect(heading.attributes('fill')).toBe('#a8a8b8')
-    expect(Number(heading.attributes('x'))).toBeCloseTo(259, 4)
-    expect(Number(heading.attributes('y'))).toBeCloseTo(383, 4)
-    expect(heading.attributes('textLength')).toBe('449')
-    expect(Number(heading.attributes('font-size'))).toBeCloseTo(13 / 0.752, 3)
-    // Row 2: gray 16px-cap caps under the plate, spread over the measured 396px.
+    expect(heading.text()).toBe('data.mrk.shop/workspace')
+    expect(heading.attributes('fill')).toBe('#a4a4b0')
+    expect(Number(heading.attributes('x'))).toBeCloseTo(369, 4)
+    expect(Number(heading.attributes('y'))).toBeCloseTo(380, 4)
+    expect(heading.attributes('textLength')).toBe('339')
+    expect(Number(heading.attributes('font-size'))).toBeCloseTo(17 / 0.752, 3)
+    // Row 2: gray caps in the body field, spread over the measured 396px.
     const heading2 = wrapper.find('text.sf-rs-heading2')
-    expect(heading2.text()).toBe('COMPUTE UNITS · FY26')
-    expect(heading2.attributes('fill')).toBe('#a8a8b8')
+    expect(heading2.text()).toBe('TIME IN ONE WORKING DAY')
+    expect(heading2.attributes('fill')).toBe('#a4a4b0')
     expect(Number(heading2.attributes('x'))).toBeCloseTo(276, 4)
-    expect(Number(heading2.attributes('y'))).toBeCloseTo(480, 4)
+    expect(Number(heading2.attributes('y'))).toBeCloseTo(481, 4)
     expect(heading2.attributes('textLength')).toBe('396')
-    expect(Number(heading2.attributes('font-size'))).toBeCloseTo(16 / 0.752, 3)
-    // 9 measurement ticks: 4×26px at y509, first tick centered on x280.
+    expect(Number(heading2.attributes('font-size'))).toBeCloseTo(17 / 0.752, 3)
+    // 9 measurement ticks: 4×25px at y510, first tick centered on x281.
     const ticks = wrapper.findAll('.sf-rs-ticks rect')
     expect(ticks).toHaveLength(9)
-    expect(Number(ticks[0].attributes('x'))).toBeCloseTo(278, 4)
-    expect(Number(ticks[0].attributes('y'))).toBeCloseTo(509, 4)
+    expect(Number(ticks[0].attributes('x'))).toBeCloseTo(279, 4)
+    expect(Number(ticks[0].attributes('y'))).toBeCloseTo(510, 4)
     expect(Number(ticks[0].attributes('width'))).toBe(4)
-    expect(Number(ticks[0].attributes('height'))).toBe(26)
+    expect(Number(ticks[0].attributes('height'))).toBe(25)
     expect(ticks[0].attributes('fill')).toBe('#3a3b42')
-    expect(Number(ticks[8].attributes('x'))).toBeCloseTo(1637, 4)
-    // Without the props no heading rows render; plate and ticks are always present.
+    expect(Number(ticks[8].attributes('x'))).toBeCloseTo(1638.5, 4)
+    // Without the props no heading rows render; panel and ticks are always present.
     const bare = mountRatioStrip(data())
     expect(bare.find('text.sf-rs-heading').exists()).toBe(false)
     expect(bare.find('text.sf-rs-heading2').exists()).toBe(false)
@@ -441,16 +475,23 @@ describe('RatioStrip component', () => {
     expect(bursts[1].attributes('fill')).toBe('url(#sf-rs-field)')
   })
 
-  it('renders the mint segment (not a chip): full band height, settling on its own delay', () => {
+  it('renders the mint segment at its 11.3% share and three dark chips riding the final band', () => {
     const wrapper = mountRatioStrip(data())
     const mintFinal = wrapper.findAll('rect.sf-rs-seg1')[1]
     expect(mintFinal.classes()).toContain('sf-rs-mint')
     expect(mintFinal.attributes('fill')).toBe('url(#sf-rs-field)')
     expect(Number(mintFinal.attributes('x'))).toBeCloseTo(605.4, 4)
-    expect(Number(mintFinal.attributes('width'))).toBeCloseTo(155.0925, 4) // 11.3% share, not the old 95px chip
+    expect(Number(mintFinal.attributes('width'))).toBeCloseTo(155.0925, 4) // 11.3% share
     expect(Number(mintFinal.attributes('height'))).toBeCloseTo(H_FRAC * 1080, 4)
-    // No chip overlay exists anymore — the mint segment IS the chip.
-    expect(wrapper.find('rect.sf-rs-chip').exists()).toBe(false)
+    // Three rounded #020404 chips at their settled positions, y628, 90px tall.
+    const chips = wrapper.findAll('rect.sf-rs-chip')
+    expect(chips).toHaveLength(3)
+    expect(chips.map((c) => Number(c.attributes('x')))).toEqual([706, 944, 1278])
+    expect(Number(chips[0].attributes('y'))).toBeCloseTo(628, 4)
+    expect(Number(chips[0].attributes('height'))).toBe(90)
+    expect(Number(chips[1].attributes('width'))).toBe(1251 - 944)
+    expect(chips[0].attributes('rx')).toBe('12')
+    expect(chips[0].attributes('fill')).toBe('#020404')
   })
 
   it('ships width-transition classes with measured delays and hidden-state snap (transition: none)', () => {
@@ -518,69 +559,66 @@ describe('RatioStrip component', () => {
     expect(Number(field.attributes('x2'))).toBeCloseTo(1648.5, 4)
   })
 
-  it('renders the in-band display text with the two-sweep clip reveal', () => {
-    const wrapper = mountRatioStrip({ ...data(), bandText: 'PLATFORM · 75.7%' })
-    const text = wrapper.find('text.sf-rs-bandtext')
-    expect(text.text()).toBe('PLATFORM · 75.7%')
-    expect(text.attributes('fill')).toBe('#0a0a0a')
-    expect(text.attributes('font-weight')).toBe('700')
-    expect(Number(text.attributes('x'))).toBeCloseTo(706, 4)
-    expect(Number(text.attributes('y'))).toBeCloseTo(718, 4) // cap band bottom = baseline
-    expect(Number(text.attributes('font-size'))).toBeCloseTo(90 / 0.752, 3)
-    expect(Number(text.attributes('textLength'))).toBeCloseTo(953, 3)
-    expect(text.attributes('lengthAdjust')).toBe('spacingAndGlyphs')
-    expect(text.attributes('clip-path')).toBe('url(#sf-rs-band-sweep)')
-    // Two sweep rects: [706→1282] then [1282→1659] — the measured sweep split.
+  it('renders the chip labels with the two-sweep clip reveal', () => {
+    const wrapper = mountRatioStrip({ ...data(), chips: ['LATE DATA', 'DUPLICATE ROWS', 'WRONG TOTALS'] })
+    const texts = wrapper.findAll('text.sf-rs-bandtext')
+    expect(texts).toHaveLength(3)
+    expect(texts.map((t) => t.text())).toEqual(['LATE DATA', 'DUPLICATE ROWS', 'WRONG TOTALS'])
+    expect(texts.map((t) => t.attributes('fill'))).toEqual(['#21d697', '#21d697', '#21d697'])
+    expect(texts.every((t) => t.attributes('font-weight') === '700')).toBe(true)
+    expect(texts.map((t) => Number(t.attributes('x')))).toEqual([730, 969, 1302])
+    expect(texts.every((t) => Number(t.attributes('y')) === 683)).toBe(true) // measured label baseline
+    expect(Number(texts[0].attributes('font-size'))).toBeCloseTo(20 / 0.752, 3)
+    expect(texts.map((t) => Number(t.attributes('textLength')))).toEqual([160, 255, 218])
+    expect(texts.every((t) => t.attributes('lengthAdjust') === 'spacingAndGlyphs')).toBe(true)
+    // The clip group carries the sweep; individual labels are unclipped.
+    expect(wrapper.find('g[clip-path="url(#sf-rs-band-sweep)"]').exists()).toBe(true)
+    // Two sweep rects: [702→1282] then [1282→1551] — the measured split between boxes 2–3.
     const sweeps = wrapper.findAll('rect.sf-rs-sweep')
     expect(sweeps).toHaveLength(2)
-    expect(Number(sweeps[0].attributes('x'))).toBeCloseTo(706, 4)
-    expect(Number(sweeps[0].attributes('width'))).toBeCloseTo(576, 4)
+    expect(Number(sweeps[0].attributes('x'))).toBeCloseTo(702, 4)
+    expect(Number(sweeps[0].attributes('width'))).toBeCloseTo(580, 4)
     expect(Number(sweeps[1].attributes('x'))).toBeCloseTo(1282, 4)
-    expect(Number(sweeps[1].attributes('width'))).toBeCloseTo(377, 4)
-    // No bandText prop → no in-band text, but the clip scaffolding is harmless.
+    expect(Number(sweeps[1].attributes('width'))).toBeCloseTo(269, 4)
+    // No chips prop → no labels, but the clip scaffolding is harmless.
     const bare = mountRatioStrip(data())
     expect(bare.find('text.sf-rs-bandtext').exists()).toBe(false)
   })
 
-  it('renders the caption row on the third click with the measured red ink override', () => {
+  it('renders the measured caption pair on the third click: red left + mint right', () => {
     const wrapper = mountRatioStrip({
       ...data(),
-      caption: 'SHARE OF COMPUTE',
+      caption: 'CONNECTING TOOLS',
       captionColor: CAPTION_COLOR,
+      captionRight: 'ACTUAL DATA PROBLEMS',
     })
     const capTexts = wrapper.findAll('text.sf-rs-caption')
-    expect(capTexts).toHaveLength(1)
-    expect(capTexts[0].text()).toBe('SHARE OF COMPUTE')
-    expect(capTexts[0].attributes('fill')).toBe('#e84442') // measured red, not chrome-dim
-    expect(Number(capTexts[0].attributes('x'))).toBeCloseTo(276, 4)
+    expect(capTexts).toHaveLength(2)
+    expect(capTexts[0].text()).toBe('CONNECTING TOOLS')
+    expect(capTexts[0].attributes('fill')).toBe('#e94343') // measured red, not chrome-dim
+    expect(Number(capTexts[0].attributes('x'))).toBeCloseTo(277, 4)
     expect(Number(capTexts[0].attributes('y'))).toBeCloseTo(858, 4)
-    expect(Number(capTexts[0].attributes('font-size'))).toBeCloseTo(22 / 0.752, 3)
+    expect(Number(capTexts[0].attributes('font-size'))).toBeCloseTo(23 / 0.752, 3)
+    expect(capTexts[0].attributes('textLength')).toBe('332')
+    expect(capTexts[0].attributes('lengthAdjust')).toBe('spacing')
+    expect(capTexts[1].text()).toBe('ACTUAL DATA PROBLEMS')
+    expect(capTexts[1].attributes('fill')).toBe('#23d598') // measured mint
+    expect(Number(capTexts[1].attributes('x'))).toBeCloseTo(1224, 4)
+    expect(capTexts[1].attributes('textLength')).toBe('419')
 
-    // Without the override the caption falls back to chrome-dim subtext.
-    const dim = mountRatioStrip({ ...data(), caption: 'SHARE OF RUNTIME' })
-    expect(dim.findAll('text.sf-rs-caption')[0].attributes('fill')).toBe('#a6a8ae')
-
-    // Per-segment labels keep their tone-family colors (mechanism retained).
-    const labeled = mountRatioStrip({
-      segments: [
-        { id: 'a', tone: 'alt', wFrac: 0.5, label: 'INGEST' },
-        { id: 'b', tone: 'tertiary', wFrac: 0.5, label: 'PLATFORM' },
-      ],
-      yFrac: 0.5,
-      hFrac: 0.2,
-      palette: SLIDE_PALETTE,
-    })
-    const labelTexts = labeled.findAll('text.sf-rs-caption')
-    expect(labelTexts).toHaveLength(2)
-    expect(labelTexts[0].attributes('fill')).toBe('#ec423f') // red label under the red segment
-    expect(labelTexts[1].attributes('fill')).toBe('#70e8c0') // mint/green under the teal region
+    // Without the override the left caption keeps the measured red default.
+    const dim = mountRatioStrip({ ...data(), caption: 'CONNECTING TOOLS' })
+    expect(dim.findAll('text.sf-rs-caption')[0].attributes('fill')).toBe('#e94343')
   })
 
-  it('renders the two-tone header: white title + chrome-green titleAccent tail', () => {
-    const wrapper = mountRatioStrip({ ...data(), title: 'RUNTIME SHARE', titleAccent: '· FY26 SPLIT' })
+  it('renders the two-tone header: white title + chrome-green titleAccent tail at the pinned extent', () => {
+    const wrapper = mountRatioStrip({ ...data(), title: 'Less time', titleAccent: 'connecting tools' })
     const header = wrapper.find('.sf-chrome-title')
-    expect(header.text()).toContain('RUNTIME SHARE')
+    expect(header.text()).toContain('Less time')
+    expect(header.text()).toContain('connecting tools')
     expect(header.html()).toContain('#66fb00')
+    // The measured title ink extent rides the shared titleTextLength prop.
+    expect(header.html()).toContain('textLength="1026"')
   })
 
   it('surfaces the layout RangeError instead of rendering blank', () => {
