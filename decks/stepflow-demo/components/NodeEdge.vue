@@ -14,6 +14,7 @@ import {
   type FlowStatus,
 } from './stepflow/nodeEdge'
 import { resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
+import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = withDefaults(defineProps<{
   /** Free-position nodes; positions are data (canvas fractions), never computed. */
@@ -37,10 +38,10 @@ const layout = computed(() => nodeEdgeLayout({ nodes: props.nodes, edges: props.
 const washId = useId()
 
 // Node tones map to palette roles; the plain tone is chrome white (the
-// recording's white-bordered node) — chrome, not a palette field, like the
-// header fill. The status tone is the solid bright-red status square.
+// recording's white-bordered node) — chrome, not a palette field. Title
+// chrome lives in the shared TitleChrome component. The status tone is the
+// solid bright-red status square.
 const PLAIN_STROKE = '#f5f4f7'
-const CHROME_GREEN = '#66fb00'
 
 function toneColor(tone: FlowNode['tone']): string {
   if (tone === 'accent') return p.value.accent
@@ -65,7 +66,6 @@ function round4(n: number): number {
 const type = computed(() => {
   const h = layout.value.viewBox.height
   return {
-    titleSize: round4(0.072 * h),
     labelSize: round4(LABEL_SIZE_FRAC * h),
     labelPitch: round4(LABEL_PITCH_FRAC * h),
     terminalSize: round4(0.0209 * h),
@@ -247,15 +247,15 @@ function fmt(n: number): string {
       letter-spacing="0.05em"
     >{{ line }}</text>
 
-    <text
-      v-if="title"
-      class="header"
-      :x="layout.viewBox.width * 0.033"
-      :y="layout.viewBox.height * 0.12"
-      :font-size="type.titleSize"
-      fill="#ffffff"
-      letter-spacing="0.06em"
-    >{{ title }}<tspan v-if="titleAccent" :fill="CHROME_GREEN">&nbsp;{{ titleAccent }}</tspan></text>
+    <!-- Shared title chrome: sheet-measured centered two-tone title
+         (NodeEdge Title row: cap 77 in the band y49–126, centered ≈x914). -->
+    <TitleChrome
+      :title="title"
+      :title-accent="titleAccent"
+      :cap-height="77"
+      :cap-top="49"
+      :center-x="914"
+    />
   </svg>
 </template>
 

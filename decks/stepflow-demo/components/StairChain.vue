@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { stairLayout, type StairCallout, type StairStep } from './stepflow/stair'
 import { chainBlue, resolvePalette, type StepFlowPalette, type StepFlowPaletteOverride } from './stepflow/palettes'
+import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = withDefaults(defineProps<{
   /** One entry per block; content travels with the slide. */
@@ -39,11 +40,6 @@ const blockClick = (i: number): number => i + 1 + (props.callout ? 1 : 0)
 const type = computed(() => {
   const height = layout.value.viewBox.height
   return {
-    // Recording-scale chrome (wave-1 systemic cause 4: family headers run
-    // 7.2-8.8%h in the sources vs the shared 34px@848 ~= 4%h formula). The
-    // census white target (>=0.5x ref 0.94%) is unreachable with labels
-    // alone; 5.6%h is the smallest bump that clears it below ref scale.
-    headerSize: 0.0555 * height,
     labelSize: 0.037 * height,
     captionSize: 0.022 * height,
     calloutSize: 0.055 * height,
@@ -67,15 +63,12 @@ function captionBaseline(blockY: number, blockH: number): number {
   return blockY + blockH + type.value.captionGap
 }
 
-// Chrome constants: white in-block labels and header, chrome-green title tail
-// (titleAccent convention — a constant, never a palette field). The ambient
-// classes are measured from the recording's settle frame (t=7.9): slate
-// #363946 shadow masses beside the blue blocks, dark-teal ambience around the
-// cyan ones (wave-1 report art_v4jVdTnp §1) — like the chrome green, ambient
-// tones are family constants, not palette roles.
+// Chrome constants: white in-block labels (title chrome lives in the shared
+// TitleChrome component). The ambient classes are measured from the
+// recording's settle frame (t=7.9): slate #363946 shadow masses beside the
+// blue blocks, dark-teal ambience around the cyan ones (wave-1 report
+// art_v4jVdTnp §1) — ambient tones are family constants, not palette roles.
 const LABEL_FILL = '#ffffff'
-const HEADER_FILL = '#ffffff'
-const CHROME_GREEN = '#66fb00'
 const SHADOW_SLATE = '#363946'
 const AMBIENCE_TEAL = '#1fd0ea'
 
@@ -174,20 +167,15 @@ function blockFill(step: StairStep, palette: StepFlowPalette): string {
       :fill="p.accentAlt"
     >{{ callout.text }}</text>
 
-    <!-- Two-tone header chrome: white title, chrome-green accent tail. -->
-    <text
-      v-if="title"
-      class="header"
-      :x="layout.viewBox.width * 0.033"
-      :y="layout.viewBox.height * 0.075"
-      :font-size="type.headerSize"
-      :fill="HEADER_FILL"
-      letter-spacing="0.06em"
-    ><tspan>{{ title }}</tspan><tspan
-      v-if="titleAccent"
-      dx="0.35em"
-      :fill="CHROME_GREEN"
-    >{{ titleAccent }}</tspan></text>
+    <!-- Shared title chrome: sheet-measured centered two-tone title
+         (StairChain Title row: cap 97 in the band y48–145, centered ≈x917). -->
+    <TitleChrome
+      :title="title"
+      :title-accent="titleAccent"
+      :cap-height="97"
+      :cap-top="48"
+      :center-x="917"
+    />
   </svg>
 </template>
 

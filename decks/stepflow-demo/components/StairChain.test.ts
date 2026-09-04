@@ -238,13 +238,17 @@ describe('StairChain', () => {
     expect(calloutHidden).toContain('transition: none')
   })
 
-  it('renders the two-tone header: white title with a chrome-green accent tail', () => {
+  it('renders the shared centered two-tone title chrome (sheet Title row: cap 97, band y48–145, ≈x917)', () => {
     const withAccent = mountStairChain({ steps, title: 'THE DATA ENGINEERING', titleAccent: 'LIFECYCLE' })
-    expect(withAccent.find('.header').text()).toContain('THE DATA ENGINEERING')
-    expect(withAccent.find('.header').text()).toContain('LIFECYCLE')
-    // Recording-scale chrome: 0.0555 x 1080 = 59.94px (wave-1 systemic
-    // cause 4; census white target). Up from the shared 34px@848 formula.
-    expect(Number(withAccent.find('.header').attributes('font-size'))).toBeCloseTo(59.94, 6)
+    const title = withAccent.find('.sf-chrome-title')
+    expect(title.exists()).toBe(true)
+    expect(title.text()).toContain('THE DATA ENGINEERING')
+    expect(title.text()).toContain('LIFECYCLE')
+    // Sheet-measured chrome: cap 97 → font-size 97/0.752, baseline at the
+    // band bottom y145, centered on the sheet's ink center ≈x917.
+    expect(Number(title.attributes('font-size'))).toBeCloseTo(97 / 0.752, 4)
+    expect(Number(title.attributes('y'))).toBe(145)
+    expect(Number(title.attributes('x'))).toBe(917)
     expect(withAccent.html()).toContain('#66fb00')
 
     const withoutAccent = mountStairChain({ steps, title: 'PLAIN HEADER' })

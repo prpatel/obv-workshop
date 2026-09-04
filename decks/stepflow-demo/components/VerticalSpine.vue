@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { spineLayout, type SpineNode, type SpineOptions } from './stepflow/spine'
 import { chainBlue, orangeSpine, resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
 import { iconPath, ICON_FALLBACK } from './stepflow/icons'
+import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = withDefaults(defineProps<{
   /** Spine elements in reveal order (top → bottom); data order is the click order. */
@@ -30,10 +31,8 @@ const spine = computed(() => resolvePalette({ ...orangeSpine, ...props.accentPal
 const centerCount = computed(() => props.nodes.filter((n) => n.side === 'center').length)
 const layout = computed(() => spineLayout(centerCount.value, props.geometry))
 
-// Chrome green of the two-tone recording headers — a convention constant,
-// never a palette field (README: title chrome convention).
-const CHROME_GREEN = '#66fb00'
-const HEADER_FILL = '#ffffff'
+// Title chrome lives in the shared TitleChrome component (titleAccent
+// convention, README).
 
 // Outlined-card plate (wave-1 report §3): near-black, never the accent fill.
 const CARD_PLATE = '#0b0a11'
@@ -53,8 +52,6 @@ const type = computed(() => {
   const h = layout.value.viewBox.height
   const src = h / 1144
   return {
-    headerSize: 0.1175 * h,
-    headerBaseline: 0.134 * h,
     labelSize: 27 * src,
     cardTitleSize: 105 * src,
     captionSize: 44 * (h / 1080),
@@ -258,19 +255,17 @@ const sideCards = computed(() => props.nodes.filter((n) => n.side === 'left' || 
       >{{ footer.right }}</text>
     </g>
 
-    <text
-      v-if="title"
-      class="sf-spine-header"
-      :x="layout.viewBox.width * 0.033"
-      :y="fmt(type.headerBaseline)"
-      :font-size="fmt(type.headerSize)"
-      :fill="HEADER_FILL"
-      letter-spacing="0.06em"
-    ><tspan>{{ title }}</tspan><tspan
-        v-if="titleAccent"
-        :dx="type.headerSize * 0.28"
-        :fill="CHROME_GREEN"
-      >{{ titleAccent }}</tspan></text>
+    <!-- Shared title chrome: sheet-measured centered two-tone title
+         (VerticalSpine Title row: green SQL phrase first at cap 84, band
+         y48–132, centered ≈x916; per-token sizing is family detail). -->
+    <TitleChrome
+      :title="title"
+      :title-accent="titleAccent"
+      :cap-height="84"
+      :cap-top="48"
+      :center-x="916"
+      accent-first
+    />
   </svg>
 </template>
 

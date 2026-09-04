@@ -157,9 +157,18 @@ visible fallback and warn in dev, so a wrong identification degrades safely.
 Family components accept an optional `titleAccent?: string` prop: the mono
 header renders `title` in white with the `titleAccent` tail in chrome-green
 `#66fb00` (the recordings' two-tone header). `#66fb00` is a constant of this
-convention, never a palette field. There is deliberately **no shared chrome
-component** — each family component renders its own two-tone title (word order
-varies per recording; arbitrary word-level coloring is out of scope).
+convention, never a palette field.
+
+As of the shared chrome rework, families render the two-tone title through the
+shared `components/stepflow/TitleChrome.vue` SVG fragment (geometry helpers in
+`components/stepflow/chrome.ts`): a **centered** two-tone display title in the
+sheet band y≈97–176 at 1920×1080, sized from each family's sheet-measured cap
+height (`cap-height`/`cap-top` props, one decimal where the sheet measures one),
+on the family's measured center axis (`center-x`, default canvas center).
+Word order varies per recording (`accent-first` when the sheet shows the green
+phrase first; arbitrary word-level coloring is out of scope). Families whose
+sheets document the recording pill pass `badge` and get the green TopRightBadge
+(x1850–1901, y19–61) drawn by the same component.
 
 ### Family components
 

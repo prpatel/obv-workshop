@@ -14,6 +14,7 @@ import {
 } from './stepflow/tiles'
 import { resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
 import { iconPath, ICON_FALLBACK } from './stepflow/icons'
+import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = defineProps<{
   /** Tiles in row-major reveal order — one native v-click per tile. */
@@ -133,15 +134,12 @@ function resolveIcon(key: string): string {
   return path ?? ICON_FALLBACK
 }
 
-// Typography on the StepFlow scale: 34px title at source height 848, rescaled
-// so custom viewBox sizes stay proportional (NodeEdge.vue pattern). Label rows
-// measure ~16px glyphs at the 1920×1080 read.
+// Typography on the StepFlow scale, rescaled so custom viewBox sizes stay
+// proportional (NodeEdge.vue pattern). Label rows measure ~16px glyphs at the
+// 1920×1080 read; title chrome lives in the shared TitleChrome component.
 const type = computed(() => ({
-  titleSize: 34 * (layout.value.viewBox.height / 848),
   labelSize: 16 * k.value,
 }))
-
-const CHROME_GREEN = '#66fb00'
 
 function fmt(n: number): string {
   return String(parseFloat(n.toFixed(4)))
@@ -252,15 +250,17 @@ function fmt(n: number): string {
       >{{ hex.tile.label }}</text>
     </g>
 
-    <text
-      v-if="title"
-      class="header"
-      :x="layout.viewBox.width * 0.033"
-      :y="layout.viewBox.height * 0.075"
-      :font-size="type.titleSize"
-      fill="#ffffff"
-      letter-spacing="0.06em"
-    >{{ title }}<tspan v-if="titleAccent" :fill="CHROME_GREEN">&nbsp;{{ titleAccent }}</tspan></text>
+    <!-- Shared title chrome: sheet-measured centered two-tone title
+         (TileGrid Title row: cap 52 in the band y97–149, centered ≈x962)
+         plus the recording badge its sheet documents. -->
+    <TitleChrome
+      :title="title"
+      :title-accent="titleAccent"
+      :cap-height="52"
+      :cap-top="97"
+      :center-x="962"
+      badge
+    />
   </svg>
 </template>
 

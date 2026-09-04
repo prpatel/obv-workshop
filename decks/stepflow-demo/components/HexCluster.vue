@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { hexLayout, type HexCell, type HexNodeData, type HexOptions, type HexArrangement } from './stepflow/hex'
 import { resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
 import { iconPath, ICON_FALLBACK } from './stepflow/icons'
+import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = withDefaults(defineProps<{
   /** One entry per cell; content travels with the slide. */
@@ -29,7 +30,7 @@ const layout = computed(() => hexLayout(props.nodes.length, props.arrangement, p
 // (the v5 recording's glyph rows).
 const type = computed(() => {
   const h = layout.value.viewBox.height
-  return { headerSize: 0.112 * h, titleSize: 0.0315 * h, captionSize: 0.0315 * h, legendSize: 0.0315 * h }
+  return { titleSize: 0.0315 * h, captionSize: 0.0315 * h, legendSize: 0.0315 * h }
 })
 
 // Inner content placement, in hexagon-radius units (measured: the v5 icon center
@@ -105,11 +106,10 @@ function toneColor(node: HexNodeData): string {
   return node.tone === 'tertiary' ? (p.value.accentTertiary ?? p.value.accent) : p.value.accent
 }
 
-// Header chrome is white; the titleAccent tail is chrome-green — a constant of
-// the titleAccent convention, never a palette field (deck README). The legend
-// glyphs are the v5 recording's amber (measured #ebb92a) — likewise a constant.
+// Title chrome lives in the shared TitleChrome component (titleAccent
+// convention, deck README). The legend glyphs are the v5 recording's amber
+// (measured #ebb92a) — likewise a constant.
 const HEADER_FILL = '#ffffff'
-const CHROME_GREEN = '#66fb00'
 const LEGEND_AMBER = '#ebb92a'
 </script>
 
@@ -123,16 +123,16 @@ const LEGEND_AMBER = '#ebb92a'
     <!-- Chrome (header + bottom rule) centers on the cluster axis — the v5
          recording's header spans x 14.8–80.8%w, its rule x 13.7–81.5%w, both
          centered at ≈ 47.6%w. -->
-    <text
-      v-if="title"
-      class="header"
-      :x="layout.axisX"
-      :y="layout.viewBox.height * 0.134"
-      text-anchor="middle"
-      :font-size="type.headerSize"
-      :fill="HEADER_FILL"
-      letter-spacing="0.06em"
-    >{{ title }} <tspan v-if="titleAccent" :fill="CHROME_GREEN">{{ titleAccent }}</tspan></text>
+    <!-- Shared title chrome: centered two-tone title on the cluster axis
+         (HexCluster Title row: the sheet reads cap ≈72–86 in the band y45–145;
+         the midpoint 79 is used, centered on the measured ≈47.6%w axis). -->
+    <TitleChrome
+      :title="title"
+      :title-accent="titleAccent"
+      :cap-height="79"
+      :cap-top="45"
+      :center-x="layout.axisX"
+    />
 
     <rect
       class="sf-hex-rule"

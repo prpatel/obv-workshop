@@ -445,7 +445,7 @@ describe('RatioStrip component', () => {
 
   it('renders the two-tone header: white title + chrome-green titleAccent tail', () => {
     const wrapper = mountRatioStrip({ ...data(), title: 'RUNTIME', titleAccent: 'SHARE' })
-    const header = wrapper.find('text.header')
+    const header = wrapper.find('.sf-chrome-title')
     expect(header.text()).toContain('RUNTIME')
     expect(header.html()).toContain('#66fb00')
   })

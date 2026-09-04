@@ -183,7 +183,7 @@ describe('SchematicRows component', () => {
 
   it('renders the two-tone header: white title + chrome-green titleAccent tail', () => {
     const wrapper = mountRows({ title: 'HARDER TO', titleAccent: 'MAINTAIN' })
-    const header = wrapper.find('.sf-rows-header')
+    const header = wrapper.find('.sf-chrome-title')
 
     expect(header.text()).toContain('HARDER TO')
     expect(header.text()).toContain('MAINTAIN')

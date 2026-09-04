@@ -388,7 +388,7 @@ describe('SegmentTimeline component', () => {
 
   it('renders the two-tone header: white title + chrome-green titleAccent tail', () => {
     const wrapper = mountTimeline({ ...data, title: 'MIGRATION', titleAccent: 'TIMELINE' })
-    const header = wrapper.find('text.header')
+    const header = wrapper.find('.sf-chrome-title')
 
     expect(header.text()).toContain('MIGRATION')
     expect(header.html()).toContain('#66fb00')

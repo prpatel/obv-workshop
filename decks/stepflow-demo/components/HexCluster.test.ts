@@ -166,12 +166,13 @@ describe('HexCluster', () => {
       title: 'THE MODERN DATA STACK',
       titleAccent: 'AT A GLANCE',
     })
-    const header = accented.find('text.header')
-    // Header chrome is oversized recording type (cap ≈ 0.082·h) centered on the
-    // cluster axis.
-    expect(Number(accented.find('text.header').attributes('font-size'))).toBeCloseTo(0.112 * 1080, 4)
-    expect(accented.find('text.header').attributes('text-anchor')).toBe('middle')
-    expect(Number(accented.find('text.header').attributes('x'))).toBeCloseTo(960, 4)
+    const header = accented.find('.sf-chrome-title')
+    // Shared chrome: the sheet's cap ≈72–86 midpoint 79 → font-size 79/0.752,
+    // baseline at the band bottom y124, centered on the cluster axis.
+    expect(Number(accented.find('.sf-chrome-title').attributes('font-size'))).toBeCloseTo(79 / 0.752, 4)
+    expect(accented.find('.sf-chrome-title').attributes('text-anchor')).toBe('middle')
+    expect(Number(accented.find('.sf-chrome-title').attributes('x'))).toBeCloseTo(960, 4)
+    expect(Number(accented.find('.sf-chrome-title').attributes('y'))).toBe(124)
     expect(header.text()).toContain('THE MODERN DATA STACK')
     expect(header.text()).toContain('AT A GLANCE')
     expect(accented.html()).toContain('#66fb00')
@@ -225,7 +226,7 @@ describe('HexCluster', () => {
       expect(Number(title.attributes('y'))).toBeCloseTo(0.603 * 1080 + 0.32 * layout.hexR, 4)
     })
     // Chrome centers on the (off-center) axis, not the canvas.
-    expect(Number(wrapper.find('text.header').attributes('x'))).toBeCloseTo(912, 4)
+    expect(Number(wrapper.find('.sf-chrome-title').attributes('x'))).toBeCloseTo(912, 4)
     expect(Number(wrapper.find('rect.sf-hex-rule').attributes('x'))).toBeCloseTo(912 - (0.678 * 1920) / 2, 4)
   })
 

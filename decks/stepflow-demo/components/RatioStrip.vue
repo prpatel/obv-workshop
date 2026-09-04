@@ -11,6 +11,7 @@ import {
   type StripSegmentLayout,
 } from './stepflow/strip'
 import { resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
+import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = withDefaults(defineProps<{
   /** Proportional segments; `wFrac` is the click-1 width, `wFracFinal` the re-flow destination. */
@@ -35,9 +36,9 @@ const p = computed(() => resolvePalette(props.palette))
 const layout = computed(() => ratioStripLayout({ segments: props.segments, yFrac: props.yFrac, hFrac: props.hFrac, caption: props.caption }))
 
 // Tone fills map to palette roles; the plain tone is chrome white (NodeEdge
-// precedent) — chrome, not a palette field.
+// precedent) — chrome, not a palette field. Title chrome lives in the shared
+// TitleChrome component.
 const PLAIN_FILL = '#f5f4f7'
-const CHROME_GREEN = '#66fb00'
 
 // Measured settled medians (report art_iHm120ov §RatioStrip, frame t=99.1s):
 // mint chip #a0fcd9 (chip fill + label accent), panel plate #18181b, and the
@@ -85,15 +86,15 @@ function tealBursts(seg: StripSegmentLayout): number[] {
   return [b1, b2]
 }
 
-// Typography on the StepFlow scale (NodeEdge pattern) for the title; the
-// heading and caption rows are measured glyph heights at the 1080px reference
-// (25px / 20px caps → ~35px / ~28px em), kept absolute so the measured rows
-// stay measured (report root-cause #2: the old 13px label row was 14–20px
-// where the source reads 26–28px).
-const type = computed(() => {
-  const k = layout.value.viewBox.height / 848
-  return { titleSize: 34 * k, headingSize: 35, labelSize: 28 }
-})
+// Typography: the heading and caption rows are measured glyph heights at the
+// 1080px reference (25px / 20px caps → ~35px / ~28px em), kept absolute so the
+// measured rows stay measured (report root-cause #2: the old 13px label row
+// was 14–20px where the source reads 26–28px). Title chrome lives in the
+// shared TitleChrome component.
+const type = computed(() => ({
+  headingSize: 35,
+  labelSize: 28,
+}))
 </script>
 
 <template>
@@ -232,15 +233,17 @@ const type = computed(() => {
       >{{ caption }}</text>
     </g>
 
-    <text
-      v-if="title"
-      class="header"
-      :x="layout.viewBox.width * 0.033"
-      :y="layout.viewBox.height * 0.075"
-      :font-size="type.titleSize"
-      fill="#ffffff"
-      letter-spacing="0.06em"
-    >{{ title }}<tspan v-if="titleAccent" :fill="CHROME_GREEN">&nbsp;{{ titleAccent }}</tspan></text>
+    <!-- Shared title chrome: sheet-measured centered two-tone title
+         (RatioStrip Title row: cap 43 in the band y98–141, centered ≈x963)
+         plus the recording badge its sheet documents. -->
+    <TitleChrome
+      :title="title"
+      :title-accent="titleAccent"
+      :cap-height="43"
+      :cap-top="98"
+      :center-x="963"
+      badge
+    />
   </svg>
 </template>
 

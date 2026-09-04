@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { heroTileLayout, type HeroTileOptions } from './stepflow/spine'
 import { orangeSpine, resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
 import { iconPath, ICON_FALLBACK } from './stepflow/icons'
+import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = withDefaults(defineProps<{
   /** Lucide icon rendered dark inside the tile; unknown keys render the fallback. */
@@ -24,9 +25,8 @@ const props = withDefaults(defineProps<{
 const p = computed(() => resolvePalette({ ...orangeSpine, ...props.palette }))
 const layout = computed(() => heroTileLayout(props.geometry))
 
-// Chrome green of the two-tone recording headers — a convention constant,
-// never a palette field (README: title chrome convention).
-const CHROME_GREEN = '#66fb00'
+// White for label/subtitle text (title chrome lives in the shared
+// TitleChrome component).
 const HEADER_FILL = '#ffffff'
 
 // Gradient id is component-unique (one HeroTile per slide by contract).
@@ -43,18 +43,14 @@ const glowStops = [
   { offset: 1, opacity: 0 },
 ]
 
-// Measured off the settled v7 tile frame: primary glyph run y 60–154 at
-// source height 1144 (cap 8.22%h, baseline 13.5%h); with the ~0.752
-// glyph/font ratio the size is 0.1094·h — the brief's 70–90px @1080 band
-// (top) rather than the wave-1 generic 0.085·h size, which lands ~6.4% cap.
-// The secondary line rides one gap below at ~40px glyphs on the 1080 canvas.
+// The secondary white header line rides one gap below the recording band at
+// ~40px glyphs on the 1080 canvas (primary header geometry lives in
+// TitleChrome).
 const headerType = computed(() => {
   const h = layout.value.viewBox.height
   return {
-    primarySize: 0.1094 * h,
-    primaryBaseline: 0.1346 * h,
     secondarySize: 53 * (h / 1080),
-    secondaryBaseline: (0.1346 + 0.076) * h,
+    secondaryBaseline: 0.2106 * h,
   }
 })
 
@@ -144,19 +140,15 @@ function resolveIcon(key: string): string {
       >{{ label }}</text>
     </g>
 
-    <text
-      v-if="title"
-      class="sf-hero-header"
-      :x="layout.viewBox.width * 0.033"
-      :y="fmt(headerType.primaryBaseline)"
-      :font-size="fmt(headerType.primarySize)"
-      :fill="HEADER_FILL"
-      letter-spacing="0.06em"
-    ><tspan>{{ title }}</tspan><tspan
-        v-if="titleAccent"
-        :dx="headerType.primarySize * 0.28"
-        :fill="CHROME_GREEN"
-      >{{ titleAccent }}</tspan></text>
+    <!-- Shared title chrome: sheet-measured centered two-tone title
+         (HeroTile Title row: cap 70.8 in the band y55.7–126.5, centered ≈x912). -->
+    <TitleChrome
+      :title="title"
+      :title-accent="titleAccent"
+      :cap-height="70.8"
+      :cap-top="55.7"
+      :center-x="912"
+    />
 
     <!-- Secondary white header line at recording scale (~40px at 1080). -->
     <text
