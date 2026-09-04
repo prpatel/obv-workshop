@@ -1,34 +1,40 @@
 /**
- * SchematicRows data contract + pure layout math (diagram-family spec, SchematicRows).
+ * SchematicRows data contract + pure layout math (exact-trace sheet art_mkVNxsft §2).
  *
- * A terminal-style token listing: mono rows of colored tokens with an optional
- * embedded thin-line schematic and an optional dim highlight band behind one
- * row. Rows render as HTML — token `<span>`s inside v-click'd row divs, one
- * click per row (SVG text makes per-token coloring awkward); schematic lines
- * are SVG polylines drawn with the StepFlow dim-base + stacked accent-copy
- * dashoffset draw, each within its attached row's click; the band fades in on
- * its row's click. Pure and SSR-safe: no DOM access, no mutation of the inputs.
+ * A macOS-style code window: traffic-dot chrome, an `answer_service.py` tab with a
+ * right-aligned gray path, seven verbatim mono rows (row numbers in the gutter, a
+ * teal band behind rows 4–5, a cyan connector rail alongside rows 4–6), and a
+ * four-callout annotation ladder on the right. Rows type in character by character
+ * (the recording's ≈9.8 s typewriter, re-paced to one row per click); the band, rail
+ * and callouts key to the rows they annotate. Pure and SSR-safe: no DOM access, no
+ * mutation of the inputs.
  *
- * Measured from the v6 recording (research art_0AzKGXnD §F5, re-measured this
- * session against the settled frame at t≈13.5s): 8 body rows at a ~5.8%h
- * pitch, first row top ≈31.5%h, code margin ≈6.5%w, one indent step ≈4.1%w,
- * glyph size ≈2.5%h. The recording's continuous auto-run (a typing effect) is
- * re-paced to one click per row — the locked deviation; no typewriter is
- * built. Tone roles map to palette fields, except `plain` (chrome white
- * #f5f4f7) and `chrome` (terminal green #66fb00) — both constants of the tone
- * convention, resolved in the component, never palette fields.
+ * Every number is measured, not fitted — source of truth is the exact-trace sheet
+ * (native frame 861 of the 2560×1440 reference) re-verified this session against the
+ * frame average: 1920×1080 values are native × 0.75. Where the sheet's prose and the
+ * pixels disagreed, the pixels won and the finding is recorded here:
  *
- * Wave-1 fidelity rework (report art_v4jVdTnp §5): the demo seed grows to ten
- * 60–110-char rows spanning ~94% of the canvas width with token tones weighted
- * white > green > amber > blue (measured t=14.1 masses 42,920 / 14,008 / 8,419
- * / 3,210 px), and the band prop carries the recording's one dim highlight
- * band behind a middle row.
+ * - Row pitch: the sheet's "≈62.3px" note matches the OLD 10-row render; its own
+ *   band list and the frame give ~49.5px (native ~66) — per-row measured tops are
+ *   used, not a uniform pitch.
+ * - Teal band: the sheet says "behind row 4", the frame shows it behind rows 4–5
+ *   (native y650–782, x48–1265); the rail runs one row further (rows 4–6).
+ * - Callout 1's ring is amber (mean (238,181,34), n=544 stroke px), not the gray the
+ *   sheet assumed from its label; its label is gray. Labels 1/4 are gray, 2/3 white —
+ *   the two small-cap labels are gray, the two large ones white.
+ * - The reference mono is a condensed face (advance ≈ 0.48–0.5em vs the deck's 0.6em
+ *   JetBrains Mono — the shared-chrome Direction-2 note). Code rows render at the
+ *   cap-matched size and condense via scaleX so extent AND cap height match; the
+ *   tab/path text uses the same treatment (x-height-matched font, scaleX pinned);
+ *   the title pins its measured extent via TitleChrome's `titleTextLength`.
+ *
+ * Tone colors are sheet-sampled constants of the tone convention (never palette
+ * fields): keywords `#4298f2`, identifiers `#f2f2f2`, string cores `#e6ebf1`,
+ * comments `#888791`.
  */
 
-import { polylineLength, polylinePath } from './paths'
-
-/** Tone of one row token. `accent`/`alt` map to palette fields; `plain` (chrome white) and `chrome` (terminal green) are constants. */
-export type RowTokenTone = 'accent' | 'alt' | 'plain' | 'chrome'
+/** Tone of one row token — all four are measured constants, never palette fields. */
+export type RowTokenTone = 'keyword' | 'ident' | 'string' | 'comment'
 
 /** One colored token of a row's text stream. Whitespace inside `text` is preserved (mono, `white-space: pre`). */
 export interface RowToken {
@@ -36,52 +42,37 @@ export interface RowToken {
   tone: RowTokenTone
 }
 
-/** One mono row of the listing: a stable id, an optional indent level, and its tokens. */
+/** One mono row of the listing: gutter number, measured x / ink-top (1080 px), tokens. */
 export interface CodeRow {
-  /** Stable key — schematic line attachment and test selectors. */
+  /** Stable key — test selectors and the click schedule. */
   id: string
-  /** Indent steps (each ~4.1%w); 0 aligns to the measured code margin. Default 0. */
-  indent?: number
+  /** Gutter line number ('1'–'7'). */
+  number: string
+  /** Left edge of the row's first glyph, 1920×1080 px (native ink start × 0.75). */
+  x: number
+  /** Top of the row's ink band (ascender), 1920×1080 px. */
+  inkTop: number
   tokens: RowToken[]
 }
 
-/** Tone of a schematic stroke: `accent` (cool) or `plain` (chrome white). */
-export type SchematicLineTone = 'accent' | 'plain'
-
-/**
- * One dim-tinted highlight band behind a row — the recording's "current line"
- * (wave-1 ref t=14.1). The band shares its row's click: same 150ms fade,
- * instant backward snap.
- */
-export interface HighlightSpec {
-  /** Id of the row (`CodeRow.id`) the band sits behind; the band shares its click. */
-  row: string
-  /** Band rect as canvas fractions — defaults are the measured t=14.1 band. */
-  xFrac?: number
-  wFrac?: number
-  hFrac?: number
+/** One right-hand callout: a hand-drawn ellipse ring, optional tail, and a tracked label. */
+export interface CalloutSpec {
+  id: string
+  /** Verbatim label text (OCR-verified against 2× crops). */
+  label: string
+  ring: { cx: number, cy: number, rx: number, ry: number, rot: number, fill: string }
+  /** Optional short tail stroke off the ring (the hand-drawn look), 1080 px points. */
+  tail?: [number, number][]
+  /** Measured label ink: left edge, ink top, cap height, mono advance, color (1080 px). */
+  ink: { x: number, inkTop: number, cap: number, advance: number, fill: string }
+  /** 1-based click that reveals the callout. */
+  click: number
 }
 
-/**
- * A thin polyline of the embedded schematic, as canvas fractions. It draws on
- * its attached row's click — `attach` names the row id; when omitted, lines
- * distribute in order over the LAST rows of the listing (the measured
- * schematic belongs to the listing's closing rows).
- */
-export interface SchematicLine {
-  /** Polyline vertices as canvas fractions, first → last (≥ 2 points). */
-  points: [number, number][]
-  tone: SchematicLineTone
-  /** Id of the row (`CodeRow.id`) whose click carries this line's draw. */
-  attach?: string
-}
-
-/** The full SchematicRows diagram: token rows plus the optional schematic. */
+/** The full SchematicRows scene: verbatim rows plus the measured chrome/annotation layers. */
 export interface SchematicRowsData {
   rows: CodeRow[]
-  schematic?: SchematicLine[]
-  /** Optional dim band behind one row (the recording's "current line"). */
-  highlight?: HighlightSpec
+  callouts: CalloutSpec[]
 }
 
 export interface Canvas {
@@ -89,149 +80,302 @@ export interface Canvas {
   height: number
 }
 
-/** Measured listing geometry, v6 recording (fractions of the 1920×1080 canvas). */
-export const ROW_PITCH_FRAC = 0.058 // row pitch ≈ 66px on the 1144-tall source (5.8%h)
-export const FIRST_ROW_Y_FRAC = 0.315 // first body row top ≈ y360 of 1144
-export const LEFT_FRAC = 0.065 // code margin ≈ x132 of 2038
-export const INDENT_FRAC = 0.041 // one indent step ≈ 83px of 2038
-export const ROW_FONT_FRAC = 0.025 // mono glyph size ≈ 27px at 1080
+/** Token colors — sheet-sampled (§2.2), constants of the tone convention. */
+export const TOKEN_COLORS: Record<RowTokenTone, string> = {
+  keyword: '#4298f2',
+  ident: '#f2f2f2',
+  string: '#e6ebf1',
+  comment: '#888791',
+}
 
-/** Measured highlight band, wave-1 ref t=14.1 (x 54/2038, w 1210/2038, h 59/1144). */
-export const BAND_X_FRAC = 0.0265
-export const BAND_W_FRAC = 0.5937
-export const BAND_H_FRAC = 0.052
+/** Window frame rules (native x23–1916, top y317–323, divider x1297, y326–1143 × 0.75). */
+export const WINDOW_FRAME = {
+  top: { x: 27.75, y: 237.75, w: 1398.75, h: 4.5, fill: '#221e18' },
+  left: { x: 17.25, y: 244.5, w: 2.25, h: 612.75, fill: '#221e18' },
+  right: { x: 1435.5, y: 244.5, w: 2.25, h: 612.75, fill: '#221e18' },
+  divider: { x: 972, y: 237.75, w: 2.25, h: 619.5, fill: '#191a1d' },
+} as const
 
-/** Resolved px geometry for one row, ready to render. */
-export interface RowLayout {
+/** Traffic dots (native centers (66/102.5/139.5, 369.5), d≈20 × 0.75). */
+export const TRAFFIC_DOTS = [
+  { cx: 49.5, cy: 277.1, r: 7.2, fill: '#fb5c55' },
+  { cx: 76.9, cy: 277.1, r: 7.2, fill: '#f5b839' },
+  { cx: 104.6, cy: 277.1, r: 7.2, fill: '#30bf49' },
+] as const
+
+/** Tab text + its underline, and the right-aligned path (native ink × 0.75).
+ * Same condensed face as the code rows: the font is x-height-matched (measured
+ * x-height 18 ÷ 0.55) and scaleX pins the measured ~14.3px advance. */
+export const TAB_TEXT = {
+  text: 'answer_service.py',
+  x: 149.25,
+  baseline: 285,
+  font: 32.7,
+  scaleX: 0.729,
+  fill: '#f5f4f7',
+  underline: { x: 234.75, y: 285.5, w: 152.25, h: 3, fill: '#f3f2f7' },
+} as const
+
+export const PATH_TEXT = {
+  text: 'data.mrk.shop/services',
+  rightEdge: 1407.75,
+  baseline: 285,
+  font: 32.7,
+  scaleX: 0.729,
+  fill: '#a5a4ae',
+} as const
+
+/** Gutter row numbers (native x89–102, digit height 22 × 0.75). */
+export const ROW_NUMBER_STYLE = { x: 66.75, font: 22.6, fill: '#a5a5ae' } as const
+
+/** Code-row typography. Font 32px at advance-matched cap; the condensed face is
+ * reproduced with scaleX (0.8333 = measured 16px advance ÷ 0.6em × 32px advance),
+ * so glyph extents AND cap height both match the reference. */
+export const ROW_FONT = 32
+export const ROW_SCALE_X = 16 / (0.6 * 32)
+/** Line-box top → ink-top offset for the mono stack at font 32 / line-height 1. */
+export const ROW_EM_TO_INK = 4.67
+/** Ink-top → baseline offset (cap 0.729em at font 32) — shared by code and gutter numbers. */
+export const ROW_BASELINE = 23.33
+
+/** Teal band behind rows 4–5 (native y650–782, x48–1265 × 0.75) — sheet §2.2 corrected by frame. */
+export const HIGHLIGHT_BAND = { x: 36, y: 487, w: 912.75, h: 99.5, fill: '#08272c' } as const
+
+/** Cyan connector rail alongside rows 4–6 (native x46–57, y653–841 × 0.75). */
+export const CONNECTOR_RAIL = { x: 34.5, y: 489.75, w: 8.25, h: 141, fill: '#35c2ea' } as const
+
+/** Click choreography (sheet §2.3 motion trace re-paced to the README's 10 clicks):
+ * chrome pops (1), callout 1 (2), then rows type one per click; the rail draws on
+ * click 6, just before row 4, whose click (7) also brings the band and callout 2;
+ * callouts 3/4 key to rows 5/6 (clicks 8/9); row 7 closes (10). */
+export const CLICK_CHROME = 1
+export const CLICK_CALLOUT_1 = 2
+export const FIRST_ROW_CLICK = 3
+export const CLICK_RAIL = 6
+export const CLICK_BAND = 7
+export const TOTAL_CLICKS = 10
+
+/** 1-based click of row `i` (0-based): the rail's click 6 shifts rows 4–7 up one
+ * beat, so the schedule is 3, 4, 5, 7, 8, 9, 10 — ten clicks total. */
+export function rowClick(i: number): number {
+  return i + FIRST_ROW_CLICK + (i >= CLICK_RAIL - FIRST_ROW_CLICK ? 1 : 0)
+}
+
+/** The recording's typewriter: ≈9.8 s across 7 rows (sheet §2.3), re-paced so each
+ * row completes its share. Rows type on their own click; the per-char delay makes
+ * the row's duration match. */
+export const TYPEWRITER_TOTAL_MS = 9800
+export const ROW_TYPE_MS = TYPEWRITER_TOTAL_MS / 7
+
+/** Per-character delay (ms) so row `charCount` completes in ROW_TYPE_MS. */
+export function rowCharDelayMs(charCount: number): number {
+  if (charCount <= 0) throw new RangeError(`charCount must be positive, received ${charCount}`)
+  return ROW_TYPE_MS / charCount
+}
+
+/** The verbatim listing — sheet §2.2, OCR flags resolved from 2× crops + the frame
+ * average this session (indent: rows 3–7 one step; no trailing ';' on row 4;
+ * '->' ASCII arrow; row 7 keeps its leading `return `). */
+export const SCHEMATIC_ROWS_ROWS: CodeRow[] = [
+  {
+    id: 'imports',
+    number: '1',
+    x: 99,
+    inkTop: 355.5,
+    tokens: [
+      { text: 'from ', tone: 'keyword' },
+      { text: 'mrk ', tone: 'ident' },
+      { text: 'import ', tone: 'keyword' },
+      { text: 'service, depends', tone: 'ident' },
+    ],
+  },
+  {
+    id: 'signature',
+    number: '2',
+    x: 99,
+    inkTop: 405.75,
+    tokens: [
+      { text: 'def ', tone: 'keyword' },
+      { text: 'answer(question: ', tone: 'ident' },
+      { text: 'str', tone: 'ident' },
+      { text: ') -> ', tone: 'ident' },
+      { text: 'str:', tone: 'ident' },
+    ],
+  },
+  {
+    id: 'comment',
+    number: '3',
+    x: 160.5,
+    inkTop: 454.5,
+    tokens: [
+      { text: '# the AI application', tone: 'comment' },
+    ],
+  },
+  {
+    id: 'api',
+    number: '4',
+    x: 160.5,
+    inkTop: 503.25,
+    tokens: [
+      { text: 'api = ', tone: 'ident' },
+      { text: 'service(', tone: 'ident' },
+      { text: '"answer-api"', tone: 'string' },
+      { text: ')', tone: 'ident' },
+    ],
+  },
+  {
+    id: 'ctx',
+    number: '5',
+    x: 160.5,
+    inkTop: 554.25,
+    tokens: [
+      { text: 'ctx = ', tone: 'ident' },
+      { text: 'depends(', tone: 'ident' },
+      { text: '"mart.orders"', tone: 'string' },
+      { text: ')', tone: 'ident' },
+    ],
+  },
+  {
+    id: 'model',
+    number: '6',
+    x: 160.5,
+    inkTop: 603.75,
+    tokens: [
+      { text: 'model = ', tone: 'ident' },
+      { text: 'depends(', tone: 'ident' },
+      { text: '"ai.answer_v2"', tone: 'string' },
+      { text: ')', tone: 'ident' },
+    ],
+  },
+  {
+    id: 'return',
+    number: '7',
+    x: 160.5,
+    inkTop: 654,
+    tokens: [
+      { text: 'return ', tone: 'keyword' },
+      { text: 'model.ask(question, ctx)', tone: 'ident' },
+    ],
+  },
+]
+
+/** The four right-hand callouts — ring geometry/tones measured on the frame average
+ * (callout 1's ring is amber, its label gray; 2/3 rings cyan/blue with white labels;
+ * 4 green with a gray label), label advance/cap from the ink runs. */
+export const SCHEMATIC_ROWS_CALLOUTS: CalloutSpec[] = [
+  {
+    id: 'dependencies',
+    label: 'DEPENDENCIES TO MAINTAIN',
+    ring: { cx: 1053.75, cy: 459.4, rx: 26.25, ry: 20.6, rot: -10, fill: '#f5b839' },
+    ink: { x: 1026.75, inkTop: 485.25, cap: 15.75, advance: 14.25, fill: '#a5a5af' },
+    click: CLICK_CALLOUT_1,
+  },
+  {
+    id: 'api',
+    label: 'API IT CALLS',
+    ring: { cx: 1050.4, cy: 605.6, rx: 17.6, ry: 20.6, rot: -12, fill: '#3dc0d4' },
+    tail: [[1043, 628], [1034, 638]],
+    ink: { x: 1094.25, inkTop: 594.75, cap: 19.9, advance: 16.9, fill: '#f5f4f7' },
+    click: CLICK_BAND,
+  },
+  {
+    id: 'data',
+    label: 'DATA IT READS',
+    ring: { cx: 1050.4, cy: 695.6, rx: 17.6, ry: 20.6, rot: -12, fill: '#4791de' },
+    ink: { x: 1095, inkTop: 684.75, cap: 19.9, advance: 16.7, fill: '#f5f4f7' },
+    click: 8,
+  },
+  {
+    id: 'model',
+    label: 'MODEL IT ASKS',
+    ring: { cx: 1052.25, cy: 789, rx: 15.75, ry: 14.6, rot: -8, fill: '#39c596' },
+    tail: [[1051, 772], [1047, 754]],
+    ink: { x: 1094.25, inkTop: 775.5, cap: 15.75, advance: 14.4, fill: '#afaeb2' },
+    click: 9,
+  },
+]
+
+/** The demo seed: the recording's verbatim listing + measured callout ladder. */
+export const SCHEMATIC_ROWS_SCENE: SchematicRowsData = {
+  rows: SCHEMATIC_ROWS_ROWS,
+  callouts: SCHEMATIC_ROWS_CALLOUTS,
+}
+
+/** Verbatim text of a row (tokens joined) — the OCR-verified strings tests assert. */
+export function rowText(row: CodeRow): string {
+  return row.tokens.map((token) => token.text).join('')
+}
+
+/** Flat per-character stream of a row, tone carried per character (the typewriter's units). */
+export function rowChars(row: CodeRow): { ch: string, tone: RowTokenTone }[] {
+  return row.tokens.flatMap((token) =>
+    Array.from(token.text).map((ch) => ({ ch, tone: token.tone })),
+  )
+}
+
+/** Resolved px geometry for one callout, ready to render (label font/tracking from
+ * the measured cap + advance: font = cap ÷ 0.729, tracking = advance − 0.6·font). */
+export interface CalloutLayout {
   id: string
-  /** Left edge of the row's first token, px. */
-  x: number
-  /** Top edge of the row (rendered with line-height 1), px. */
-  y: number
-  indent: number
-  tokens: RowToken[]
-}
-
-/** Resolved px geometry for one schematic line, ready to render. */
-export interface LineLayout {
-  d: string
-  /** Analytic length — the dashoffset draw distance (`--sf-drawn`). */
-  length: number
-  tone: SchematicLineTone
-  /** 0-based index of the row whose v-click carries this line's draw. */
-  atIndex: number
-}
-
-/** Resolved px geometry for the highlight band, ready to render. */
-export interface HighlightLayout {
-  x: number
-  y: number
-  width: number
-  height: number
-  /** 0-based index of the row whose v-click carries the band's fade. */
-  atIndex: number
+  label: string
+  ring: { cx: number, cy: number, rx: number, ry: number, rot: number, fill: string }
+  tail: [number, number][]
+  ink: { x: number, baseline: number, font: number, tracking: number, fill: string }
+  click: number
 }
 
 export interface SchematicRowsLayout {
-  rows: RowLayout[]
-  schematic: LineLayout[]
-  /** Resolved band rect, or null when no `highlight` was given. */
-  highlight: HighlightLayout | null
+  rows: { id: string, number: string, x: number, y: number, inkTop: number, click: number, chars: { ch: string, tone: RowTokenTone }[], charDelayMs: number }[]
+  callouts: CalloutLayout[]
   viewBox: Canvas
 }
 
-/**
- * Resolve the highlight band rect: centered on the attached row's glyph box
- * (glyph height = ROW_FONT_FRAC × height), x/width/height from the measured
- * t=14.1 defaults unless overridden. Unknown row ids and out-of-range fracs
- * throw RangeError — the same contract as schematic `attach`.
- */
-function resolveHighlight(spec: HighlightSpec, rows: RowLayout[], viewBox: Canvas): HighlightLayout {
-  const atIndex = rows.findIndex((row) => row.id === spec.row)
-  if (atIndex === -1) {
-    throw new RangeError(`highlight band references unknown row "${spec.row}"`)
-  }
-  const xFrac = spec.xFrac ?? BAND_X_FRAC
-  const wFrac = spec.wFrac ?? BAND_W_FRAC
-  const hFrac = spec.hFrac ?? BAND_H_FRAC
-  for (const [name, value] of [['x', xFrac], ['w', wFrac], ['h', hFrac]] as const) {
-    if (!(value >= 0 && value <= 1)) {
-      throw new RangeError(`highlight band ${name}Frac (${value}) is outside the [0, 1] canvas-fraction range`)
-    }
-  }
-  const glyphHeight = ROW_FONT_FRAC * viewBox.height
-  const height = hFrac * viewBox.height
-  return {
-    x: xFrac * viewBox.width,
-    y: rows[atIndex].y + (glyphHeight - height) / 2,
-    width: wFrac * viewBox.width,
-    height,
-    atIndex,
-  }
-}
+/** Label cap-height ratio of the deck's mono face (chrome.ts CAP_HEIGHT_RATIO). */
+const LABEL_CAP_RATIO = 0.729
 
 /**
- * Convert canvas-fraction line points to absolute px in the given viewBox.
- * Pure; validates the fraction range so a typo like `12.0` throws instead of
- * silently exploding the layout.
+ * Resolve the full render layout for the SchematicRows scene. Rows keep their
+ * measured positions verbatim (x, inkTop); each row's click is FIRST_ROW_CLICK + i
+ * (rows 3–9), its per-char delay completes the row's share of the ≈9.8 s typewriter.
+ * Callout tracking solves advance = 0.6·font + tracking for the measured advance.
  */
-function linePoints(points: [number, number][], viewBox: Canvas): [number, number][] {
-  if (points.length < 2) {
-    throw new RangeError(`schematic line needs at least 2 points, got ${points.length}`)
-  }
-  return points.map(([xFrac, yFrac]) => {
-    if (!(xFrac >= 0 && xFrac <= 1) || !(yFrac >= 0 && yFrac <= 1)) {
-      throw new RangeError(`schematic line point (${xFrac}, ${yFrac}) is outside the [0, 1] canvas-fraction range`)
-    }
-    return [xFrac * viewBox.width, yFrac * viewBox.height] as [number, number]
-  })
-}
-
-/**
- * Resolve the full render layout for a SchematicRows diagram.
- *
- * - Row i sits at top `(FIRST_ROW_Y_FRAC + i × ROW_PITCH_FRAC) × height`,
- *   left `(LEFT_FRAC + indent × INDENT_FRAC) × width` — a uniform grid; the
- *   blueprint's "lineHeightFrac constant only" layout.
- * - Schematic lines must reference known row ids when `attach` is set and
- *   keep their points inside the canvas — violations throw RangeError, never
- *   render blank. Lines without `attach` bind to the last rows in order
- *   (clamped into the listing when there are more lines than rows).
- * - Click choreography (native v-clicks): row i is click i + 1; a schematic
- *   line shares its attached row's click — no line ever adds a click.
- */
-export function schematicRowsLayout(data: SchematicRowsData, viewBox: Canvas = { width: 1920, height: 1080 }): SchematicRowsLayout {
+export function schematicRowsLayout(data: SchematicRowsData = SCHEMATIC_ROWS_SCENE, viewBox: Canvas = { width: 1920, height: 1080 }): SchematicRowsLayout {
   if (data.rows.length === 0) {
     throw new RangeError('SchematicRows needs at least one row')
   }
 
-  const rows: RowLayout[] = data.rows.map((row, i) => {
-    const indent = row.indent ?? 0
+  const rows = data.rows.map((row, i) => {
+    const chars = rowChars(row)
     return {
       id: row.id,
-      x: (LEFT_FRAC + indent * INDENT_FRAC) * viewBox.width,
-      y: (FIRST_ROW_Y_FRAC + i * ROW_PITCH_FRAC) * viewBox.height,
-      indent,
-      tokens: row.tokens,
+      number: row.number,
+      x: row.x,
+      y: row.inkTop - ROW_EM_TO_INK,
+      inkTop: row.inkTop,
+      click: rowClick(i),
+      chars,
+      charDelayMs: rowCharDelayMs(chars.length),
     }
   })
 
-  const schematic = data.schematic ?? []
-  const schematicLayout: LineLayout[] = schematic.map((line, k) => {
-    const fallback = Math.max(0, Math.min(rows.length - schematic.length + k, rows.length - 1))
-    let atIndex = fallback
-    if (line.attach !== undefined) {
-      const found = rows.findIndex((row) => row.id === line.attach)
-      if (found === -1) {
-        throw new RangeError(`schematic line references unknown row "${line.attach}"`)
-      }
-      atIndex = found
+  const callouts = data.callouts.map((callout) => {
+    const font = callout.ink.cap / LABEL_CAP_RATIO
+    const tracking = callout.ink.advance - 0.6 * font
+    return {
+      id: callout.id,
+      label: callout.label,
+      ring: callout.ring,
+      tail: callout.tail ?? [],
+      ink: {
+        x: callout.ink.x,
+        baseline: callout.ink.inkTop + callout.ink.cap,
+        font,
+        tracking,
+        fill: callout.ink.fill,
+      },
+      click: callout.click,
     }
-    const pts = linePoints(line.points, viewBox)
-    return { d: polylinePath(pts), length: polylineLength(pts), tone: line.tone, atIndex }
   })
 
-  const highlight = data.highlight ? resolveHighlight(data.highlight, rows, viewBox) : null
-
-  return { rows, schematic: schematicLayout, highlight, viewBox }
+  return { rows, callouts, viewBox }
 }
