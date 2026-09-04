@@ -228,3 +228,73 @@ describe('useAutoAdvance', () => {
     expect(ctrl.isRunning()).toBe(false)
   })
 })
+
+describe('useAutoAdvance — measured step schedule (TileGrid growing stagger)', () => {
+  it('fires clicks at the measured schedule entries instead of uniform spacing', () => {
+    // art_7bTnqSB3 §2.3: TileGrid's gaps GROW (400/1383/1434/1050/1800ms);
+    // uniform 8.7s spacing cannot express them. The schedule supersedes durationMs.
+    const { nav, state } = mockNav(6)
+    mountAdvance({ nav, durationMs: 8700, stepScheduleMs: [550, 950, 2333, 3767, 4817, 6617] })
+
+    press('a')
+    vi.advanceTimersByTime(549)
+    expect(state.nextCalls).toBe(0)
+    vi.advanceTimersByTime(1) // 550: tile 1
+    expect(state.nextCalls).toBe(1)
+    vi.advanceTimersByTime(400) // 950: tile 2
+    expect(state.nextCalls).toBe(2)
+    vi.advanceTimersByTime(1383) // 2333: tile 3
+    expect(state.nextCalls).toBe(3)
+    vi.advanceTimersByTime(1434) // 3767: tile 4
+    expect(state.nextCalls).toBe(4)
+    vi.advanceTimersByTime(1050) // 4817: tile 5
+    expect(state.nextCalls).toBe(5)
+    vi.advanceTimersByTime(1800) // 6617: tile 6 — run ends cleanly
+    expect(state.nextCalls).toBe(6)
+  })
+
+  it('resumes a mid-schedule run by replaying the tail from its own start', () => {
+    // 2 clicks shown, run started later: click k fires at schedule[k] — the
+    // first resumed advance lands at schedule[2] = 2333ms.
+    const { nav, state } = mockNav(6, 2)
+    mountAdvance({ nav, durationMs: 8700, stepScheduleMs: [550, 950, 2333, 3767, 4817, 6617] })
+
+    press('a')
+    vi.advanceTimersByTime(2332)
+    expect(state.nextCalls).toBe(0)
+    vi.advanceTimersByTime(1) // 2333 → click 3
+    expect(state.nextCalls).toBe(1)
+    vi.advanceTimersByTime(1434) // 3767 → click 4
+    expect(state.nextCalls).toBe(2)
+  })
+
+  it('repeats the final interval when the schedule is shorter than the remaining clicks', () => {
+    const { nav, state } = mockNav(4)
+    mountAdvance({ nav, durationMs: 8700, stepScheduleMs: [550, 950] })
+
+    press('a')
+    vi.advanceTimersByTime(550)
+    expect(state.nextCalls).toBe(1)
+    vi.advanceTimersByTime(400) // schedule exhausted → repeats its final gap
+    expect(state.nextCalls).toBe(2)
+    vi.advanceTimersByTime(400)
+    expect(state.nextCalls).toBe(3)
+    vi.advanceTimersByTime(400)
+    expect(state.nextCalls).toBe(4)
+  })
+
+  it('ignores a runMs argument when the schedule covers every click', () => {
+    const { nav, state } = mockNav(3)
+    const { ctrl } = mountAdvance({ nav, durationMs: 8700, stepScheduleMs: [550, 950, 2333] })
+
+    ctrl.start(1000) // runMs ignored: schedule entries govern, not 1000/3 ≈ 333ms
+    vi.advanceTimersByTime(549)
+    expect(state.nextCalls).toBe(0) // uniform spacing would already have fired
+    vi.advanceTimersByTime(1) // 550
+    expect(state.nextCalls).toBe(1)
+    vi.advanceTimersByTime(400) // 950
+    expect(state.nextCalls).toBe(2)
+    vi.advanceTimersByTime(1383) // 2333 — run ends
+    expect(state.nextCalls).toBe(3)
+  })
+})

@@ -6,6 +6,13 @@ import { parseAutoplayParam, useAutoAdvance, type AutoAdvanceNav } from './stepf
 const props = defineProps<{
   /** Default run duration in seconds when ?autoplay carries no valid value (demo default: 7s). */
   durationSec?: number
+  /**
+   * Optional measured click-fire times in seconds from run start, one per
+   * click (TileGrid's growing stagger — art_7bTnqSB3 §2.3). Supersedes the
+   * uniform `durationSec` spacing; `?autoplay=N` still triggers the run, its
+   * N is simply ignored when a schedule covers every click.
+   */
+  stepScheduleSec?: number[]
 }>()
 
 /** Bridge the pure runner to Slidev's real navigation (verified in
@@ -24,6 +31,7 @@ const nav: AutoAdvanceNav = (() => {
 const advance = useAutoAdvance({
   nav,
   durationMs: (props.durationSec ?? 7) * 1000,
+  stepScheduleMs: props.stepScheduleSec?.map((s) => s * 1000),
 })
 
 // ?autoplay=N (or bare ?autoplay) hands-free-starts the run on slide enter —

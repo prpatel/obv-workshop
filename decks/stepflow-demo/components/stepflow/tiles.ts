@@ -234,3 +234,57 @@ export function tileGridLayout(data: TileGridData, viewBox: Canvas = { width: 19
 
   return { tiles, viewBox }
 }
+
+// ---------------------------------------------------------------------------
+// Measured motion (exact-trace sheet art_7bTnqSB3 §2.3 — 60 fps frames-seq,
+// t(ms) = frame/60·1000, slide entrance at frame 15 = 250ms):
+//
+//   tile 1  550–633   tile 2  950–1033   tile 3  2333–2417
+//   tile 4  3767–3850  tile 5  4817–4900  tile 6  6617–6750
+//   connector track 8117–9117 — row 1 (track 1–2) at 8117, row 2 at 9100
+//
+// The inter-tile gaps GROW (400/1383/1434/1050/1800ms — not uniform), and the
+// #353642 connector track stays dark until every tile is on stage.
+// ---------------------------------------------------------------------------
+
+/** Tile 1 begins its ~100ms soft fade ~550ms after the slide entrance (frames 33–38). */
+export const TILE_STAGGER_FIRST_MS = 550
+
+/**
+ * Measured inter-tile reveal gaps (ms) for the six-tile demo grid — growing,
+ * not uniform (frames 57/140/226/289/397 minus their predecessors).
+ */
+export const TILE_STAGGER_GAPS_MS = [400, 1383, 1434, 1050, 1800] as const
+
+/** Each tile's soft fade measures ~83–150ms (frames 33–38; tile 6 trails glow); the sheet rounds to ~100ms. */
+export const TILE_FADE_MS = 100
+
+/**
+ * Connector-track beats, measured from the moment the last tile's click lands
+ * (source: tile 6 starts 6617ms, row-1 track 8117ms, row-2 track 9100ms).
+ * Row 1 fades in ~1.5s after tile 6; row 2 trails row 1 by ~983ms. Each fade
+ * is ~100ms (frames 487–491 and 546–547).
+ */
+export const TRACK_ROW1_DELAY_MS = 1500
+export const TRACK_ROW2_DELAY_MS = 2483
+export const TRACK_FADE_MS = 100
+
+/**
+ * Cumulative click-fire times (ms from run start) that reproduce the measured
+ * stagger through AutoAdvance's optional step schedule: click k fires at
+ * `firstMs + Σ gaps[0..k-1]` — the deck's uniform spacing cannot express the
+ * growing gaps. Grids larger than the measured six tiles repeat the final
+ * (longest) gap; smaller grids truncate. Pure; SSR-safe.
+ */
+export function tileStaggerSchedule(tiles: number, firstMs: number = TILE_STAGGER_FIRST_MS, gaps: readonly number[] = TILE_STAGGER_GAPS_MS): number[] {
+  if (tiles < 1) {
+    throw new RangeError(`tileStaggerSchedule needs at least one tile, got ${tiles}`)
+  }
+  const times: number[] = []
+  let t = 0
+  for (let i = 0; i < tiles; i++) {
+    t += i === 0 ? firstMs : (gaps[Math.min(i - 1, gaps.length - 1)] ?? 0)
+    times.push(t)
+  }
+  return times
+}
