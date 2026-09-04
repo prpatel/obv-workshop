@@ -40,7 +40,7 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (13) · VerticalSpine (4) · HeroTile (1) · SchematicRows (10) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (3) · SegmentTimeline (3) · StackPanels (5) · MilestoneLanes (5) · HexCluster (3)
+├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (13) · VerticalSpine (4) · HeroTile (1) · SchematicRows (10) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (3) · SegmentTimeline (3) · StackPanels (5) · MilestoneLanes (9) · HexCluster (3)
 ├─ components/
 │  ├─ StepFlow.vue                # the serpentine flow diagram (auto-imported by Slidev)
 │  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
@@ -54,7 +54,7 @@ decks/stepflow-demo/
 │  ├─ RatioStrip.vue              # family built-in: proportional band, two-phase pop + three-burst teal re-flow (wave 2)
 │  ├─ SegmentTimeline.vue         # family built-in: thin track, bright fills between glowing nodes (sweep-then-pop)
 │  ├─ StackPanels.vue             # family built-in: measured four-panel mosaic (burst pops + legacy sweep)
-│  ├─ MilestoneLanes.vue          # family built-in: four-lane Gantt/milestone chart (offset bars + tick markers)
+│  ├─ MilestoneLanes.vue          # family built-in: four-lane Gantt/milestone chart (two-phase bar pop/re-proportion + tick markers)
 │  ├─ HexCluster.vue              # family built-in: hexagon cluster (outline pop + content fade)
 │  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance + per-slide durationSec beats
 │  └─ stepflow/
@@ -183,7 +183,7 @@ inline on the demo slides; data order is the click order for every family.
 | `RatioStrip`    | `strip.ts` — `RatioStripData` (segments + `yFrac`/`hFrac` + optional heading/caption) | 3 — band pop at initial proportions, three-burst teal re-flow, then chip + tone-colored caption row | measured gradients on the `accentAlt`/`accentTertiary` tokens — hue decisions in the notes below | 11         | —           |
 | `SegmentTimeline` | `timeline.ts` — `TimelineSegment[]` (`tone` is `'accent'`/`'tertiary'`/`'alt'`, optional proportional `wFrac`, optional `label`/`sublabel`) | 3 — one per segment: node pop + fill sweep together | measured blue/cyan/red trio over `chainBlue` (no preset added) | 12         | —           |
 | `StackPanels`   | `panels.ts` — `StackPanel[]` + optional `caption`       | one per panel + one label click     | four-accent seed (`accent`…`accentQuaternary` = the recorded blue/cyan/amber/green) | 13         | —           |
-| `MilestoneLanes` | `lanes.ts` — `MilestoneLanesData` (lanes + measured y0/pitch/barH grid, per-bar `hFrac` override) | one per bar, then tick markers | `statusAmber` verbatim | 14         | —           |
+| `MilestoneLanes` | `lanes.ts` — `MilestoneLanesData` (lanes + measured y0/pitch/barH grid, per-bar `hFrac` override) | pop + re-proportion per bar, then the closing beat | `statusAmber` verbatim | 14         | `map-pin`   |
 | `HexCluster`    | `hex.ts` — `HexNodeData[]` + `arrangement`              | one per cell                        | `chainBlue` + `accentTertiary`                | 15         | `bot`       |
 
 StairChain authoring notes: each step carries `title` (uppercase white, rendered
@@ -310,10 +310,17 @@ re-paced to one click per panel plus one shared stepped-label click.
 MilestoneLanes authoring notes: bar offsets and sizes are data — `(xFrac,
 wFrac)` are canvas-width fractions, and the lane grid rides the measured
 `y0Frac` / `lanePitchFrac` / `barHFrac` (a per-bar `hFrac` overrides the
-default height; the seed's short lanes measure 24px at 720 vs 35px tall). One
-click grows each bar from its left edge — the recording's pop-then-re-flow is
-simplified to a single width reveal (accepted re-pace deviation) — then the
-amber tick markers spread across lanes on the final click. The palette
+default height; the seed's short lanes measure 24px at 720 vs 35px tall).
+Choreography is two-phase (fidelity report art_iHm120ov §MilestoneLanes):
+bar k pops wide on click 2k−1 — a rail-anchored sweep to the bar's final
+right edge, held through one click — then re-proportions on click 2k as the
+left edge retracts (the uniform sweep re-paces the recording's lane-specific
+pop variants — accepted re-pace deviation); the closing beat 2n+1 spreads
+the amber tick markers and lands the footer row. Backward navigation snaps
+both phases instantly (zero-animation). Measured text chrome from ref frame
+t=180.1s: a header label row above lane 1 (amber glyph + dim gray mono
+`subtext` text), a footer row with a teal `map-pin` chip glyph, and 28px
+lane labels left-aligned inside the tick rail (x410 at 1920). The palette
 defaults to the measured `statusAmber` preset verbatim: red bars are
 `tone: 'alt'`.
 

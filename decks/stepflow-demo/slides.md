@@ -615,14 +615,17 @@ canvasWidth: 1920
 
 <!--
   Demo slide: MilestoneLanes — a four-lane Gantt/milestone chart (src
-  174–181s, research art_2kSBGNmJ §3.4). Each click grows one lane bar from
-  its left edge (clicks 1-4; the recording's pop-then-re-proportion is
-  simplified to a single width reveal — accepted re-pace deviation), then
-  the amber tick markers spread across lanes (click 5). Bar offsets and
-  sizes are DATA: lanes 1-2 red (alt), 3-4 amber (accent) under the
-  statusAmber preset verbatim. AutoAdvance is renderless deck-level wiring:
-  the `a` key toggles a hands-free run and `?autoplay=N` in the URL starts
-  one on slide enter.
+  174–181s, research art_2kSBGNmJ §3.4). Two-phase choreography (fidelity
+  report art_iHm120ov §MilestoneLanes): each bar pops WIDE on its pop click
+  (clicks 1, 3, 5, 7 — a sweep anchored at the tick rail spanning to the
+  bar's final right edge), then re-proportions to its measured seed width on
+  the next click (2, 4, 6, 8); the closing beat (click 9) spreads the amber
+  tick markers and lands the footer row. Measured text chrome: the header
+  label row above lane 1 and the footer row with its teal chip glyph are
+  reproduced from ref frame t=180.1s. Bar offsets and sizes are DATA: lanes
+  1-2 red (alt), 3-4 amber (accent) under the statusAmber preset verbatim.
+  AutoAdvance is renderless deck-level wiring: the `a` key toggles a
+  hands-free run and `?autoplay=N` in the URL starts one on slide enter.
 -->
 
 <div class="sf-demo-stage">
@@ -630,6 +633,10 @@ canvasWidth: 1920
 <MilestoneLanes
   title="DATA"
   title-accent="ROADMAP"
+  header-label="WHERE THE WORK GOES"
+  header-icon="database"
+  footer-label="YOUR JUDGEMENT DECIDES THE DESIGN"
+  footer-icon="map-pin"
   :lanes="[
     { id: 'streaming', label: 'STREAMING', bars: [{ xFrac: 0.634, wFrac: 0.202, tone: 'alt' }] },
     { id: 'pipeline', label: 'PIPELINE', bars: [{ xFrac: 0.219, wFrac: 0.18, tone: 'alt', hFrac: 0.0333333 }] },

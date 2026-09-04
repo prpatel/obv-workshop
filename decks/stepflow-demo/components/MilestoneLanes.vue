@@ -1,6 +1,34 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { milestoneLanesLayout, type Lane } from './stepflow/lanes'
+import { computed, inject, ref, watch, type InjectionKey, type Ref } from 'vue'
+import type { ClicksContext } from '@slidev/client/constants'
+
+/**
+ * Mirrors `injectionClicksContext` from @slidev/client/constants — the same
+ * branded string, restated locally. The runtime import is a build hazard:
+ * the subpath resolves to constants.ts, which the production bundler cannot
+ * load; the type comes in type-only (erased) and the string is the protocol.
+ */
+const injectionClicksContext = '$$slidev-clicks-context' as unknown as InjectionKey<Ref<ClicksContext>>
+import {
+  milestoneLanesLayout,
+  LANE_LABEL_X_FRAC,
+  LANE_LABEL_SIZE_PX,
+  HEADER_ROW_X_FRAC,
+  HEADER_ROW_Y_FRAC,
+  HEADER_ROW_SIZE_PX,
+  HEADER_ICON_X_FRAC,
+  HEADER_ICON_Y_FRAC,
+  FOOTER_CHIP_X_FRAC,
+  FOOTER_CHIP_Y_FRAC,
+  FOOTER_CHIP_W_FRAC,
+  FOOTER_CHIP_H_FRAC,
+  FOOTER_ROW_X_FRAC,
+  FOOTER_ROW_Y_FRAC,
+  FOOTER_ROW_SIZE_PX,
+  type Lane,
+  type LaneBarLayout,
+} from './stepflow/lanes'
+import { iconPath, ICON_FALLBACK } from './stepflow/icons'
 import { resolvePalette, statusAmber, type StepFlowPaletteOverride } from './stepflow/palettes'
 
 const props = withDefaults(defineProps<{
@@ -18,7 +46,19 @@ const props = withDefaults(defineProps<{
   title?: string
   /** Header tail rendered in chrome green after `title` (two-tone chrome convention). */
   titleAccent?: string
-}>(), { palette: () => ({}) })
+  /** Label row above lane 1 (ref t=180.1s: 'WHERE THE WORK GOES'). Renders only when provided. */
+  headerLabel?: string
+  /** Icon key for the header row's amber leading glyph. */
+  headerIcon?: string
+  /** Footer row text (ref t=180.1s: 'YOUR JUDGEMENT DECIDES THE DESIGN'). Renders only when provided. */
+  footerLabel?: string
+  /** Icon key for the footer row's teal chip glyph. */
+  footerIcon?: string
+}>(), {
+  palette: () => ({}),
+  headerIcon: 'database',
+  footerIcon: 'map-pin',
+})
 
 // statusAmber is MilestoneLanes' family preset, verbatim (wave-2 spec):
 // amber accent bars, red accentAlt. resolvePalette merges the default
@@ -34,26 +74,114 @@ const layout = computed(() =>
   }),
 )
 
+// Live Slidev click state — the same context the v-click directive reads,
+// provided per slide. Outside Slidev (tests, static renders) it's undefined
+// and every bar renders settled: geometry is complete, only animation hides.
+const clicksCtx = inject(injectionClicksContext, undefined)
+const clicks = computed(() => clicksCtx?.value.current ?? Number.POSITIVE_INFINITY)
+
+// Backward navigation snaps instantly (locked decision): when the last click
+// step went backward, the next geometry update suppresses all transitions.
+const instant = ref(true)
+watch(clicks, (next, prev) => {
+  instant.value = next < prev
+})
+
+type BarPhase = 'hidden' | 'popped' | 'settled'
+
+// Two-phase choreography (fidelity report art_iHm120ov §MilestoneLanes):
+// bar k pops wide on native click 2k−1 and re-proportions on click 2k.
+function barPhase(bar: LaneBarLayout): BarPhase {
+  if (clicks.value < bar.click) return 'hidden'
+  if (clicks.value < bar.settleClick) return 'popped'
+  return 'settled'
+}
+
+// Hidden bars wait collapsed at the tick rail so the pop sweep grows from it;
+// popped holds the rail-anchored wide sweep; settled is the measured seed.
+function barRect(bar: LaneBarLayout): { x: number; w: number } {
+  switch (barPhase(bar)) {
+    case 'hidden': return { x: bar.popX, w: 0 }
+    case 'popped': return { x: bar.popX, w: bar.popW }
+    default: return { x: bar.x, w: bar.w }
+  }
+}
+
 function barColor(tone: Lane['bars'][number]['tone']): string {
   return tone === 'accent' ? p.value.accent : (p.value.accentAlt ?? p.value.accent)
 }
 
-// Label rail: right-aligned left of the measured tick rail (x208/1280), with
-// a 24px gap so the two never touch.
-const labelX = computed(() => layout.value.ticks[0].x - 24)
+// Lane labels: white mono, left-aligned at the measured x410 inside the tick
+// rail, vertically centered on the lane band (ref y538–563 centered at 550).
+const labelX = computed(() => LANE_LABEL_X_FRAC * layout.value.viewBox.width)
+
+// Header/footer rows: leading glyph centered in its measured box, text at the
+// measured left edge with the row top as the hanging baseline.
+const headerPos = computed(() => {
+  const vb = layout.value.viewBox
+  return {
+    iconCx: HEADER_ICON_X_FRAC * vb.width + ICON_SIZE / 2,
+    iconCy: HEADER_ICON_Y_FRAC * vb.height + ICON_SIZE / 2,
+    textX: HEADER_ROW_X_FRAC * vb.width,
+    textY: HEADER_ROW_Y_FRAC * vb.height,
+  }
+})
+
+const footerPos = computed(() => {
+  const vb = layout.value.viewBox
+  const chipW = FOOTER_CHIP_W_FRAC * vb.width
+  const chipH = FOOTER_CHIP_H_FRAC * vb.height
+  return {
+    iconCx: FOOTER_CHIP_X_FRAC * vb.width + chipW / 2,
+    iconCy: FOOTER_CHIP_Y_FRAC * vb.height + chipH / 2,
+    textX: FOOTER_ROW_X_FRAC * vb.width,
+    textY: FOOTER_ROW_Y_FRAC * vb.height,
+  }
+})
 
 // Typography on the StepFlow scale: 34px title at source height 848, rescaled
-// so custom viewBox sizes stay proportional (StepFlow.vue pattern).
+// so custom viewBox sizes stay proportional (StepFlow.vue pattern). Text rows
+// and labels are measured at 1920 scale and rescale by width.
 const type = computed(() => {
   const k = layout.value.viewBox.height / 848
-  return { titleSize: 34 * k, labelSize: 15 }
+  const kw = layout.value.viewBox.width / 1920
+  return {
+    titleSize: 34 * k,
+    labelSize: LANE_LABEL_SIZE_PX * kw,
+    headerSize: HEADER_ROW_SIZE_PX * kw,
+    footerSize: FOOTER_ROW_SIZE_PX * kw,
+  }
 })
 
 // Chrome constants: white header and lane labels, chrome-green title tail
-// (titleAccent convention — a constant, never a palette field).
+// (titleAccent convention — a constant, never a palette field), the teal of
+// the footer chip (chrome like TwoBarCompare's chips; measured (32,208,152)
+// ≈ the deck's teal token), and ~36px icon glyphs in 24-unit Lucide space.
 const HEADER_FILL = '#ffffff'
 const LABEL_FILL = '#ffffff'
 const CHROME_GREEN = '#66fb00'
+const CHROME_TEAL = '#1cd797'
+const ICON_BOX = 24
+const ICON_SIZE = 48
+
+function fmt(n: number): string {
+  return String(parseFloat(n.toFixed(4)))
+}
+
+function iconTransform(cx: number, cy: number): string {
+  const s = ICON_SIZE / ICON_BOX
+  return `translate(${fmt(cx - ICON_SIZE / 2)} ${fmt(cy - ICON_SIZE / 2)}) scale(${fmt(s)})`
+}
+
+// Unknown key renders the visible fallback (never undefined into v-html) and
+// names the bad key in dev so the author fixes the string.
+function resolveIcon(key: string): string {
+  const path = iconPath(key)
+  if (!path && import.meta.env?.DEV) {
+    console.warn(`[MilestoneLanes] unknown icon key "${key}" — rendering the fallback icon`)
+  }
+  return path ?? ICON_FALLBACK
+}
 </script>
 
 <template>
@@ -63,8 +191,46 @@ const CHROME_GREEN = '#66fb00'
     role="img"
     :aria-label="`${lanes.length}-lane milestone chart`"
   >
-    <!-- Lane labels: white mono, right-aligned left of the tick rail. Each
-         label rides its lane's first bar click — nothing reveals alone. -->
+    <!-- Dim warm container frame around the chart field — static chrome; the
+         ref's frame (x281–1652, y377–954, amber at ~15%) persists across the
+         whole sequence. -->
+    <rect
+      class="sf-ml-box"
+      :x="layout.box.x"
+      :y="layout.box.y"
+      :width="layout.box.w"
+      :height="layout.box.h"
+      fill="none"
+      :stroke="p.accent"
+      stroke-opacity="0.15"
+      :stroke-width="2"
+    />
+
+    <!-- Header label row above lane 1: amber leading glyph + dim gray mono
+         text (static chrome, present from the ref's first settled frame). -->
+    <g v-if="headerLabel" class="sf-ml-header">
+      <g
+        class="sf-ml-header-icon"
+        fill="none"
+        :stroke="p.accent"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        :transform="iconTransform(headerPos.iconCx, headerPos.iconCy)"
+        v-html="resolveIcon(headerIcon)"
+      />
+      <text
+        :x="headerPos.textX"
+        :y="headerPos.textY"
+        dominant-baseline="hanging"
+        :font-size="type.headerSize"
+        :fill="p.subtext"
+        letter-spacing="0.08em"
+      >{{ headerLabel }}</text>
+    </g>
+
+    <!-- Lane labels: white mono, left-aligned inside the tick rail (measured
+         x410). Each label rides its lane's pop click — nothing reveals alone. -->
     <template v-for="lane in layout.lanes" :key="`label-${lane.id}`">
       <text
         v-if="lane.label"
@@ -72,7 +238,6 @@ const CHROME_GREEN = '#66fb00'
         class="sf-ml-label"
         :x="labelX"
         :y="lane.y + lane.bars[0].h / 2"
-        text-anchor="end"
         dominant-baseline="central"
         :font-size="type.labelSize"
         :fill="LABEL_FILL"
@@ -81,12 +246,12 @@ const CHROME_GREEN = '#66fb00'
     </template>
 
     <!--
-      Reveal binding: one click per bar (lanes then bars in data order), a
-      single width reveal per bar — the recording's pop-then-re-proportion
-      simplified to one width transition (accepted re-pace deviation, same
-      class as StackPanels'). Slidev toggles each bar's OWN
-      slidev-vclick-hidden class — hidden = collapsed to its left edge +
-      transition:none (backward nav snaps), revealed = 300ms ease-out grow.
+      Two-phase reveal: bar k pops wide on click 2k−1 — a rail-anchored sweep
+      to its final right edge (the ref frame t=180.1s caught this state) — and
+      re-proportions on click 2k as the left edge retracts to the measured seed
+      width. Transition lives in the destination state: forward pop 250ms,
+      settle 500ms; a backward step sets .sf-ml-instant so both phases snap
+      back with zero animation (locked decision).
     -->
     <g v-for="lane in layout.lanes" :key="lane.id">
       <rect
@@ -94,17 +259,18 @@ const CHROME_GREEN = '#66fb00'
         :key="`${lane.id}-${bi}`"
         v-click="bar.click"
         class="sf-ml-bar"
-        :x="bar.x"
+        :class="{ 'sf-ml-settled': barPhase(bar) === 'settled', 'sf-ml-instant': instant }"
+        :x="barRect(bar).x"
         :y="bar.y"
-        :width="bar.w"
+        :width="barRect(bar).w"
         :height="bar.h"
         rx="4"
         :fill="barColor(bar.tone)"
       />
     </g>
 
-    <!-- Tick markers: amber ticks at the measured left-edge rail, spreading
-         across lanes on the final click. -->
+    <!-- Closing beat: tick markers spread across lanes and the footer row —
+         teal chip glyph + dim gray mono text — land on the final click. -->
     <g v-click="layout.clickCount" class="sf-ml-ticks">
       <line
         v-for="(tick, i) in layout.ticks"
@@ -117,6 +283,26 @@ const CHROME_GREEN = '#66fb00'
         :stroke-width="3"
         stroke-linecap="round"
       />
+    </g>
+    <g v-if="footerLabel" v-click="layout.clickCount" class="sf-ml-footer">
+      <g
+        class="sf-ml-chip-icon"
+        fill="none"
+        :stroke="CHROME_TEAL"
+        stroke-width="2.5"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        :transform="iconTransform(footerPos.iconCx, footerPos.iconCy)"
+        v-html="resolveIcon(footerIcon)"
+      />
+      <text
+        :x="footerPos.textX"
+        :y="footerPos.textY"
+        dominant-baseline="hanging"
+        :font-size="type.footerSize"
+        :fill="p.subtext"
+        letter-spacing="0.08em"
+      >{{ footerLabel }}</text>
     </g>
 
     <text
@@ -144,21 +330,23 @@ const CHROME_GREEN = '#66fb00'
 }
 
 /*
- * Measured motion (visual-spec §9 pattern). Transition is taken from the
- * destination state: forward reveal grows each bar from its left edge (the
- * single width reveal), the hidden state's transition:none makes backward
- * nav instant — the locked decision, zero JS. Scoped selectors (0,2,0 +
- * attribute) beat Slidev's built-in .slidev-vclick-target
- * { transition: all .1s ease } — no source-order reliance.
+ * Measured motion (fidelity report art_iHm120ov §MilestoneLanes): the pop is
+ * 250ms ease-out (measured 175.80→176.05s), the re-proportion 500ms (measured
+ * 176.35→176.80s ≈ 470ms). Transition is taken from the destination state:
+ * the base rule pops wide, .sf-ml-settled re-proportions, and
+ * .sf-ml-instant — backward navigation, last rule wins — snaps both phases
+ * with zero animation (locked decision). Scoped selectors (0,2,0 + attribute)
+ * beat Slidev's built-in .slidev-vclick-target { transition: all .1s ease }.
  */
 .sf-ml-bar {
-  transform-box: fill-box;
-  transform-origin: left center;
-  transition: transform 300ms cubic-bezier(0, 0, 0.2, 1), opacity 150ms ease-out;
+  transition: x 250ms cubic-bezier(0, 0, 0.2, 1), width 250ms cubic-bezier(0, 0, 0.2, 1);
 }
 
-.sf-ml-bar.slidev-vclick-hidden {
-  transform: scaleX(0);
+.sf-ml-bar.sf-ml-settled {
+  transition: x 500ms cubic-bezier(0, 0, 0.2, 1), width 500ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.sf-ml-bar.sf-ml-instant {
   transition: none;
 }
 
@@ -178,10 +366,19 @@ const CHROME_GREEN = '#66fb00'
   transition: none;
 }
 
+.sf-ml-footer {
+  transition: opacity 150ms ease-out;
+}
+
+.sf-ml-footer.slidev-vclick-hidden {
+  transition: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sf-ml-bar,
   .sf-ml-label,
-  .sf-ml-ticks {
+  .sf-ml-ticks,
+  .sf-ml-footer {
     transition: none;
   }
 }
