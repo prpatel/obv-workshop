@@ -85,7 +85,7 @@ describe('VerticalSpine', () => {
     // Ref §3: the big glyph strokes ARE the card's ink mass — the title reads
     // the card tone (bold), never white.
     expect(wrapper.find('.sf-spine-card-title').attributes('fill')).toBe('#349aea')
-    expect(wrapper.find('.sf-spine-card-title').attributes('font-weight')).toBe('700')
+    expect(wrapper.find('.sf-spine-card-title').attributes('font-weight')).toBe('800')
   })
 
   it('renders outlined two-tone cards with the seeded recording palette', () => {
