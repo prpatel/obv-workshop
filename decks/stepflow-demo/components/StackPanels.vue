@@ -1,24 +1,36 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { panelsLayout, revealPlan, SWEEP_FRAC, type StackPanel } from './stepflow/panels'
+import {
+  panelsLayout,
+  panelPath,
+  plateLayout,
+  revealPlan,
+  STACKPANELS_CAPTION,
+  STACKPANELS_HEADER,
+  SWEEP_FRAC,
+  type PanelRect,
+  type StackPanel,
+} from './stepflow/panels'
 import { resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
-import TitleChrome from './stepflow/TitleChrome.vue'
+import { iconPath, ICON_FALLBACK } from './stepflow/icons'
+import { CAP_HEIGHT_RATIO, CHROME_GREEN, TITLE_WHITE } from './stepflow/chrome'
 
 const props = withDefaults(defineProps<{
-  /** The panel mosaic, in reveal order: the sweep band first, then sub-panels. */
+  /** The panel mosaic, in reveal order: TL → TR → BL → BR on the measured seed. */
   panels: StackPanel[]
   /** Partial palette merged over the measured `cyanOnBlack` preset. */
   palette?: StepFlowPaletteOverride
-  /** White caption line under the composition. */
+  /** White caption line under the composition; lands on the closing beat. */
   caption?: string
-  /** Mono header line, rendered centered (white lead). */
+  /** White lead of the two-tone header (sheet: 'One'). */
   title?: string
-  /** Header tail rendered in chrome-green #66fb00 (the two-tone recording chrome). */
+  /** Header tail rendered in chrome green (sheet: 'unified environment'). */
   titleAccent?: string
 }>(), { palette: () => ({}) })
 
 const p = computed(() => resolvePalette(props.palette))
 const layout = computed(() => panelsLayout(props.panels))
+const plate = computed(() => plateLayout(layout.value.viewBox))
 const plan = computed(() => revealPlan(props.panels, !!props.caption))
 
 // Tone → token: `alt`/`tertiary`/`quaternary` fall back to `accent` when the
@@ -31,93 +43,91 @@ function fill(tone: StackPanel['tone']): string {
   return p.value.accent
 }
 
-// Typography measured from the v4 recording (title chrome lives in the
-// shared TitleChrome component): panel titles are the wave-1 fix list's
-// ~40px-at-1080 white in-fill labels (0.038·h, as before); the caption glyphs
-// y1099–1127 read ~26px at 1080 (0.024·h) — the fix list's caption size.
-const type = computed(() => ({
-  panelTitle: 0.038 * layout.value.viewBox.height,
-  row: 0.025 * layout.value.viewBox.height,
-  caption: 0.024 * layout.value.viewBox.height,
-}))
+// Sheet §1.2 header geometry (art_mkVNxsft): two ink spans pinned to their
+// measured extents — 'One' 324.9–518.9, 'unified environment' 545.3–1506.8 at
+// cap height 69.9, shared baseline ≈y127. The recording header is a
+// proportional face while the deck mono runs wider at equal cap (the chrome
+// foundation's systemic note), so each segment renders textLength +
+// spacingAndGlyphs: extent and the white→green split point land exactly.
+const header = computed(() => {
+  const { width } = layout.value.viewBox
+  return {
+    fontSize: STACKPANELS_HEADER.capHeight / CAP_HEIGHT_RATIO,
+    baseline: STACKPANELS_HEADER.baseline,
+    lead: {
+      x: STACKPANELS_HEADER.leadBox.xFrac * width,
+      w: STACKPANELS_HEADER.leadBox.wFrac * width,
+    },
+    accent: {
+      x: STACKPANELS_HEADER.accentBox.xFrac * width,
+      w: STACKPANELS_HEADER.accentBox.wFrac * width,
+    },
+  }
+})
 
-// The recording's panels have rounded corners (visual inspection); the radius
-// reads ≈1% of stage height.
-const rx = computed(() => 0.011 * layout.value.viewBox.height)
+// Plate border: left/right/bottom only — the sheet sees no top border line.
+// Coords round to 1/10000 px so the rendered path stays readable.
+const plateBorder = computed(() => {
+  const q = (v: number) => Number(v.toFixed(4))
+  const { x, y, w, h } = plate.value
+  return `M ${q(x)} ${q(y)} V ${q(y + h)} H ${q(x + w)} V ${q(y)}`
+})
 
-interface Label {
-  key: string
-  text: string
-  x: number
-  y: number
-  size: number
-  fill: string
-  anchor: 'start' | 'middle'
-  delay: number
+// One click drives the plate's first beat (the dim margin rides the blue
+// fade, ~200ms behind its onset); the brighten lands with the caption.
+const plateFirstClick = computed(() => plan.value.panelClicks[0] ?? 1)
+const plateFullClick = computed(() => plan.value.labelClick || plan.value.panelClicks.length || 1)
+
+/** Sheet-measured icon → SVG transform mapping the 24-unit Lucide box onto the
+ * measured ink bbox (art_mkVNxsft §1.2). */
+function iconTransform(panel: PanelRect): string | undefined {
+  if (!panel.iconBox) return undefined
+  const { width, height } = layout.value.viewBox
+  const x = panel.iconBox.xFrac * width
+  const y = panel.iconBox.yFrac * height
+  const w = panel.iconBox.wFrac * width
+  const h = panel.iconBox.hFrac * height
+  return `translate(${x} ${y}) scale(${w / 24} ${h / 24})`
 }
 
-// Measured label fade (recording 5.53–6.07s ≈ 0.54s over several text
-// elements) → one shared click with a ~90ms per-element cascade.
-const LABEL_STEP_MS = 90
+/** Dark centered panel title pinned to the sheet's measured ink box. */
+interface TitleAttrs {
+  x: number
+  y: number
+  fontSize: number
+  textLength: number
+  text: string
+}
 
-// All text reveals together on the final click. Titles render white (~40px
-// at 1080 per the wave-1 fix list) at each panel's top-left inset (pad 23px,
-// baseline 43px — design choices within the fix list's "top-left of fill";
-// the recording's settled frame centers dark text blocks instead — accepted
-// deviation, recorded in the PR). Rows render dark (iconStroke), left-aligned
-// under their panel's title; the caption centers under the composition
-// (measured caption center x965 vs mosaic center x970) in white.
-const PAD_X = 0.012
-const TITLE_BASELINE = 0.04
-const labels = computed<Label[]>(() => {
-  const out: Label[] = []
+const titles = computed<Record<string, TitleAttrs>>(() => {
+  const out: Record<string, TitleAttrs> = {}
+  const { width, height } = layout.value.viewBox
   for (const panel of layout.value.panels) {
-    const left = panel.x + PAD_X * layout.value.viewBox.width
-    if (panel.title) {
-      out.push({
-        key: `${panel.id}-title`,
-        text: panel.title,
-        x: left,
-        y: panel.y + TITLE_BASELINE * layout.value.viewBox.height,
-        size: type.value.panelTitle,
-        fill: '#ffffff',
-        anchor: 'start',
-        delay: out.length * LABEL_STEP_MS,
-      })
+    if (!panel.title || !panel.titleBox) continue
+    const box = panel.titleBox
+    out[panel.id] = {
+      x: (box.xFrac + box.wFrac / 2) * width,
+      y: (box.yFrac + box.hFrac) * height,
+      fontSize: (box.hFrac * height) / CAP_HEIGHT_RATIO,
+      textLength: box.wFrac * width,
+      text: panel.title,
     }
-    if (panel.rows?.length) {
-      const lineH = type.value.row * 1.45
-      const first = panel.y + TITLE_BASELINE * layout.value.viewBox.height + type.value.panelTitle * 1.75
-      panel.rows.forEach((row, r) => {
-        out.push({
-          key: `${panel.id}-row-${r}`,
-          text: row,
-          x: left,
-          y: first + r * lineH,
-          size: type.value.row,
-          fill: p.value.iconStroke,
-          anchor: 'start',
-          delay: out.length * LABEL_STEP_MS,
-        })
-      })
-    }
-  }
-  if (props.caption) {
-    const xs = layout.value.panels.map((panel) => panel.x)
-    const rights = layout.value.panels.map((panel) => panel.x + panel.w)
-    const bottoms = layout.value.panels.map((panel) => panel.y + panel.h)
-    out.push({
-      key: 'caption',
-      text: props.caption,
-      x: (Math.min(...xs) + Math.max(...rights)) / 2,
-      y: Math.max(...bottoms) + 0.075 * layout.value.viewBox.height,
-      size: type.value.caption,
-      fill: '#ffffff',
-      anchor: 'middle',
-      delay: out.length * LABEL_STEP_MS,
-    })
   }
   return out
+})
+
+// Sheet §1.2 caption: white #f5f5f5, centered under the mosaic (x≈908.8, not
+// canvas-centered), landing with the plate brighten on the closing beat.
+const captionSpec = computed(() => {
+  if (!props.caption) return undefined
+  const { width, height } = layout.value.viewBox
+  const box = STACKPANELS_CAPTION.box
+  return {
+    x: (box.xFrac + box.wFrac / 2) * width,
+    y: (box.yFrac + box.hFrac) * height,
+    fontSize: (box.hFrac * height) / CAP_HEIGHT_RATIO,
+    textLength: box.wFrac * width,
+  }
 })
 
 </script>
@@ -128,52 +138,116 @@ const labels = computed<Label[]>(() => {
     role="img"
     :aria-label="`${panels.length}-panel stack diagram`"
   >
-    <!-- One sibling group per panel (never nested v-clicks): the band sweeps,
-         sub-panels pop — one click each, in data order. -->
+    <!-- White plate, two layers (art_mkVNxsft §1.3): the margin rides the
+         first panel's click at ~33% white and brightens to full #f5f5f5 with
+         the caption on the closing beat (the f351–360 window). -->
+    <g v-click="plateFirstClick" :data-sf-click="plateFirstClick" class="sf-plate sf-plate--dim">
+      <rect :x="plate.x" :y="plate.y" :width="plate.w" :height="plate.h" :fill="plate.fill" />
+      <path :d="plateBorder" fill="none" :stroke="plate.border" :stroke-width="plate.borderWidth" />
+    </g>
+    <g v-click="plateFullClick" :data-sf-click="plateFullClick" class="sf-plate sf-plate--full">
+      <rect :x="plate.x" :y="plate.y" :width="plate.w" :height="plate.h" :fill="plate.fill" />
+      <path :d="plateBorder" fill="none" :stroke="plate.border" :stroke-width="plate.borderWidth" />
+    </g>
+
+    <!-- One sibling group per panel (never nested v-clicks): a ~300ms
+         full-size opacity fade on its click — no scale, no sweep
+         (art_mkVNxsft §1.3). The dark icon+title group rides the same click. -->
     <g
       v-for="(panel, i) in layout.panels"
       :key="panel.id"
       v-click="plan.panelClicks[i]"
       :data-sf-click="plan.panelClicks[i]"
       class="sf-panel"
-      :class="panel.bandReveal === 'sweep' ? 'sf-panel--sweep' : 'sf-panel--pop'"
+      :class="panel.bandReveal === 'sweep' ? 'sf-panel--sweep' : 'sf-panel--fade'"
     >
+      <path
+        v-if="panel.bandReveal !== 'sweep'"
+        class="sf-band"
+        :d="panelPath(panel, panel.cutCorner ? plate.cut : 0, panel.cutCorner)"
+        :fill="fill(panel.tone)"
+      />
       <rect
+        v-else
         class="sf-band"
         :x="panel.x"
         :y="panel.y"
         :width="panel.w * SWEEP_FRAC"
         :height="panel.h"
-        :rx="rx"
         :fill="fill(panel.tone)"
       />
+
+      <g
+        v-if="panel.icon && iconTransform(panel)"
+        class="sf-icon"
+        :transform="iconTransform(panel)"
+        :style="{ color: p.iconStroke }"
+      >
+        <g
+          v-html="iconPath(panel.icon ?? '') ?? ICON_FALLBACK"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        />
+      </g>
+
+      <text
+        v-if="titles[panel.id]"
+        class="sf-title"
+        :x="titles[panel.id]?.x"
+        :y="titles[panel.id]?.y"
+        :font-size="titles[panel.id]?.fontSize"
+        :textLength="titles[panel.id]?.textLength"
+        lengthAdjust="spacing"
+        text-anchor="middle"
+        :fill="p.iconStroke"
+      >{{ titles[panel.id]?.text }}</text>
     </g>
 
-    <!-- Labels fade stepped on the final click; the hidden state snaps back. -->
+    <!-- Caption: one opacity fade on the closing beat, next to the plate
+         brighten. -->
     <text
-      v-for="label in labels"
-      :key="label.key"
+      v-if="captionSpec"
       v-click="plan.labelClick"
       :data-sf-click="plan.labelClick"
-      class="sf-label"
-      :x="label.x"
-      :y="label.y"
-      :font-size="label.size"
-      :fill="label.fill"
-      :text-anchor="label.anchor"
-      :style="{ '--sf-label-delay': `${label.delay}ms` }"
-    >{{ label.text }}</text>
+      class="sf-caption"
+      :x="captionSpec.x"
+      :y="captionSpec.y"
+      :font-size="captionSpec.fontSize"
+      :textLength="captionSpec.textLength"
+      lengthAdjust="spacing"
+      text-anchor="middle"
+      fill="#f5f5f5"
+    >{{ caption }}</text>
 
-    <!-- Shared title chrome: sheet-measured centered two-tone title
-         (StackPanels Title row: cap 69.9 in the band y58.5–128.4, centered
-         ≈x916). Static — the header carries no click. -->
-    <TitleChrome
-      :title="title"
-      :title-accent="titleAccent"
-      :cap-height="69.9"
-      :cap-top="58.5"
-      :center-x="916"
-    />
+    <!-- Sheet §1.2 header: two ink spans pinned to their measured extents —
+         white lead, chrome-green tail, shared baseline. Static, no click. -->
+    <g v-if="title || titleAccent" class="sf-chrome-title">
+      <text
+        v-if="title"
+        class="sf-chrome-lead"
+        :x="header.lead.x"
+        :y="header.baseline"
+        :font-size="header.fontSize"
+        :textLength="header.lead.w"
+        lengthAdjust="spacingAndGlyphs"
+        text-anchor="start"
+        :fill="TITLE_WHITE"
+      >{{ title }}</text>
+      <text
+        v-if="titleAccent"
+        class="sf-chrome-accent"
+        :x="header.accent.x"
+        :y="header.baseline"
+        :font-size="header.fontSize"
+        :textLength="header.accent.w"
+        lengthAdjust="spacingAndGlyphs"
+        text-anchor="start"
+        :fill="CHROME_GREEN"
+      >{{ titleAccent }}</text>
+    </g>
   </svg>
 </template>
 
@@ -190,20 +264,76 @@ const labels = computed<Label[]>(() => {
 }
 
 /*
- * Measured motion (family blueprint F3, re-measured per the wave-1 fix list:
- * each fill lands in a ~30–50ms burst — blue at 3.47s, cyan ~270ms later,
- * amber 4.13s, green 4.53s, stepped labels 5.53–6.07s — so panels pop at
- * 60ms and the legacy sweep runs 80ms). Like StepFlow's .sf-track-fill, the
- * transition lives on the destination state and the hidden state's
- * transition:none makes backward nav instant — the locked decision, zero JS.
- * Scoped selectors (0,2,0 + attribute) beat Slidev's built-in
- * .slidev-vclick-target transition.
+ * Measured motion (art_mkVNxsft §1.3): each fill lands as a ~300ms full-size
+ * opacity fade — blue at 3350ms, cyan 3583, amber 4083, green 4483 (re-paced
+ * to one click each, TL→TR→BL→BR); the plate margin rides the first click at
+ * ~33% white and brightens to full #f5f5f5 with the caption in the f351–360
+ * window (the closing beat). The transition lives on the destination state and
+ * the hidden state's transition:none makes backward nav instant — the locked
+ * decision, zero JS. Scoped selectors (0,2,0 + attribute) beat Slidev's
+ * built-in .slidev-vclick-target transition.
  */
 
-/* Sweep: .sf-track-fill applied to a region — scaleX on the revealed state
- * sweeps the fill left→right; transform-box: fill-box pins the origin to the
- * rect's own left edge. Kept for stylized use at the measured burst pace
- * (~80ms); the demo slide ships pops — the recording's mechanism. */
+/* Panels: opacity-only fade — no scale, no pop (the recording's mechanism;
+ * the stylized legacy sweep keeps its own class below). */
+.sf-panel--fade .sf-band {
+  transition: opacity 300ms ease-out;
+}
+
+.sf-panel--fade.slidev-vclick-hidden .sf-band {
+  opacity: 0;
+  transition: none;
+}
+
+/* Icon+title group: same fade, onset ~50ms behind its fill ("appears with its
+ * fill within 2–4 frames"). */
+.sf-icon,
+.sf-title {
+  transition: opacity 300ms ease-out;
+  transition-delay: 50ms;
+}
+
+.sf-panel.slidev-vclick-hidden .sf-icon,
+.sf-panel.slidev-vclick-hidden .sf-title {
+  opacity: 0;
+  transition: none;
+}
+
+/* Plate: dim margin (~33% white) enters with the first panel ~200ms behind
+ * its onset (f202 fill, f215 margin); the full plate brightens on the closing
+ * beat next to the caption. */
+.sf-plate--dim {
+  opacity: 0.33;
+  transition: opacity 300ms ease-out;
+  transition-delay: 200ms;
+}
+
+.sf-plate--dim.slidev-vclick-hidden {
+  opacity: 0;
+  transition: none;
+}
+
+.sf-plate--full {
+  transition: opacity 300ms ease-out;
+}
+
+.sf-plate--full.slidev-vclick-hidden {
+  opacity: 0;
+  transition: none;
+}
+
+.sf-caption {
+  transition: opacity 300ms ease-out;
+}
+
+.sf-caption.slidev-vclick-hidden {
+  opacity: 0;
+  transition: none;
+}
+
+/* Legacy stylized sweep (unused by the demo slide): scaleX on the revealed
+ * state sweeps the fill left→right; transform-box: fill-box pins the origin
+ * to the band's own left edge. */
 .sf-panel--sweep .sf-band {
   transform-box: fill-box;
   transform-origin: left center;
@@ -217,39 +347,14 @@ const labels = computed<Label[]>(() => {
   transition: none;
 }
 
-/* Pop: fade + slight scale-up — the disc-pop pattern at region scale. The
- * recording's fills land in ~30–50ms bursts (60fps walks: blue completes in
- * two ~30ms bursts); 60ms sits inside the fix list's 50–80ms window. */
-.sf-panel--pop .sf-band {
-  transform-box: fill-box;
-  transform-origin: center;
-  transition:
-    transform 60ms cubic-bezier(0, 0, 0.2, 1),
-    opacity 60ms ease-out;
-}
-
-.sf-panel--pop.slidev-vclick-hidden .sf-band {
-  opacity: 0;
-  transform: scale(0.85);
-  transition: none;
-}
-
-/* Stepped labels: one click, cascade via a per-element delay on the way in;
-   the hidden state drops the delay entirely so backward nav snaps. */
-.sf-label {
-  transition: opacity 150ms ease-out;
-  transition-delay: var(--sf-label-delay, 0ms);
-}
-
-.sf-label.slidev-vclick-hidden {
-  opacity: 0;
-  transition: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .sf-panel--sweep .sf-band,
-  .sf-panel--pop .sf-band,
-  .sf-label {
+  .sf-panel--fade .sf-band,
+  .sf-icon,
+  .sf-title,
+  .sf-plate--dim,
+  .sf-plate--full,
+  .sf-caption {
     transition: none;
   }
 }

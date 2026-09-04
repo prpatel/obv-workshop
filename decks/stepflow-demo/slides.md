@@ -590,34 +590,36 @@ canvasWidth: 1920
 ---
 
 <!--
-  StackPanels demo (v4 family): the recording is a continuous auto-run;
-  native v-clicks re-pace it to five clicks — one burst-pop per panel (blue,
-  cyan, amber, green), then the stepped labels (accepted deviation per the
-  family spec). Panel geometry is the wave-1 re-measured 2×2 mosaic in stage
-  fractions: blue #3599fb top-left, cyan #1fd0ea top-right (abutting at the
-  x≈1040 seam), amber #f7ba20 bottom-left, #1cd798 green bottom-right — the
-  four recorded shades ride the palette's four accent slots, including the
-  `accentQuaternary` fourth tone added for this split. AutoAdvance is
-  per-slide opt-in: `a` toggles a hands-free run, `?autoplay=N` starts one on
-  slide enter.
+  StackPanels demo (v4 family, exact-trace art_mkVNxsft §1): the recording is
+  a continuous auto-run; native v-clicks re-pace it to five clicks — four
+  ~300ms full-size opacity fades (blue, cyan, amber, green — TL→TR→BL→BR),
+  then the plate brighten + caption landing on the closing beat (the sheet's
+  f351–360 window). The white plate (#f5f5f5, 1px #989898 border, no top
+  line) enters dim (~33% white) with click 1; every panel cuts one 45°
+  corner (~10px) showing plate white; dark icon+title groups center per
+  panel; the green panel is empty below its title. Geometry is the sheet's
+  measured mosaic in stage fractions — title boxes are the sheet's native
+  ink bboxes × the 2038→1920 (0.94171) / 1144→1080 (0.944055) conversion
+  factors, so the numbers stay traceable to the sheet. AutoAdvance paces
+  the run; `a` toggles a hands-free run, `?autoplay=N` starts one on enter.
 -->
 
 <div class="sf-demo-stage">
 
 <StackPanels
-  title="STACK PANELS"
-  titleAccent="FAMILY 3"
-  caption="measured 2×2 mosaic — panel bursts, stepped labels"
-  :palette="{ accent: '#3599fb', accentAlt: '#1fd0ea', accentTertiary: '#f7ba20', accentQuaternary: '#1cd798' }"
+  title="One"
+  titleAccent="unified environment"
+  caption="ONE ENVIRONMENT"
+  :palette="{ accent: '#3599fb', accentAlt: '#1fd0ea', accentTertiary: '#f9bc1d', accentQuaternary: '#1cd798' }"
   :panels="[
-    { id: 'blue', xFrac: 0.1197, yFrac: 0.3374, wFrac: 0.3906, hFrac: 0.2815, tone: 'accent', bandReveal: 'pop', title: 'RUNTIME' },
-    { id: 'cyan', xFrac: 0.5103, yFrac: 0.3374, wFrac: 0.3219, hFrac: 0.2815, tone: 'alt', bandReveal: 'pop', title: 'CANVAS' },
-    { id: 'amber', xFrac: 0.1197, yFrac: 0.6206, wFrac: 0.2718, hFrac: 0.2797, tone: 'tertiary', bandReveal: 'pop', title: 'INGEST' },
-    { id: 'green', xFrac: 0.3925, yFrac: 0.6189, wFrac: 0.4396, hFrac: 0.2815, tone: 'quaternary', bandReveal: 'pop', title: 'WAREHOUSE', rows: ['STREAMS REPLACE BATES', 'GOVERNED BY DEFAULT'] },
+    { id: 'blue', xFrac: 229.8 / 1920, yFrac: 364.4 / 1080, wFrac: 748.6 / 1920, hFrac: 301.2 / 1080, tone: 'accent', bandReveal: 'fade', cutCorner: 'tl', icon: 'dash-grid', iconBox: { xFrac: 398.3 / 1920, yFrac: 489.0 / 1080, wFrac: 74.4 / 1920, hFrac: 49.1 / 1080 }, title: 'INGESTION', titleBox: { xFrac: 550 * 0.94171 / 1920, yFrac: 526 * 0.944055 / 1080, wFrac: 304 * 0.94171 / 1920, hFrac: 37 * 0.944055 / 1080 } },
+    { id: 'cyan', xFrac: 981.3 / 1920, yFrac: 364.4 / 1080, wFrac: 615.0 / 1920, hFrac: 301.2 / 1080, tone: 'alt', bandReveal: 'fade', cutCorner: 'tr', icon: 'filter', iconBox: { xFrac: 1086.9 / 1920, yFrac: 482.4 / 1080, wFrac: 73.3 / 1920, hFrac: 72.7 / 1080 }, title: 'TRANSFORM', titleBox: { xFrac: 1279 * 0.94171 / 1920, yFrac: 526 * 0.944055 / 1080, wFrac: 308 * 0.94171 / 1920, hFrac: 37 * 0.944055 / 1080 } },
+    { id: 'amber', xFrac: 229.8 / 1920, yFrac: 670.3 / 1080, wFrac: 520.8 / 1920, hFrac: 301.1 / 1080, tone: 'tertiary', bandReveal: 'fade', cutCorner: 'bl', icon: 'database', iconBox: { xFrac: 323.0 / 1920, yFrac: 784.5 / 1080, wFrac: 64.0 / 1920, hFrac: 74.6 / 1080 }, title: 'STORAGE', titleBox: { xFrac: 464 * 0.94171 / 1920, yFrac: 852 * 0.944055 / 1080, wFrac: 234 * 0.94171 / 1920, hFrac: 38 * 0.944055 / 1080 } },
+    { id: 'green', xFrac: 753.4 / 1920, yFrac: 668.7 / 1080, wFrac: 842.9 / 1920, hFrac: 302.7 / 1080, tone: 'quaternary', bandReveal: 'fade', cutCorner: 'br', icon: 'navigation-2', iconBox: { xFrac: 958.7 / 1920, yFrac: 809.0 / 1080, wFrac: 70.5 / 1920, hFrac: 37.8 / 1080 }, title: 'MONITORING', titleBox: { xFrac: 1141 * 0.94171 / 1920, yFrac: 852 * 0.944055 / 1080, wFrac: 342 * 0.94171 / 1920, hFrac: 38 * 0.944055 / 1080 } },
   ]"
 />
 
-<AutoAdvance :duration-sec="1.8" />
+<AutoAdvance :duration-sec="0.6" />
 
 </div>
 

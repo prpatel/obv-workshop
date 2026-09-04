@@ -1,141 +1,225 @@
 import { describe, expect, it } from 'vitest'
-import { panelsLayout, revealPlan, SWEEP_FRAC, type StackPanel } from './panels'
+import {
+  panelsLayout,
+  panelPath,
+  plateLayout,
+  PLATE,
+  revealPlan,
+  STACKPANELS_CAPTION,
+  STACKPANELS_HEADER,
+  STACKPANELS_SEED,
+} from './panels'
 
-// Hand-computed constants for the default 1920×1080 canvas, from the wave-1
-// re-measured v4 mosaic (tight fill masks on the settled frame, source scale
-// 2038×1144): blue x244–1039, cyan x1040–1695 (abutting the blue seam), amber
-// x244–797, green x800–1695; top row y386–707, bottom row y710–1029.
-const SEED: StackPanel[] = [
-  { id: 'blue', xFrac: 0.1197, yFrac: 0.3374, wFrac: 0.3906, hFrac: 0.2815, tone: 'accent', bandReveal: 'pop' },
-  { id: 'cyan', xFrac: 0.5103, yFrac: 0.3374, wFrac: 0.3219, hFrac: 0.2815, tone: 'alt', bandReveal: 'pop' },
-  { id: 'amber', xFrac: 0.1197, yFrac: 0.6206, wFrac: 0.2718, hFrac: 0.2797, tone: 'tertiary', bandReveal: 'pop' },
-  { id: 'green', xFrac: 0.3925, yFrac: 0.6189, wFrac: 0.4396, hFrac: 0.2815, tone: 'quaternary', bandReveal: 'pop' },
-]
+// Hand-derived rect for the path tests (geometry independent of the sheet).
+const rect = { x: 100, y: 200, w: 300, h: 150 }
 
-// The legacy top-band sweep entry, kept for the styled sweep mechanism.
-const BAND: StackPanel = { id: 'band', xFrac: 0.1178, yFrac: 0.333, wFrac: 0.7168, hFrac: 0.285, tone: 'accent', bandReveal: 'sweep' }
+describe('plateLayout — the settled-state white plate (art_mkVNxsft §1.2)', () => {
+  it('resolves the sheet-measured plate rect, cut, fill, and border', () => {
+    const plate = plateLayout()
 
-describe('panelsLayout — absolute rects', () => {
-  it('resolves the measured four-panel mosaic on the default 1920×1080 stage', () => {
-    const l = panelsLayout(SEED)
-
-    expect(l.viewBox).toEqual({ width: 1920, height: 1080 })
-    expect(l.panels).toHaveLength(4)
-
-    const [blue, cyan, amber, green] = l.panels
-    // blue:  0.1197·1920=229.824  0.3374·1080=364.392  0.3906·1920=749.952  0.2815·1080=304.02
-    expect(blue.x).toBeCloseTo(229.824, 6)
-    expect(blue.y).toBeCloseTo(364.392, 6)
-    expect(blue.w).toBeCloseTo(749.952, 6)
-    expect(blue.h).toBeCloseTo(304.02, 6)
-    // cyan:  0.5103·1920=979.776  0.3219·1920=618.048
-    expect(cyan.x).toBeCloseTo(979.776, 6)
-    expect(cyan.y).toBeCloseTo(364.392, 6)
-    expect(cyan.w).toBeCloseTo(618.048, 6)
-    expect(cyan.h).toBeCloseTo(304.02, 6)
-    // amber: 0.6206·1080=670.248  0.2718·1920=521.856  0.2797·1080=302.076
-    expect(amber.x).toBeCloseTo(229.824, 6)
-    expect(amber.y).toBeCloseTo(670.248, 6)
-    expect(amber.w).toBeCloseTo(521.856, 6)
-    expect(amber.h).toBeCloseTo(302.076, 6)
-    // green: 0.3925·1920=753.6   0.6189·1080=668.412  0.4396·1920=844.032
-    expect(green.x).toBeCloseTo(753.6, 6)
-    expect(green.y).toBeCloseTo(668.412, 6)
-    expect(green.w).toBeCloseTo(844.032, 6)
-    expect(green.h).toBeCloseTo(304.02, 6)
+    expect(plate.x).toBeCloseTo(222.2, 6)
+    expect(plate.y).toBeCloseTo(356.9, 6)
+    expect(plate.w).toBeCloseTo(1382.5, 6)
+    expect(plate.h).toBeCloseTo(623.0, 6)
+    expect(plate.cut).toBeCloseTo(10, 6)
+    expect(plate.fill).toBe('#f5f5f5')
+    expect(plate.border).toBe('#989898')
+    expect(plate.borderWidth).toBe(1)
   })
 
+  it('carries the cut as a stage-height fraction in the spec', () => {
+    expect(PLATE.cutFrac).toBeCloseTo(10 / 1080, 8)
+    expect(PLATE.xFrac).toBeCloseTo(222.2 / 1920, 8)
+    expect(PLATE.hFrac).toBeCloseTo(623.0 / 1080, 8)
+  })
+
+  it('scales with the viewBox (off-nominal stage)', () => {
+    const plate = plateLayout({ width: 960, height: 540 })
+
+    expect(plate.w).toBeCloseTo(1382.5 / 2, 6)
+    expect(plate.h).toBeCloseTo(623.0 / 2, 6)
+    expect(plate.cut).toBeCloseTo(5, 6)
+    expect(plate.fill).toBe('#f5f5f5')
+  })
+})
+
+describe('panelPath — 45° corner cuts', () => {
+  it('cuts the top-left corner (outer corner of the TL panel)', () => {
+    expect(panelPath(rect, 10, 'tl')).toBe('M 110 200 H 400 V 350 H 100 V 210 Z')
+  })
+
+  it('cuts the top-right corner (outer corner of the TR panel)', () => {
+    expect(panelPath(rect, 10, 'tr')).toBe('M 100 200 H 390 L 400 210 V 350 H 100 Z')
+  })
+
+  it('cuts the bottom-left corner (outer corner of the BL panel)', () => {
+    expect(panelPath(rect, 10, 'bl')).toBe('M 100 200 H 400 V 350 H 110 L 100 340 Z')
+  })
+
+  it('cuts the bottom-right corner (outer corner of the BR panel)', () => {
+    expect(panelPath(rect, 10, 'br')).toBe('M 100 200 H 400 V 340 L 390 350 H 100 Z')
+  })
+
+  it('degenerates to the plain rect outline at cut 0 (corner irrelevant)', () => {
+    expect(panelPath(rect, 0, 'br')).toBe('M 100 200 H 400 V 350 H 100 Z')
+  })
+
+  it('throws when the cut overruns the rect or goes negative', () => {
+    expect(() => panelPath(rect, 80, 'tl')).toThrow(RangeError)
+    expect(() => panelPath(rect, -1, 'tl')).toThrow(RangeError)
+    expect(() => panelPath(rect, Number.NaN, 'tl')).toThrow(RangeError)
+  })
+})
+
+describe('STACKPANELS_SEED + sheet strings (art_mkVNxsft §1.2)', () => {
+  it('carries the corrected header, caption, and panel-title strings', () => {
+    expect(STACKPANELS_HEADER.lead).toBe('One')
+    expect(STACKPANELS_HEADER.accent).toBe('unified environment')
+    expect(STACKPANELS_CAPTION.text).toBe('ONE ENVIRONMENT')
+    expect(STACKPANELS_SEED.map((panel) => panel.title)).toEqual([
+      'INGESTION',
+      'TRANSFORM',
+      'STORAGE',
+      'MONITORING',
+    ])
+  })
+
+  it('pins the header and caption to the measured ink extents', () => {
+    expect(STACKPANELS_HEADER.capHeight).toBeCloseTo(69.9, 6)
+    expect(STACKPANELS_HEADER.baseline).toBeCloseTo(127.0, 6)
+    expect(STACKPANELS_HEADER.leadBox.xFrac * 1920).toBeCloseTo(324.9, 4)
+    expect((STACKPANELS_HEADER.leadBox.xFrac + STACKPANELS_HEADER.leadBox.wFrac) * 1920).toBeCloseTo(518.9, 4)
+    expect(STACKPANELS_HEADER.accentBox.xFrac * 1920).toBeCloseTo(545.3, 4)
+    expect((STACKPANELS_HEADER.accentBox.xFrac + STACKPANELS_HEADER.accentBox.wFrac) * 1920).toBeCloseTo(1506.8, 4)
+
+    const captionCenter = (STACKPANELS_CAPTION.box.xFrac + STACKPANELS_CAPTION.box.wFrac / 2) * 1920
+    expect(captionCenter).toBeCloseTo(908.75, 4)
+    expect((STACKPANELS_CAPTION.box.yFrac + STACKPANELS_CAPTION.box.hFrac) * 1080).toBeCloseTo(1065.9, 4)
+  })
+
+  it('renders the mosaic at the sheet-measured bboxes with outer corner cuts', () => {
+    const l = panelsLayout(STACKPANELS_SEED)
+    expect(l.viewBox).toEqual({ width: 1920, height: 1080 })
+
+    const [blue, cyan, amber, green] = l.panels
+    // Sheet bboxes: blue x229.8 y364.4 748.6×301.2, cyan x981.3 615.0 wide,
+    // amber y670.3 520.8 wide, green x753.4 y668.7 842.9×302.7.
+    expect(blue.x).toBeCloseTo(229.8, 4)
+    expect(blue.y).toBeCloseTo(364.4, 4)
+    expect(blue.w).toBeCloseTo(748.6, 4)
+    expect(blue.h).toBeCloseTo(301.2, 4)
+    expect(cyan.x).toBeCloseTo(981.3, 4)
+    expect(cyan.w).toBeCloseTo(615.0, 4)
+    expect(amber.y).toBeCloseTo(670.3, 4)
+    expect(amber.w).toBeCloseTo(520.8, 4)
+    expect(green.x).toBeCloseTo(753.4, 4)
+    expect(green.y).toBeCloseTo(668.7, 4)
+    expect(green.w).toBeCloseTo(842.9, 4)
+    expect(green.h).toBeCloseTo(302.7, 4)
+
+    expect(STACKPANELS_SEED.map((panel) => panel.cutCorner)).toEqual(['tl', 'tr', 'bl', 'br'])
+    expect(STACKPANELS_SEED.map((panel) => panel.tone)).toEqual([
+      'accent',
+      'alt',
+      'tertiary',
+      'quaternary',
+    ])
+  })
+
+  it('carries the four distinct sheet glyphs at measured ink boxes', () => {
+    expect(STACKPANELS_SEED.map((panel) => panel.icon)).toEqual([
+      'dash-grid',
+      'filter',
+      'database',
+      'navigation-2',
+    ])
+
+    const blue = STACKPANELS_SEED[0]
+    expect(blue.iconBox!.xFrac * 1920).toBeCloseTo(398.3, 4)
+    expect(blue.iconBox!.yFrac * 1080).toBeCloseTo(489.0, 4)
+    expect(blue.iconBox!.wFrac * 1920).toBeCloseTo(74.4, 4)
+    expect(blue.iconBox!.hFrac * 1080).toBeCloseTo(49.1, 4)
+
+    // Title boxes are the sheet's native ink bboxes × the 2038→1920 / 1144→1080
+    // factors: INGESTION x550–854 native → 517.94–804.22 @1080-stage.
+    expect(blue.titleBox!.xFrac * 1920).toBeCloseTo(550 * 0.94171, 2)
+    expect(blue.titleBox!.wFrac * 1920).toBeCloseTo(304 * 0.94171, 2)
+    expect(blue.titleBox!.yFrac * 1080).toBeCloseTo(526 * 0.944055, 2)
+  })
+
+  it('keeps the green panel empty below its title — the wave-1 rows are gone', () => {
+    const green = STACKPANELS_SEED[3]
+    expect(green.title).toBe('MONITORING')
+    expect(Object.hasOwn(green, 'rows')).toBe(false)
+    for (const panel of STACKPANELS_SEED) {
+      expect(Object.hasOwn(panel, 'rows')).toBe(false)
+    }
+  })
+
+  it('defaults bandReveal to the recording fade and ships the seed with it explicit', () => {
+    for (const panel of STACKPANELS_SEED) {
+      expect(panel.bandReveal).toBe('fade')
+    }
+  })
+})
+
+describe('panelsLayout — absolute rects (pure math)', () => {
   it('scales every rect with a custom viewBox (off-nominal stage)', () => {
-    const l = panelsLayout(SEED, { width: 960, height: 540 })
+    const l = panelsLayout(STACKPANELS_SEED, { width: 960, height: 540 })
     const [blue] = l.panels
 
     expect(l.viewBox).toEqual({ width: 960, height: 540 })
     // Halving the stage halves every coordinate.
-    expect(blue.x).toBeCloseTo(114.912, 6)
-    expect(blue.y).toBeCloseTo(182.196, 6)
-    expect(blue.w).toBeCloseTo(374.976, 6)
-    expect(blue.h).toBeCloseTo(152.01, 6)
+    expect(blue.x).toBeCloseTo(114.9, 4)
+    expect(blue.y).toBeCloseTo(182.2, 4)
+    expect(blue.w).toBeCloseTo(374.3, 4)
+    expect(blue.h).toBeCloseTo(150.6, 4)
   })
 
-  it('keeps content and reveal fields on the resolved rects (6-panel off-nominal seed)', () => {
-    const six: StackPanel[] = [
-      ...SEED,
-      { id: 't5', xFrac: 0.05, yFrac: 0.05, wFrac: 0.1, hFrac: 0.1, tone: 'accent', title: 'T5', rows: ['a', 'b'] },
-      { id: 't6', xFrac: 0.85, yFrac: 0.05, wFrac: 0.1, hFrac: 0.1, tone: 'alt' },
-    ]
-    const l = panelsLayout(six)
+  it('keeps content fields on the resolved rects', () => {
+    const l = panelsLayout(STACKPANELS_SEED)
+    const [blue] = l.panels
 
-    expect(l.panels).toHaveLength(6)
-    const t5 = l.panels[4]
-    expect(t5.id).toBe('t5')
-    expect(t5.tone).toBe('accent')
-    expect(t5.title).toBe('T5')
-    expect(t5.rows).toEqual(['a', 'b'])
-    expect(t5.bandReveal).toBeUndefined() // default pop
-    expect(t5.x).toBeCloseTo(0.05 * 1920, 6)
-    expect(l.panels[0].bandReveal).toBe('pop')
+    expect(blue.id).toBe('blue')
+    expect(blue.tone).toBe('accent')
+    expect(blue.title).toBe('INGESTION')
+    expect(blue.icon).toBe('dash-grid')
+    expect(blue.cutCorner).toBe('tl')
   })
 
   it('accepts an empty panel list (renders nothing, throws nothing)', () => {
     const l = panelsLayout([])
     expect(l.panels).toEqual([])
-    expect(l.viewBox).toEqual({ width: 1920, height: 1080 })
+  })
+
+  it('throws on out-of-range fractions', () => {
+    const bad: StackPanelLike[] = [{ ...STACKPANELS_SEED[0], xFrac: 1.2 }]
+    expect(() => panelsLayout(bad)).toThrow(RangeError)
   })
 })
 
-describe('panelsLayout — validation', () => {
-  it('rejects fractions outside [0, 1] with the panel id named', () => {
-    expect(() => panelsLayout([{ id: 'x', xFrac: 1.5, yFrac: 0, wFrac: 0.1, hFrac: 0.1, tone: 'accent' }]))
-      .toThrow(RangeError)
-    expect(() => panelsLayout([{ id: 'y', xFrac: 0, yFrac: -0.1, wFrac: 0.1, hFrac: 0.1, tone: 'accent' }]))
-      .toThrow(/panel "y"/)
-  })
-
-  it('rejects non-finite fractions and non-positive extents', () => {
-    expect(() => panelsLayout([{ id: 'n', xFrac: Number.NaN, yFrac: 0, wFrac: 0.1, hFrac: 0.1, tone: 'accent' }]))
-      .toThrow(RangeError)
-    expect(() => panelsLayout([{ id: 'z', xFrac: 0, yFrac: 0, wFrac: 0, hFrac: 0.1, tone: 'accent' }]))
-      .toThrow(/extent/)
-  })
-})
-
-describe('revealPlan — the re-paced 5-click choreography', () => {
-  it('paces the measured mosaic to 5 clicks: blue, cyan, amber, green, labels', () => {
-    const plan = revealPlan(SEED, true)
+describe('revealPlan — re-paced click schedule', () => {
+  it('paces the demo seed to five clicks: four fades + the closing beat', () => {
+    const plan = revealPlan(STACKPANELS_SEED, true)
     expect(plan.panelClicks).toEqual([1, 2, 3, 4])
     expect(plan.labelClick).toBe(5)
     expect(plan.totalClicks).toBe(5)
   })
 
-  it('gives the label click to caption-only slides too', () => {
-    const bare: StackPanel[] = SEED.map(({ id, xFrac, yFrac, wFrac, hFrac, tone }) => ({ id, xFrac, yFrac, wFrac, hFrac, tone }))
-    const plan = revealPlan(bare, true)
-    expect(plan.labelClick).toBe(5)
-    expect(plan.totalClicks).toBe(5)
-  })
-
-  it('omits the label click when no panel carries text and no caption is given', () => {
-    const bare: StackPanel[] = SEED.map(({ id, xFrac, yFrac, wFrac, hFrac, tone }) => ({ id, xFrac, yFrac, wFrac, hFrac, tone }))
-    const plan = revealPlan(bare, false)
+  it('ends on the last panel when there is no caption', () => {
+    const plan = revealPlan(STACKPANELS_SEED)
+    expect(plan.panelClicks).toEqual([1, 2, 3, 4])
     expect(plan.labelClick).toBe(0)
     expect(plan.totalClicks).toBe(4)
   })
-
-  it('scales with panel count (off-nominal 6-panel seed)', () => {
-    const six: StackPanel[] = [...SEED, { id: 't5', xFrac: 0.05, yFrac: 0.05, wFrac: 0.1, hFrac: 0.1, tone: 'accent', title: 'T5' }, { id: 't6', xFrac: 0.85, yFrac: 0.05, wFrac: 0.1, hFrac: 0.1, tone: 'alt' }]
-    const plan = revealPlan(six, false)
-    expect(plan.panelClicks).toEqual([1, 2, 3, 4, 5, 6])
-    expect(plan.labelClick).toBe(7)
-    expect(plan.totalClicks).toBe(7)
-  })
 })
 
-describe('SWEEP_FRAC — the band sweep extent', () => {
-  it('is 1: the recording sweeps the full band width (settled bbox x240–1694 of band x240–1701)', () => {
-    expect(SWEEP_FRAC).toBe(1)
-    // The component sizes the sweep element as w · SWEEP_FRAC — at 1 it covers
-    // the band exactly (no unfilled strip at the right edge).
-    const [band] = panelsLayout([BAND]).panels
-    expect(band.w * SWEEP_FRAC).toBeCloseTo(1376.256, 6)
-  })
-})
+/** Structural subset for the bad-fraction test (avoids importing types twice). */
+interface StackPanelLike {
+  xFrac: number
+  yFrac: number
+  wFrac: number
+  hFrac: number
+  id: string
+  tone: 'accent'
+}
