@@ -54,7 +54,7 @@ decks/stepflow-demo/
 │  ├─ RatioStrip.vue              # family built-in: proportional band, two-phase pop + three-burst teal re-flow (wave 2)
 │  ├─ SegmentTimeline.vue         # family built-in: thin track, bright fills between glowing nodes (sweep-then-pop)
 │  ├─ StackPanels.vue             # family built-in: measured four-panel mosaic (burst pops + legacy sweep)
-│  ├─ MilestoneLanes.vue          # family built-in: four-lane Gantt/milestone chart (two-phase bar pop/re-proportion + tick markers)
+│  ├─ MilestoneLanes.vue          # family built-in: four-lane Gantt/milestone chart (four measured reveal styles + milestone diamonds)
 │  ├─ HexCluster.vue              # family built-in: hexagon cluster (outline pop + content fade)
 │  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance + per-slide durationSec beats
 │  └─ stepflow/
@@ -192,7 +192,7 @@ inline on the demo slides; data order is the click order for every family.
 | `RatioStrip`    | `strip.ts` — `RatioStripData` (segments + `yFrac`/`hFrac` + optional heading/caption) | 3 — band pop at initial proportions, three-burst teal re-flow, then chip + tone-colored caption row | measured gradients on the `accentAlt`/`accentTertiary` tokens — hue decisions in the notes below | 11         | —           |
 | `SegmentTimeline` | `timeline.ts` — `TimelineSegment[]` (`tone` is `'accent'`/`'tertiary'`/`'alt'`, optional proportional `wFrac`, optional `label`/`sublabel`) | 3 — one per segment: node pop + fill sweep together | measured blue/cyan/red trio over `chainBlue` (no preset added) | 12         | —           |
 | `StackPanels`   | `panels.ts` — `StackPanel[]` + optional `caption`       | one per panel + one label click     | four-accent seed (`accent`…`accentQuaternary` = the recorded blue/cyan/amber/green) | 13         | —           |
-| `MilestoneLanes` | `lanes.ts` — `MilestoneLanesData` (lanes + measured y0/pitch/barH grid, per-bar `hFrac` override) | pop + re-proportion per bar, then the closing beat | `statusAmber` verbatim | 14         | `map-pin`   |
+| `MilestoneLanes` | `lanes.ts` — `MilestoneLanesData` (lanes + optional `diamonds`, per-lane `yFrac` override, measured y0/pitch/barH grid) | one reveal click + one settle click per bar, footer last | measured fills `#ED4342`/`#F9BB21` (no preset) | 14         | `map-pin`   |
 | `HexCluster`    | `hex.ts` — `HexNodeData[]` + `arrangement`              | one per cell                        | `chainBlue` + `accentTertiary`                | 15         | `bot`       |
 
 StairChain authoring notes: each step carries `title` (uppercase white, rendered
@@ -340,29 +340,32 @@ composition. Accepted deviation: the recording is a continuous auto-run,
 re-paced to one click per panel plus one shared stepped-label click.
 
 MilestoneLanes authoring notes: bar offsets and sizes are data — `(xFrac,
-wFrac)` are canvas-width fractions, and the lane grid rides the measured
-`y0Frac` / `lanePitchFrac` / `barHFrac` (a per-bar `hFrac` overrides the
-default height; the seed's short lanes measure 24px at 720 vs 35px tall).
-Choreography is two-phase (fidelity report art_iHm120ov §MilestoneLanes):
-bar k pops wide on click 2k−1 — a rail-anchored sweep to the bar's final
-right edge, held through one click — then re-proportions on click 2k as the
-left edge retracts (the uniform sweep re-paces the recording's lane-specific
-pop variants — accepted re-pace deviation); the closing beat 2n+1 spreads
-the amber tick markers and lands the footer row. Backward navigation snaps
-both phases instantly (zero-animation). Measured text chrome from ref frame
-t=180.1s: a header label row above lane 1 (amber glyph + dim gray mono
-`subtext` text), a footer row with a teal `map-pin` chip glyph, and 28px
-lane labels left-aligned inside the tick rail (x410 at 1920). The palette
-defaults to the measured `statusAmber` preset verbatim: red bars are
-`tone: 'alt'`.
+wFrac)` are canvas-width fractions, each lane takes an explicit `yFrac`
+(non-uniform tops: y525/597/694/766 at 1080 in the demo), and the lane grid
+rides the measured `y0Frac` / `lanePitchFrac` / `barHFrac` fallback (a
+per-bar `hFrac` overrides the default height). Optional `diamonds` render
+45°-rotated hollow squares with per-element radial glows on the marker
+column (38px outer, 21px inner, 3.5px stroke); optional per-bar `text` with
+`textLength` renders near-black captions inside long bars. Choreography
+(exact-trace sheet art_kYBddwt9 §5): lane data is listed in reveal order and
+bar k reveals on click 2k−1 in its own style — `sweep` (250ms rail sweep,
+then a 500ms re-proportion to the seed on click 2k), `pop` (holds final
+geometry, fades in), `grow` (733ms ease-out growth), `center` (120ms
+center-out expansion) — and the closing beat 2n+1 lands the footer row.
+Backward navigation snaps instantly (zero-animation). Lanes carry measured
+fills (`tone: 'alt'` = #ED4342, `tone: 'accent'` = #F9BB21; no palette
+preset). Measured text chrome: a header label row above lane 1 (34px,
+amber glyph + dim gray mono `subtext`), a footer row with a teal `map-pin`
+chip glyph (26px), and 35px lane labels tracked 0.4em left-aligned at x404
+at 1920.
 
-Dim ambience (final sweep, ref frame t=180.1s extracted at 2560×1440): the
-chart field is not void black — the render carries a static neutral dim plate
-(`#0f0e11`) across the container box plus a soft tone wash behind each lane's
-bars (dark red behind red lanes, warm amber behind amber lanes; band 1.6× /
-core 0.7× bar height, ~6px gaussian falloff). Static decorative chrome like
-the container frame: no v-click, outside the accessibility tree, and
-unchanged by reduced-motion (it never animates).
+Dim ambience (true settled frame, clip 6600ms): the chart field is not
+void black — the render carries a static neutral dim plate (`#0f0e11`) across
+the full field. Bars and diamonds carry the glow instead of lane-wide
+washes: each milestone diamond has its own radial glow (a radialGradient
+sprite), and no per-lane tone washes or container frame remain in the
+settled state. Static decorative chrome like the plate: no v-click, outside
+the accessibility tree, and unchanged by reduced-motion (it never animates).
 
 The free-position node-edge network built-in, on the shared contract
 (src-3 recording — re-measured against the settle frame t=4.0, fidelity

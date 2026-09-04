@@ -1,23 +1,32 @@
 /**
  * MilestoneLanes data contract + pure layout math (diagram-family spec, MilestoneLanes).
  *
- * A four-lane Gantt/milestone chart: horizontal lanes of offset bars in two
- * tones, with small tick markers at the left edge. Bar sizes and offsets are
- * DATA (canvas fractions), never computed — the recording's chart is
- * hand-placed. Pure and SSR-safe: no DOM access, no mutation of the inputs.
+ * A four-lane Gantt/milestone chart: horizontal bars in two tones at
+ * non-uniform lane positions, milestone diamonds on the left marker column,
+ * dark captions inside the long bars, a header row above lane 1 and a footer
+ * row below lane 4. Bar sizes, offsets and lane tops are DATA (canvas
+ * fractions), never computed. Pure and SSR-safe: no DOM access, no mutation
+ * of the inputs.
  *
- * Measured from the source video at 174–181s (research art_2kSBGNmJ §3.4,
- * crop milestone.png): four lanes at pitch ≈50px/720 (6.9%h), bar heights
- * 24–35px (3.3–4.9%h), lanes 1–2 red (accentAlt) and 3–4 amber (accent),
- * small tick marks at the left edge (x208/1280).
+ * Measured from the true settled reference frame (clip 6600 ms, native
+ * 2560×1440 → 1920×1080; exact-trace sheet art_kYBddwt9): bar bboxes
+ * x1218–1604/y525–575, x420–763/y597–632, x1307–1604/y694–745,
+ * x420–1423/y766–802; fills #ED4342 (lanes 1–2) and #F9BB21 (lanes 3–4),
+ * flat (the sheet's "interior texture" samples land on the dark on-bar
+ * captions — measured fill std < 0.6 luma across all four bars); milestone
+ * diamonds: rotated-45° hollow squares at (347,551) red and (347,719) amber,
+ * outer core ≈38px side (≈54px bbox incl. stroke), lane 3 carries a second
+ * ≈21px inner ring, each with a soft ≈52px radial glow; no tick markers, no
+ * container frame, no lane-wide washes in the settled reference.
  *
- * Two-phase choreography (fidelity report art_iHm120ov §MilestoneLanes):
- * each bar pops WIDE — a sweep anchored at the tick rail spanning to the
- * bar's final right edge, the state the ref frame at t=180.1s caught —
- * then re-proportions to its measured seed width (the left edge retracts,
- * right edge fixed; measured retraction 176.35→176.80s ≈ 470ms ease-out).
- * The uniform rail-anchored sweep re-paces the recording's lane-specific
- * pop variants — an accepted re-pace deviation, same class as StackPanels'.
+ * Choreography (sheet §5 motion trace; two native v-clicks per bar plus a
+ * closing beat — the contract is unchanged, the data order carries the
+ * recording's reveal order): bar 2 sweeps its full rail then re-proportions
+ * (clicks 1–2), bar 1 pops at final width (clicks 3–4), bar 4 grows ease-out
+ * (clicks 5–6), bar 3 expands center-out (clicks 7–8), the footer row fades
+ * last (click 9). Milestone diamonds ride the measured beats: lane 1's with
+ * the opening sweep (click 1), lane 3's outer ring on click 4 and inner ring
+ * on click 8. Backward navigation snaps instantly (component concern).
  */
 
 /** One horizontal bar in a lane. `(xFrac, wFrac)` span the canvas width. */
@@ -26,15 +35,37 @@ export interface LaneBar {
   xFrac: number
   /** Bar width as a fraction of the canvas width. */
   wFrac: number
-  /** Palette role: `accent` (amber) or `alt` (red) under the statusAmber preset. */
+  /** Palette role: `accent` (amber) or `alt` (red) under the measured preset. */
   tone: 'accent' | 'alt'
   /**
    * Optional bar-height override as a fraction of the canvas height; omitted
-   * bars take the data-level `barHFrac` (the seed overrides the two short
-   * lanes — measured heights span 24–35px at 720).
+   * bars take the data-level `barHFrac`.
    */
   hFrac?: number
+  /** Optional dark caption rendered inside the bar, left-aligned (ref: the long bars carry mono captions). */
+  text?: string
+  /**
+   * Pinned caption ink extent in px at 1920 scale — SVG textLength +
+   * spacingAndGlyphs, matching the measured condensed-face extent the deck's
+   * mono face cannot hit naturally at the measured cap height.
+   */
+  textLength?: number
+  /**
+   * Reveal style (sheet §5): `sweep` grows along the rail past the final
+   * width then re-proportions; `pop` appears at final width; `grow` eases
+   * out along the rail; `center` expands from the bar's center. Defaults to
+   * `sweep` (the original rail-anchored behavior).
+   */
+  reveal?: BarReveal
+  /**
+   * Sweep overshoot: the right edge the `sweep` reveal grows to before
+   * re-proportioning (ref: bar 2 sweeps to x1511 before settling at 763).
+   */
+  sweepToFrac?: number
 }
+
+/** Reveal styles, one per bar per the sheet's motion table. */
+export type BarReveal = 'sweep' | 'pop' | 'grow' | 'center'
 
 /** One horizontal lane: an id, its bars in click order, and an optional label. */
 export interface Lane {
@@ -42,20 +73,46 @@ export interface Lane {
   id: string
   /** Bars on this lane, revealed one click per bar in data order. */
   bars: LaneBar[]
-  /** Short label rendered left of the tick rail, riding the lane's first bar click. */
+  /** Short label rendered left of the bars, riding the lane's first bar click. */
   label?: string
+  /**
+   * Bar top y as a fraction of the canvas height — overrides the uniform
+   * `y0Frac + i * lanePitchFrac` grid (the reference lanes sit at
+   * non-uniform measured positions y525/597/694/766 at 1080).
+   */
+  yFrac?: number
+  /** Click the label fades in on; defaults to the lane's first bar click. */
+  labelClick?: number
 }
 
-/** The full MilestoneLanes chart: lanes plus the measured lane grid. */
+/** One milestone diamond on the left marker column. */
+export interface MilestoneDiamond {
+  /** Stable key — template keys. */
+  id: string
+  /** Center x as a fraction of the canvas width (ref marker column x347). */
+  centerXFrac: number
+  /** Center y as a fraction of the canvas height. */
+  centerYFrac: number
+  /** Palette role: `accent` (amber) or `alt` (red). */
+  tone: 'accent' | 'alt'
+  /** Native v-click the diamond pops on. */
+  click: number
+  /** Render the small inner ring instead of the outer one (ref lane 3 double outline). */
+  inner?: boolean
+}
+
+/** The full MilestoneLanes chart: lanes, optional diamonds, and the grid fallback. */
 export interface MilestoneLanesData {
-  /** Lanes top-to-bottom; lane i's bar top sits at `y0Frac + i * lanePitchFrac`. */
+  /** Lanes in click order; each lane's bar top sits at `yFrac` or the grid fallback. */
   lanes: Lane[]
-  /** Bar top of the first lane as a fraction of the canvas height. */
+  /** Grid fallback: bar top of the first lane as a fraction of the canvas height. */
   y0Frac: number
-  /** Vertical lane pitch as a fraction of the canvas height. */
+  /** Grid fallback: vertical lane pitch as a fraction of the canvas height. */
   lanePitchFrac: number
   /** Default bar height as a fraction of the canvas height (per-bar `hFrac` overrides). */
   barHFrac: number
+  /** Milestone diamonds, revealed on their own beats. */
+  diamonds?: MilestoneDiamond[]
 }
 
 export interface Canvas {
@@ -64,57 +121,58 @@ export interface Canvas {
 }
 
 /**
- * Measured geometry, source 174–181s (fractions of the 1920×1080 canvas;
- * source px are 1280×720 of the 2560×1440 video).
+ * Measured diamond geometry at 1920 scale (sheet §3 + native frame): rotated
+ * squares of ≈38px side (≈54px bbox incl. stroke — the sheet's 40×40 core
+ * within the 50–56px marker region), lane 3's inner ring ≈21px side, ≈3.5px
+ * stroke, soft radial glow ≈52px across.
  */
-export const LANE_Y0_FRAC = 350 / 720 // first lane's bar top: y350
-export const LANE_PITCH_FRAC = 50 / 720 // lane pitch ≈50px (measured y-steps 48/64/49)
-export const BAR_H_FRAC = 35 / 720 // default bar height 35px (lanes 1 & 3)
-export const BAR_H_SHORT_FRAC = 24 / 720 // short bar height 24px (lanes 2 & 4)
-export const TICK_X_FRAC = 208 / 1280 // left-edge tick rail: x208
-export const TICK_H_FRAC = 12 / 720 // tick height 12px (y275–287)
+export const DIAMOND_SIDE_PX = 38
+export const DIAMOND_INNER_SIDE_PX = 21
+export const DIAMOND_STROKE_PX = 3.5
+export const DIAMOND_GLOW_RADIUS_PX = 26
+export const DIAMOND_GLOW_OPACITY = 0.22
+
+/** Measured caption/label typography at 1920 scale. */
+export const BAR_TEXT_INSET_PX = 26
+export const BAR_TEXT_SIZE_PX = 33
+export const BAR_TEXT_FILL = '#0a0202'
+export const LANE_LABEL_X_FRAC = 404 / 1920
+export const LANE_LABEL_SIZE_PX = 35
+export const LANE_LABEL_TRACKING_EM = 0.4
 
 /**
- * Measured text-row chrome (ref frame t=180.1s at 1920×1080, fidelity report
- * art_iHm120ov §MilestoneLanes fixes 1–2): a header label row above lane 1,
- * a footer row with a teal icon chip, 26–28px lane labels, and a dim warm
- * container frame around the chart field.
+ * Measured text-row chrome (ref frame clip 6600 ms at 1920×1080): a header
+ * label row above lane 1 (amber leading glyph + light mono text) and a footer
+ * row with a teal chip glyph.
  */
-export const HEADER_ROW_Y_FRAC = 412 / 1080 // header text row top (y412–439)
-export const HEADER_ROW_X_FRAC = 364 / 1920 // header text left edge (x364, after the amber glyph)
-export const HEADER_ICON_X_FRAC = 315 / 1920 // amber glyph left edge (x315–350, ~36px)
-export const HEADER_ICON_Y_FRAC = 406 / 1080 // amber glyph top (y406–445)
-export const FOOTER_CHIP_X_FRAC = 326 / 1920 // teal chip left edge (x326–362)
-export const FOOTER_CHIP_Y_FRAC = 856 / 1080 // teal chip top (y856–901, 36×45)
+export const HEADER_ROW_Y_FRAC = 412 / 1080
+export const HEADER_ROW_X_FRAC = 364 / 1920
+export const HEADER_ICON_X_FRAC = 315 / 1920
+export const HEADER_ICON_Y_FRAC = 406 / 1080
+export const HEADER_ROW_SIZE_PX = 34
+export const FOOTER_CHIP_X_FRAC = 326 / 1920
+export const FOOTER_CHIP_Y_FRAC = 856 / 1080
 export const FOOTER_CHIP_W_FRAC = 36 / 1920
 export const FOOTER_CHIP_H_FRAC = 45 / 1080
-export const FOOTER_ROW_Y_FRAC = 868 / 1080 // footer text row top (y868–888)
-export const FOOTER_ROW_X_FRAC = 392 / 1920 // footer text left edge (x392)
-export const LANE_LABEL_X_FRAC = 410 / 1920 // lane labels left-align here (measured x410, inside the rail)
+export const FOOTER_ROW_Y_FRAC = 868 / 1080
+export const FOOTER_ROW_X_FRAC = 392 / 1920
+export const FOOTER_ROW_SIZE_PX = 26
 
-/**
- * Dim ambience layer (final sweep, ref frame t=180.1s extracted from the
- * source video at 2560×1440): the chart field is not void black — the ref
- * reads a neutral dim plate (median rgb(15,14,17)) across the container box
- * plus per-lane tone washes at luminance 25–45 (dark red behind red lanes,
- * warm amber behind amber lanes; measured band heights ≈1.2–1.8× bar height).
- * Wash heights are factors of the lane's own bar height; opacities live in
- * the component (paint, not geometry).
- */
-export const WASH_BAND_H_FACTOR = 1.6
-export const WASH_CORE_H_FACTOR = 0.7
-/** Wash rows start at the label rail and stop short of the frame's right edge. */
-export const WASH_RIGHT_INSET_FRAC = 38 / 1920
+/** Dim plate behind the chart zone — the settled field inside the plate is a
+ * neutral dim tone, not void black; outside the plate the field IS void black
+ * (the plate does NOT span the canvas). The plate brightens toward the top. */
+export const PLATE_X_FRAC = 260 / 1920
+export const PLATE_Y_FRAC = 372 / 1080
+export const PLATE_W_FRAC = 1400 / 1920
+export const PLATE_H_FRAC = 588 / 1080
+export const PLATE_FILL = '#0f0e11'
+export const PLATE_TOP_FILL = '#19181d'
 
-export const LANE_LABEL_SIZE_PX = 28 // lane labels: 26–28px class at 1920 scale
-export const HEADER_ROW_SIZE_PX = 28 // header row: measured ≈28.9px/char pitch
-export const FOOTER_ROW_SIZE_PX = 26 // footer row: measured ≈26.6px/char pitch
-
-/** Dim warm container frame around the chart field: borders x281–1652, y377–954. */
-export const BOX_X_FRAC = 281 / 1920
-export const BOX_Y_FRAC = 377 / 1080
-export const BOX_W_FRAC = (1652 - 281) / 1920
-export const BOX_H_FRAC = (954 - 377) / 1080
+/** A rect state in px: one phase of a bar's three-phase motion. */
+export interface BarRectState {
+  x: number
+  w: number
+}
 
 /** Resolved px geometry for one bar, ready to render. */
 export interface LaneBarLayout {
@@ -125,13 +183,21 @@ export interface LaneBarLayout {
   y: number
   w: number
   h: number
-  /** Pop-state rect: rail-anchored sweep to the bar's final right edge. */
-  popX: number
-  popW: number
   tone: LaneBar['tone']
-  /** 1-based native v-click index of the WIDE POP (odd: 1, 3, 5, …). */
+  reveal: BarReveal
+  /** Caption rendered inside the bar, or undefined. */
+  text?: string
+  /** Pinned caption ink extent in px, or undefined for natural width. */
+  textLength?: number
+  /** Rect while hidden (pre-reveal): sweep/grow collapse at their left edge, center at its centerline, pop holds the final rect. */
+  hidden: BarRectState
+  /** Rect while popped: the sweep's overshoot width, otherwise the final rect. */
+  popped: BarRectState
+  /** Rect while settled: always the measured seed. */
+  settled: BarRectState
+  /** 1-based native v-click index of the reveal (odd: 1, 3, 5, …). */
   click: number
-  /** 1-based native v-click index of the re-proportion (pop click + 1). */
+  /** 1-based native v-click index of the re-proportion (reveal click + 1). */
   settleClick: number
 }
 
@@ -143,34 +209,37 @@ export interface LaneLayout {
   /** Bar top y in px (bars hang down from the lane line). */
   y: number
   bars: LaneBarLayout[]
-  /** Click index of the lane's first bar — the optional label rides it. */
+  /** Click index of the lane's first bar — the optional label rides it unless `labelClick` overrides. */
   firstClick: number
+  /** Click the label fades in on. */
+  labelClick: number
 }
 
-/** Resolved px geometry for one left-edge tick marker. */
-export interface LaneTick {
-  /** Tick center x in px. */
-  x: number
-  /** Tick center y in px — the vertical center of its lane's tallest bar. */
-  y: number
-  /** Tick length in px (a vertical mark). */
-  h: number
-}
-
-/** Resolved px geometry for the dim warm container frame around the chart. */
-export interface LaneBox {
-  x: number
-  y: number
-  w: number
-  h: number
+/** Resolved px geometry for one milestone diamond. */
+export interface DiamondLayout {
+  id: string
+  /** Center x in px. */
+  cx: number
+  /** Center y in px. */
+  cy: number
+  /** Rotated-square side length in px. */
+  side: number
+  /** Stroke width in px. */
+  stroke: number
+  /** Radial glow radius in px. */
+  glowRadius: number
+  tone: MilestoneDiamond['tone']
+  inner: boolean
+  /** 1-based native v-click index the diamond pops on. */
+  click: number
 }
 
 export interface MilestoneLanesLayout {
   lanes: LaneLayout[]
-  ticks: LaneTick[]
-  /** Dim warm container frame around the chart field (ref x281–1652, y377–954). */
-  box: LaneBox
-  /** Total native v-clicks: pop + re-proportion per bar, then the closing beat. */
+  diamonds: DiamondLayout[]
+  /** Dim plate behind the chart zone (gradient top → flat bottom). */
+  plate: { x: number; y: number; w: number; h: number }
+  /** Total native v-clicks: reveal + re-proportion per bar, then the closing beat. */
   clickCount: number
   viewBox: Canvas
 }
@@ -178,12 +247,15 @@ export interface MilestoneLanesLayout {
 /**
  * Resolve the full render layout for a MilestoneLanes chart.
  *
- * - Bar offsets and sizes are data; fractions must stay inside the canvas —
- *   violations throw RangeError, never render blank. A bar whose right edge
- *   sits at or left of the tick rail has no sweep to pop — also a RangeError.
- * - Click choreography (native v-clicks): bar k (lane by lane, bar by bar)
- *   pops wide on click 2k−1 and re-proportions on click 2k; the closing
- *   beat (tick markers + footer row) is the final click 2n+1.
+ * - Bar offsets, sizes and lane tops are data; fractions must stay inside the
+ *   canvas — violations throw RangeError, never render blank.
+ * - Click choreography (native v-clicks): bar k (in data order — the data
+ *   carries the recording's reveal order) reveals on click 2k−1 and
+ *   re-proportions on click 2k; the footer row is the final click 2n+1.
+ * - Reveal styles reshape the hidden/popped rects: `sweep` grows along the
+ *   rail to its overshoot, `pop` holds the final rect throughout, `grow`
+ *   collapses to zero width at its left edge, `center` collapses at its
+ *   centerline.
  */
 export function milestoneLanesLayout(data: MilestoneLanesData, viewBox: Canvas = { width: 1920, height: 1080 }): MilestoneLanesLayout {
   if (data.lanes.length === 0) {
@@ -198,7 +270,11 @@ export function milestoneLanesLayout(data: MilestoneLanesData, viewBox: Canvas =
     if (lane.bars.length === 0) {
       throw new RangeError(`lane "${lane.id}" has no bars`)
     }
-    const y = (data.y0Frac + laneIndex * data.lanePitchFrac) * viewBox.height
+    const yFrac = lane.yFrac ?? data.y0Frac + laneIndex * data.lanePitchFrac
+    if (!(yFrac >= 0 && yFrac <= 1)) {
+      throw new RangeError(`lane "${lane.id}" yFrac ${yFrac} is outside the [0, 1] canvas-fraction range`)
+    }
+    const y = yFrac * viewBox.height
     const bars: LaneBarLayout[] = lane.bars.map((bar, barIndex) => {
       if (!(bar.xFrac >= 0 && bar.xFrac < 1) || !(bar.wFrac > 0) || bar.xFrac + bar.wFrac > 1) {
         throw new RangeError(`bar ${barIndex} on lane "${lane.id}" spans (${bar.xFrac} + ${bar.wFrac}) — outside the [0, 1] canvas-fraction range`)
@@ -207,13 +283,20 @@ export function milestoneLanesLayout(data: MilestoneLanesData, viewBox: Canvas =
       if (!(hFrac > 0 && hFrac <= 1)) {
         throw new RangeError(`bar ${barIndex} on lane "${lane.id}" height ${hFrac} is outside the (0, 1] canvas-fraction range`)
       }
-      if (bar.xFrac + bar.wFrac <= TICK_X_FRAC) {
-        throw new RangeError(`bar ${barIndex} on lane "${lane.id}" ends at ${bar.xFrac + bar.wFrac} — at or left of the tick rail (${TICK_X_FRAC}); no sweep to pop`)
+      const reveal: BarReveal = bar.reveal ?? 'sweep'
+      if (reveal === 'sweep' && bar.sweepToFrac !== undefined && bar.sweepToFrac < bar.xFrac + bar.wFrac) {
+        throw new RangeError(`bar ${barIndex} on lane "${lane.id}" sweepToFrac ${bar.sweepToFrac} ends left of its settled right edge — no sweep to pop`)
       }
       click += 1
       const x = bar.xFrac * viewBox.width
       const w = bar.wFrac * viewBox.width
-      const popX = TICK_X_FRAC * viewBox.width
+      const sweepRight = (bar.sweepToFrac ?? bar.xFrac + bar.wFrac) * viewBox.width
+      // Per-style phase rects: sweep collapses at its left edge and pops to
+      // the overshoot; grow collapses at its left edge and pops to the final
+      // width; center collapses at its centerline; pop holds the final rect
+      // (the component veils it with opacity instead of geometry).
+      const hiddenState: BarRectState = reveal === 'center' ? { x: x + w / 2, w: 0 } : reveal === 'pop' ? { x, w } : { x, w: 0 }
+      const poppedState: BarRectState = reveal === 'sweep' ? { x, w: sweepRight - x } : { x, w }
       return {
         laneIndex,
         barIndex,
@@ -221,34 +304,53 @@ export function milestoneLanesLayout(data: MilestoneLanesData, viewBox: Canvas =
         y,
         w,
         h: hFrac * viewBox.height,
-        popX,
-        popW: x + w - popX,
         tone: bar.tone,
+        reveal,
+        text: bar.text,
+        textLength: bar.textLength,
+        hidden: hiddenState,
+        popped: poppedState,
+        settled: { x, w },
         click: click * 2 - 1,
         settleClick: click * 2,
       }
     })
-    return { id: lane.id, index: laneIndex, label: lane.label, y, bars, firstClick: bars[0].click }
-  })
-
-  // Tick markers: one amber tick per lane at the measured left-edge rail,
-  // centered on the lane's tallest bar; they spread across lanes on the
-  // closing beat.
-  const ticks: LaneTick[] = lanes.map((lane) => {
-    const tallest = Math.max(...lane.bars.map((bar) => bar.h))
+    const firstClick = bars[0].click
     return {
-      x: TICK_X_FRAC * viewBox.width,
-      y: lane.y + tallest / 2,
-      h: TICK_H_FRAC * viewBox.height,
+      id: lane.id,
+      index: laneIndex,
+      label: lane.label,
+      y,
+      bars,
+      firstClick,
+      labelClick: lane.labelClick ?? firstClick,
     }
   })
 
-  const box: LaneBox = {
-    x: BOX_X_FRAC * viewBox.width,
-    y: BOX_Y_FRAC * viewBox.height,
-    w: BOX_W_FRAC * viewBox.width,
-    h: BOX_H_FRAC * viewBox.height,
-  }
+  // Milestone diamonds: rotated-square outlines with a soft radial glow,
+  // resolved to px on the marker column (ref centers (347,551) and (347,719)).
+  const diamonds: DiamondLayout[] = (data.diamonds ?? []).map((diamond) => {
+    if (!(diamond.centerXFrac >= 0 && diamond.centerXFrac <= 1) || !(diamond.centerYFrac >= 0 && diamond.centerYFrac <= 1)) {
+      throw new RangeError(`diamond "${diamond.id}" center (${diamond.centerXFrac}, ${diamond.centerYFrac}) is outside the [0, 1] canvas-fraction range`)
+    }
+    return {
+      id: diamond.id,
+      cx: diamond.centerXFrac * viewBox.width,
+      cy: diamond.centerYFrac * viewBox.height,
+      side: (diamond.inner ? DIAMOND_INNER_SIDE_PX : DIAMOND_SIDE_PX) * (viewBox.width / 1920),
+      stroke: DIAMOND_STROKE_PX * (viewBox.width / 1920),
+      glowRadius: DIAMOND_GLOW_RADIUS_PX * (viewBox.width / 1920),
+      tone: diamond.tone,
+      inner: diamond.inner ?? false,
+      click: diamond.click,
+    }
+  })
 
-  return { lanes, ticks, box, clickCount: click * 2 + 1, viewBox }
+  const plate = {
+    x: PLATE_X_FRAC * viewBox.width,
+    y: PLATE_Y_FRAC * viewBox.height,
+    w: PLATE_W_FRAC * viewBox.width,
+    h: PLATE_H_FRAC * viewBox.height,
+  }
+  return { lanes, diamonds, plate, clickCount: click * 2 + 1, viewBox }
 }
