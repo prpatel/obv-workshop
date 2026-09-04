@@ -271,11 +271,14 @@ describe('NodeEdge component', () => {
     expect(lines[0].attributes('fill')).toBe('#ffffff')
   })
 
-  it('scales the header to the measured 7.2%h', () => {
+  it('renders the chrome at the sheet-measured cap height', () => {
     const wrapper = mountNodeEdge({ nodes, edges, title: 'DATA', titleAccent: 'PLATFORM' })
-    const header = wrapper.find('text.header')
+    const header = wrapper.find('.sf-chrome-title')
 
-    expect(header.attributes('font-size')).toBe('77.76') // 0.072 × 1080
+    // Sheet Title row: cap 77 in the band y49–126 → font-size 77/0.752,
+    // baseline at the band bottom y126.
+    expect(Number(header.attributes('font-size'))).toBeCloseTo(77 / 0.752, 4)
+    expect(Number(header.attributes('y'))).toBe(126)
     expect(header.text()).toContain('DATA')
     expect(header.html()).toContain('#66fb00')
   })

@@ -144,12 +144,13 @@ describe('VerticalSpine', () => {
     expect(wrapper.findAll('.sf-spine-item')).toHaveLength(4)
   })
 
-  it('sets the header at recording scale (report §2 chrome rule 4)', () => {
+  it('renders the shared chrome at the sheet band (report §2 chrome rule 4 evolved)', () => {
     const wrapper = mountSpine({ nodes: spineNodes, title: 'CENTER AXIS', titleAccent: 'RHYTHM' })
-    const header = wrapper.find('.sf-spine-header')
+    const header = wrapper.find('.sf-chrome-title')
 
-    expect(header.attributes('font-size')).toBe('126.9') // 0.1175 × 1080 — measured cap 8.83%h at ~0.752 glyph ratio
-    expect(header.attributes('y')).toBe('144.72') // 0.134 × 1080 baseline
+    // Sheet Title row: green SQL phrase first at cap 84 in the band y48–132.
+    expect(Number(header.attributes('font-size'))).toBeCloseTo(84 / 0.752, 4)
+    expect(Number(header.attributes('y'))).toBe(132)
   })
 
   it('applies the two-preset composition: chainBlue cards, orangeSpine spine, amber flanks', () => {
@@ -163,7 +164,7 @@ describe('VerticalSpine', () => {
 
   it('renders the titleAccent tail in chrome green (convention constant, not a palette field)', () => {
     const wrapper = mountSpine({ nodes: spineNodes, title: 'CENTER AXIS', titleAccent: 'RHYTHM' })
-    const header = wrapper.find('.sf-spine-header')
+    const header = wrapper.find('.sf-chrome-title')
 
     expect(header.exists()).toBe(true)
     expect(header.html()).toContain('#66fb00')

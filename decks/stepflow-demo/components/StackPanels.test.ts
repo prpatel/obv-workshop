@@ -172,7 +172,7 @@ describe('StackPanels', () => {
 
   it('renders the two-tone header chrome: white lead, chrome-green tail', () => {
     const wrapper = mountStackPanels(FULL_PROPS)
-    const header = wrapper.find('.sf-header')
+    const header = wrapper.find('.sf-chrome-title')
 
     expect(header.exists()).toBe(true)
     expect(header.attributes('text-anchor')).toBe('middle')

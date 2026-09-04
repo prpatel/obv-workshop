@@ -10,6 +10,7 @@ import {
   type SchematicLineTone,
 } from './stepflow/rows'
 import { resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
+import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = withDefaults(defineProps<{
   /** Mono token rows, revealed one per click in data order. */
@@ -47,19 +48,10 @@ function lineColor(tone: SchematicLineTone): string {
   return tone === 'plain' ? PLAIN_TEXT : p.value.accent
 }
 
-// Typography on the StepFlow scale: 34px title at source height 848, rescaled
-// so custom viewBox sizes stay proportional (StepFlow.vue pattern). Rows use
-// the measured mono size at the canvas height.
+// Typography: rows use the measured mono size at the canvas height (title
+// chrome lives in the shared TitleChrome component).
 const type = computed(() => ({
-  titleSize: 34 * (layout.value.viewBox.height / 848),
   rowSize: ROW_FONT_FRAC * layout.value.viewBox.height,
-}))
-
-// Header band aligned with the SVG siblings: left ≈3.3%w, the 0.075h baseline
-// lifted to a top offset for HTML (glyph top ≈ baseline − 0.8em).
-const header = computed(() => ({
-  left: layout.value.viewBox.width * 0.033,
-  top: layout.value.viewBox.height * 0.044,
 }))
 
 function fmt(n: number): string {
@@ -73,12 +65,6 @@ function px(n: number): string {
 
 <template>
   <div class="sf-rows" role="img" :aria-label="`${rows.length}-row schematic listing`">
-    <div
-      v-if="title"
-      class="sf-rows-header"
-      :style="{ left: px(header.left), top: px(header.top), fontSize: px(type.titleSize) }"
-    >{{ title }}<span v-if="titleAccent" class="sf-rows-header-accent" :style="{ color: CHROME_GREEN }"> {{ titleAccent }}</span></div>
-
     <!--
       Embedded schematic: the dim base strokes are always visible; one stacked
       accent copy per line draws the full polyline on its attached row's click
@@ -92,6 +78,18 @@ function px(n: number): string {
       :viewBox="`0 0 ${layout.viewBox.width} ${layout.viewBox.height}`"
       aria-hidden="true"
     >
+      <!-- Shared title chrome: sheet-measured centered two-tone title
+           (SchematicRows Title row: green 'Harder' phrase first at cap 78.4,
+           band y48.1–126.5, centered ≈x915; per-token sizing is family detail). -->
+      <TitleChrome
+        :title="title"
+        :title-accent="titleAccent"
+        :cap-height="78.4"
+        :cap-top="48"
+        :center-x="915"
+        accent-first
+      />
+
       <path
         v-for="(line, k) in layout.schematic"
         :key="`base-${k}`"
@@ -157,12 +155,6 @@ function px(n: number): string {
 .sf-rows {
   position: absolute;
   inset: 0;
-}
-
-.sf-rows-header {
-  position: absolute;
-  color: #ffffff;
-  letter-spacing: 0.06em;
 }
 
 .sf-rows-schematic {

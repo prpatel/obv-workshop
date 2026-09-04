@@ -14,6 +14,7 @@ import {
 } from './stepflow/columns'
 import { iconPath, ICON_FALLBACK } from './stepflow/icons'
 import { orangeSpine, resolvePalette, statusAmber, stepBlue, type StepFlowPaletteOverride } from './stepflow/palettes'
+import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = withDefaults(defineProps<{
   /** One entry per column; content travels with the slide. */
@@ -96,21 +97,16 @@ const UNDERLINE_FILL = statusAmber.accent
 const HEADING_FILL = '#f4f4f6'
 const PLATE_FILL = '#0d1a26'
 
-// Chrome constants: white column labels and header, chrome-green title tail
-// (titleAccent convention — a constant, never a palette field).
+// Chrome constants: white column labels (title chrome lives in the shared
+// TitleChrome component).
 const LABEL_FILL = '#ffffff'
 const ROW_FILL = '#ffffff'
-const HEADER_FILL = '#ffffff'
-const CHROME_GREEN = '#66fb00'
-
 // Typography: the two text rows measured at source height 720 (dot glyphs
-// ≈10px, label glyphs ≈13px) rescale with the stage; the header reuses
-// StepFlow's measured 34px-at-848 formula for family consistency.
+// ≈10px, label glyphs ≈13px) rescale with the stage (title chrome lives in
+// the shared TitleChrome component).
 const type = computed(() => {
-  const height = layout.value.viewBox.height
   const k = typeScale(layout.value.viewBox)
   return {
-    titleSize: 34 * (height / 848),
     dotSize: 10 * k,
     labelSize: 13 * k,
     tintedSize: TINTED_LABEL_SIZE_SOURCE * k,
@@ -293,15 +289,16 @@ function px(n: number): string {
       </template>
     </g>
 
-    <text
-      v-if="title"
-      class="header"
-      :x="layout.viewBox.width * 0.033"
-      :y="layout.viewBox.height * 0.075"
-      :font-size="type.titleSize"
-      :fill="HEADER_FILL"
-      letter-spacing="0.06em"
-    >{{ title }}<tspan v-if="titleAccent" :fill="CHROME_GREEN">&nbsp;{{ titleAccent }}</tspan></text>
+    <!-- Shared title chrome: sheet-measured centered two-tone title
+         (ColumnRow Title row: cap 78 in the band y98–176, centered ≈x960)
+         plus the recording badge its sheet documents. -->
+    <TitleChrome
+      :title="title"
+      :title-accent="titleAccent"
+      :cap-height="78"
+      :cap-top="98"
+      badge
+    />
   </svg>
 </template>
 

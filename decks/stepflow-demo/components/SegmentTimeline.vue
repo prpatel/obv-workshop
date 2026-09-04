@@ -17,6 +17,7 @@ import {
   type TimelineTone,
 } from './stepflow/timeline'
 import { chainBlue, resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
+import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = withDefaults(defineProps<{
   /** Track segments, left → right; node i pops and fill i sweeps on click i. */
@@ -82,18 +83,9 @@ function glowEdgeFrac(seg: SegmentLayout): number {
   return seg.nodeR / seg.glowR
 }
 
-// Chrome constants: white in label rows and header, chrome-white lead,
-// chrome-green title tail (titleAccent convention — a constant, never a
-// palette field).
+// Chrome constants: white in label rows (title chrome lives in the shared
+// TitleChrome component).
 const LEAD_FILL = LEAD_WHITE
-const CHROME_GREEN = '#66fb00'
-
-// Typography on the StepFlow scale: 34px title at source height 848, rescaled
-// so custom viewBox sizes stay proportional (NodeEdge.vue pattern).
-const type = computed(() => {
-  const k = layout.value.viewBox.height / 848
-  return { titleSize: 34 * k }
-})
 
 function fmt(n: number): string {
   return String(parseFloat(n.toFixed(4)))
@@ -201,15 +193,16 @@ function px(n: number): string {
       >{{ seg.sublabel }}</text>
     </g>
 
-    <text
-      v-if="title"
-      class="header"
-      :x="layout.viewBox.width * 0.033"
-      :y="layout.viewBox.height * 0.075"
-      :font-size="type.titleSize"
-      fill="#ffffff"
-      letter-spacing="0.06em"
-    >{{ title }}<tspan v-if="titleAccent" :fill="CHROME_GREEN">&nbsp;{{ titleAccent }}</tspan></text>
+    <!-- Shared title chrome: sheet-measured centered two-tone title
+         (SegmentTimeline Title row: cap 78 in the band y98–176, centered ≈x960)
+         plus the recording badge its sheet documents. -->
+    <TitleChrome
+      :title="title"
+      :title-accent="titleAccent"
+      :cap-height="78"
+      :cap-top="98"
+      badge
+    />
   </svg>
 </template>
 

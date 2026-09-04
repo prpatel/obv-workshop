@@ -269,7 +269,7 @@ describe('ColumnRow component', () => {
 
   it('renders the two-tone header: white title + chrome-green titleAccent tail', () => {
     const { wrapper } = mountColumnRow({ columns, yFrac, hFrac, title: 'PIPELINE', titleAccent: 'STAGES' })
-    const header = wrapper.find('text.header')
+    const header = wrapper.find('.sf-chrome-title')
 
     expect(header.text()).toContain('PIPELINE')
     expect(header.html()).toContain('#66fb00')

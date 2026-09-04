@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { panelsLayout, revealPlan, SWEEP_FRAC, type StackPanel } from './stepflow/panels'
 import { resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
+import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = withDefaults(defineProps<{
   /** The panel mosaic, in reveal order: the sweep band first, then sub-panels. */
@@ -30,12 +31,11 @@ function fill(tone: StackPanel['tone']): string {
   return p.value.accent
 }
 
-// Typography measured from the v4 recording: header cap ≈ 6%h (baseline
-// 0.117·h). Panel titles are the wave-1 fix list's ~40px-at-1080 white
-// in-fill labels (0.038·h, as before); the caption glyphs y1099–1127 read
-// ~26px at 1080 (0.024·h) — the fix list's caption size.
+// Typography measured from the v4 recording (title chrome lives in the
+// shared TitleChrome component): panel titles are the wave-1 fix list's
+// ~40px-at-1080 white in-fill labels (0.038·h, as before); the caption glyphs
+// y1099–1127 read ~26px at 1080 (0.024·h) — the fix list's caption size.
 const type = computed(() => ({
-  header: 0.088 * layout.value.viewBox.height,
   panelTitle: 0.038 * layout.value.viewBox.height,
   row: 0.025 * layout.value.viewBox.height,
   caption: 0.024 * layout.value.viewBox.height,
@@ -120,12 +120,7 @@ const labels = computed<Label[]>(() => {
   return out
 })
 
-// Header chrome is white with a chrome-green tail (titleAccent convention —
-// the constant is the convention's, never a palette field).
-const HEADER_FILL = '#ffffff'
-const CHROME_GREEN = '#66fb00'
 </script>
-
 <template>
   <svg
     class="stackpanels"
@@ -169,22 +164,16 @@ const CHROME_GREEN = '#66fb00'
       :style="{ '--sf-label-delay': `${label.delay}ms` }"
     >{{ label.text }}</text>
 
-    <!-- Two-tone header chrome, centered per the recording (measured header
-         center x974 of 2038). Static — StepFlow's header carries no click. -->
-    <text
-      v-if="title || titleAccent"
-      class="sf-header"
-      :x="layout.viewBox.width / 2"
-      :y="0.117 * layout.viewBox.height"
-      text-anchor="middle"
-      :font-size="type.header"
-      :fill="HEADER_FILL"
-      letter-spacing="0.06em"
-    ><tspan v-if="title" :fill="HEADER_FILL">{{ title }}</tspan><tspan
-        v-if="titleAccent"
-        :fill="CHROME_GREEN"
-        :dx="title ? type.header * 0.35 : 0"
-      >{{ titleAccent }}</tspan></text>
+    <!-- Shared title chrome: sheet-measured centered two-tone title
+         (StackPanels Title row: cap 69.9 in the band y58.5–128.4, centered
+         ≈x916). Static — the header carries no click. -->
+    <TitleChrome
+      :title="title"
+      :title-accent="titleAccent"
+      :cap-height="69.9"
+      :cap-top="58.5"
+      :center-x="916"
+    />
   </svg>
 </template>
 

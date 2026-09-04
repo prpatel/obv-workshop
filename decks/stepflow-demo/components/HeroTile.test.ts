@@ -107,7 +107,7 @@ describe('HeroTile', () => {
 
   it('renders the titleAccent tail in chrome green (convention constant, not a palette field)', () => {
     const wrapper = mountTile({ icon: 'user-round', title: 'SECTION', titleAccent: 'DIVIDER' })
-    const header = wrapper.find('.sf-hero-header')
+    const header = wrapper.find('.sf-chrome-title')
 
     expect(header.exists()).toBe(true)
     expect(header.html()).toContain('#66fb00')
@@ -115,19 +115,20 @@ describe('HeroTile', () => {
     expect(header.text()).toContain('DIVIDER')
   })
 
-  it('scales the header to recording size and renders the secondary white line', () => {
+  it('renders the sheet chrome band and the secondary white line', () => {
     const wrapper = mountTile({
       icon: 'user-round',
       title: 'SECTION',
       titleAccent: 'DIVIDER',
       subtitle: 'STEPFLOW HOUSE STYLE',
     })
-    const header = wrapper.find('.sf-hero-header')
+    const header = wrapper.find('.sf-chrome-title')
 
-    // Measured off the settled v7 tile frame: primary glyph run y 60–154 at
-    // 1144 (cap 8.22%h, baseline 13.5%h); secondary line ~40px glyphs at 1080.
-    expect(header.attributes('font-size')).toBe('118.152') // 0.1094 × 1080
-    expect(header.attributes('y')).toBe('145.368') // 0.1346 × 1080 baseline
+    // Sheet Title row: cap 70.8 in the band y55.7–126.5, centered ≈x912.
+    // Secondary line ~40px glyphs at 1080.
+    expect(Number(header.attributes('font-size'))).toBeCloseTo(70.8 / 0.752, 4)
+    expect(Number(header.attributes('y'))).toBe(126.5)
+    expect(Number(header.attributes('x'))).toBe(912)
 
     const subtitle = wrapper.find('.sf-hero-subtitle')
     expect(subtitle.exists()).toBe(true)

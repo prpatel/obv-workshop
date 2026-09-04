@@ -10,6 +10,7 @@ import {
 } from './stepflow/compare'
 import { resolvePalette, statusAmber, type StepFlowPaletteOverride } from './stepflow/palettes'
 import { iconPath, ICON_FALLBACK } from './stepflow/icons'
+import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = withDefaults(defineProps<{
   /** The comparison bars, in reveal order — one pop click each. */
@@ -79,7 +80,7 @@ function resolveIcon(key: string): string {
 // glyphs ≈ 32px font; ~28px under-bar class) — ~2× the pre-rework rows.
 const type = computed(() => {
   const k = layout.value.viewBox.height / 848
-  return { titleSize: 34 * k, labelSize: 32, subSize: 28, chipSize: 26 }
+  return { labelSize: 32, subSize: 28, chipSize: 26 }
 })
 
 function fmt(n: number): string {
@@ -253,15 +254,17 @@ function fmt(n: number): string {
       letter-spacing="0.04em"
     >{{ layout.subhead.text }}<tspan v-if="layout.subhead.accent" :fill="CHROME_GREEN">&nbsp;{{ layout.subhead.accent }}</tspan></text>
 
-    <text
-      v-if="title"
-      class="header"
-      :x="layout.viewBox.width * 0.033"
-      :y="layout.viewBox.height * 0.075"
-      :font-size="type.titleSize"
-      fill="#ffffff"
-      letter-spacing="0.06em"
-    >{{ title }}<tspan v-if="titleAccent" :fill="CHROME_GREEN">&nbsp;{{ titleAccent }}</tspan></text>
+    <!-- Shared title chrome: sheet-measured centered two-tone title
+         (TwoBarCompare Title row: cap 53 in the band y98–151, centered ≈x962)
+         plus the recording badge its sheet documents. -->
+    <TitleChrome
+      :title="title"
+      :title-accent="titleAccent"
+      :cap-height="53"
+      :cap-top="98"
+      :center-x="962"
+      badge
+    />
   </svg>
 </template>
 

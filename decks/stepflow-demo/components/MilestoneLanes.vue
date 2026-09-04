@@ -33,6 +33,7 @@ import {
 } from './stepflow/lanes'
 import { iconPath, ICON_FALLBACK } from './stepflow/icons'
 import { resolvePalette, statusAmber, type StepFlowPaletteOverride } from './stepflow/palettes'
+import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = withDefaults(defineProps<{
   /** Lanes top-to-bottom; bar offsets and sizes are data (canvas fractions). */
@@ -146,23 +147,19 @@ const footerPos = computed(() => {
 // so custom viewBox sizes stay proportional (StepFlow.vue pattern). Text rows
 // and labels are measured at 1920 scale and rescale by width.
 const type = computed(() => {
-  const k = layout.value.viewBox.height / 848
   const kw = layout.value.viewBox.width / 1920
   return {
-    titleSize: 34 * k,
     labelSize: LANE_LABEL_SIZE_PX * kw,
     headerSize: HEADER_ROW_SIZE_PX * kw,
     footerSize: FOOTER_ROW_SIZE_PX * kw,
   }
 })
 
-// Chrome constants: white header and lane labels, chrome-green title tail
-// (titleAccent convention — a constant, never a palette field), the teal of
-// the footer chip (chrome like TwoBarCompare's chips; measured (32,208,152)
-// ≈ the deck's teal token), and ~36px icon glyphs in 24-unit Lucide space.
-const HEADER_FILL = '#ffffff'
+// Chrome constants: white lane labels (title chrome lives in the shared
+// TitleChrome component), the teal of the footer chip (chrome like
+// TwoBarCompare's chips; measured (32,208,152) ≈ the deck's teal token), and
+// ~36px icon glyphs in 24-unit Lucide space.
 const LABEL_FILL = '#ffffff'
-const CHROME_GREEN = '#66fb00'
 const CHROME_TEAL = '#1cd797'
 const ICON_BOX = 24
 const ICON_SIZE = 48
@@ -374,15 +371,16 @@ function resolveIcon(key: string): string {
       >{{ footerLabel }}</text>
     </g>
 
-    <text
-      v-if="title"
-      class="header"
-      :x="layout.viewBox.width * 0.033"
-      :y="layout.viewBox.height * 0.075"
-      :font-size="type.titleSize"
-      :fill="HEADER_FILL"
-      letter-spacing="0.06em"
-    >{{ title }}<tspan v-if="titleAccent" :fill="CHROME_GREEN">&nbsp;{{ titleAccent }}</tspan></text>
+    <!-- Shared title chrome: sheet-measured centered two-tone title
+         (MilestoneLanes Title row: cap 78 in the band y98–176, centered ≈x960)
+         plus the recording badge its sheet documents. -->
+    <TitleChrome
+      :title="title"
+      :title-accent="titleAccent"
+      :cap-height="78"
+      :cap-top="98"
+      badge
+    />
   </svg>
 </template>
 

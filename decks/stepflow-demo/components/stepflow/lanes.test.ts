@@ -446,7 +446,7 @@ describe('MilestoneLanes component', () => {
 
   it('renders the two-tone header: white title + chrome-green titleAccent tail', () => {
     const wrapper = mountLanes({ title: 'DATA', titleAccent: 'ROADMAP' })
-    const header = wrapper.find('text.header')
+    const header = wrapper.find('.sf-chrome-title')
 
     expect(header.text()).toContain('DATA')
     expect(header.html()).toContain('#66fb00')
