@@ -23,6 +23,12 @@ const props = withDefaults(defineProps<{
   title?: string
   /** Tail rendered in chrome green (titleAccent convention). */
   titleAccent?: string
+  /** Sheet/reference-measured title ink extent in canvas px. The deck's mono
+   * face runs wider than the recordings' condensed face at the same cap
+   * height; families pin this to their sheet's Title-row extent and the SVG
+   * condenses advances + glyphs to match (`textLength` +
+   * `lengthAdjust="spacingAndGlyphs"`). Undefined = natural mono width. */
+  titleTextLength?: number
   /** Sheet-measured cap height in 1920×1080 pixels (43–97 across the sheets). */
   capHeight: number
   /** Sheet-measured top of the title band in 1920×1080 pixels. */
@@ -60,6 +66,8 @@ const tailGap = computed(() => `${(fontSize.value * 0.3).toFixed(4)}`)
       text-anchor="middle"
       :font-size="fontSize"
       :fill="TITLE_WHITE"
+      :textLength="titleTextLength"
+      :lengthAdjust="titleTextLength ? 'spacingAndGlyphs' : undefined"
       letter-spacing="0.06em"
     ><tspan
       v-if="accentFirst && titleAccent"

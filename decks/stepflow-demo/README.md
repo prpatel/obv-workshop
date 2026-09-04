@@ -672,3 +672,44 @@ beside blue blocks, dark-teal ambience feathers around cyan ones — is drawn
 beside/behind each block and reveals with it. The block rise is a measured
 80ms ease-out pop; the ~300ms block stagger stays owned by the slide's
 AutoAdvance beat.
+
+## NodeEdge hard-cut end state (exact-trace rework)
+
+Supplements the NodeEdge notes above: per the exact-trace sheet (art_4A7yguGJ
+§2), the src recording's network is a MID-state — it hard-cuts out at
+f265/t≈4417ms and the clip settles on a terminal/log composition (traffic
+lights, `$ meshctl status --verbose`, a teal block cursor + `nodes : 6
+healthy · 2` stat row, a very dim late center element, right third and bottom
+empty). The demo slide therefore sequences 13 clicks: nodes pop on clicks
+1–6, edges on 7–12 (the two replay hookups share beat 12), and click 13 IS
+the hard cut. Every network-scene element — nodes, edges, and the red ambient
+wash — binds a native Slidev click range `[reveal, 13)` (`v-click` array
+values, Slidev ≥0.48): hidden at/after the cut, restored on backward nav, so
+the v-click contract is preserved. `nodeEdgeClickPlan(nodeCount, edgeCount,
+statusCount)` (in `stepflow/nodeEdge.ts`) derives the full beat map purely;
+the component binds ranges from it. The terminal/log panel is the new
+`terminal-log` prop (`{ command, stat }`) rendered as STATIC chrome at every
+click count — it is both the recording's initial and settled state — and the
+dim center element is the only element revealed BY the cut (`v-click="13"`).
+Measured end-state geometry (lights, command line, stat row, cursor, center
+element) lives in `TERMINAL_LOG_MEASURED` / `terminalLogLayout`. The old
+bottom-left white `terminal` readout prop is removed (slide 4 was its only
+consumer). Capture contract unchanged: `?clicks=13` is the settled end state.
+
+## NodeEdge settled ambience + title condensation (exact-trace rework, cont.)
+
+Two further measured treatments from the same rework: (1) the settled
+reference is not pure black — dark-field profiles read a `#08070a` floor from
+y≈330 down, a soft full-width `#141318` band behind the terminal row (y≈352–
+414, uniform interior, ≈60px feathered edges), and a dimmer `#0f0e11` glow
+plateau over the left half (y≈470–680). These ship as
+`TERMINAL_LOG_AMBIENCE` / `ambienceLayout` and render inside the
+terminal/log panel (Gaussian-feathered rects; static chrome, never
+click-bound). The sheet's "right third and bottom empty" is empty of CONTENT;
+the ambience is the recording's glow, measured where it actually is.
+(2) The deck's mono face runs ~37% wider than the recording's condensed face
+at cap 77 (title ink 1503px vs the reference's 1095px), so the slide pins the
+reference-measured ink extent via `TitleChrome`'s `titleTextLength` (SVG
+`textLength` + `lengthAdjust="spacingAndGlyphs"` — additive prop, undefined =
+natural mono width). Slide 4 passes `:title-text-length="1105"`; the captured
+title ink lands at x366–1458 vs the reference's x366–1461.

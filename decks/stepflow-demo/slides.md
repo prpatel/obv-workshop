@@ -159,12 +159,21 @@ canvasWidth: 1920
   settle frame t=4.0) is a ~100px square — #0b0a11 plate, 6px tone-colored
   border, 3-line ~20px tone-colored label inside — plus one taller solid
   bright-red status square; edges are dim red ~6px (bright red is reserved
-  for the status square). Each click pops one node (clicks 1-6, ~70ms), then
-  pops one edge (7-13, ~80ms — measured from the recording at native fps:
-  edges reach full ink 1-2 frames after onset, a pop, not a dashoffset
-  draw). Node positions are DATA (canvas fractions), never computed. The
-  red ambient wash behind the network zone and the terminal readout are
-  static chrome, not click-bound. Palette seed: the recording's measured
+  for the status square). Exact-trace sheet art_4A7yguGJ §2: the network is
+  the MID-state — the reference hard-cuts it out at f265/t≈4417ms and settles
+  on a terminal/log composition (traffic-light title bar, `$ meshctl status
+  --verbose`, teal cursor + `nodes : 6 healthy · 2`, a dim late center
+  element, right third and bottom empty of CONTENT — the recording's ambience
+  (dark floor, soft band behind the terminal row, left glow plateau) is
+  measured in TERMINAL_LOG_AMBIENCE and ships with the panel). The title pins
+  the reference-measured ink extent (x366–1461) via titleTextLength — the
+  mono face runs ~37% wider than the recording's condensed face at cap 77.
+  So: nodes pop on clicks 1-6, edges
+  7-12 (the two replay hookups share beat 12), then click 13 IS the hard cut
+  — the whole scene (nodes, edges, red wash) vanishes instantly via native
+  Slidev click ranges `[reveal, 13)`, backward nav restores it. The
+  terminal/log panel is static chrome at every click count; only the dim
+  center element arrives with the cut. Palette seed: the recording's measured
   blue #33a5cd, amber #e6b434, dim-red track #5a1e1e. AutoAdvance is
   renderless deck-level wiring: the `a` key toggles a hands-free run and
   `?autoplay=N` in the URL starts one on slide enter.
@@ -175,8 +184,9 @@ canvasWidth: 1920
 <NodeEdge
   title="DATA MESH CORE"
   title-accent="PLATFORM"
+  :title-text-length="1105"
   :palette="{ accent: '#33a5cd', accentAlt: '#e6b434', track: '#5a1e1e' }"
-  :terminal="['LAST DEPLOY 14M AGO', 'VER 2.4.1']"
+  :terminal-log="{ command: 'meshctl status --verbose', stat: 'nodes : 6 healthy · 2' }"
   :nodes="[
     { id: 'ingest', xFrac: 0.515, yFrac: 0.524, tone: 'accent', label: ['INGEST', 'EVENTS', '12K/S'] },
     { id: 'lake', xFrac: 0.756, yFrac: 0.524, tone: 'accent', label: ['LAKE', 'BRONZE', '4.1TB'] },
