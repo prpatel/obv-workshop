@@ -9,7 +9,13 @@ import { heroTileLayout } from './stepflow/spine'
  * stub it as a no-op so the component mounts outside the deck. Reveal behavior
  * itself is dogfooded against the running dev server (spike art_7Q2OtXCm).
  */
-function mountTile(props: { icon: string; label?: string; title?: string; titleAccent?: string }) {
+function mountTile(props: {
+  icon: string
+  label?: string
+  title?: string
+  titleAccent?: string
+  subtitle?: string
+}) {
   return mount(HeroTile, { props, global: { directives: { click: {} } } })
 }
 
@@ -20,14 +26,27 @@ function documentCss(): string {
 }
 
 describe('HeroTile', () => {
-  it('renders a single one-click group: tile, icon, no label by default', () => {
+  it('renders a single one-click group: halo, tile, icon, no label by default', () => {
     const wrapper = mountTile({ icon: 'user-round' })
 
     expect(wrapper.find('svg.hero-tile').exists()).toBe(true)
     expect(wrapper.findAll('.sf-hero')).toHaveLength(1) // the single v-click group
+    expect(wrapper.findAll('.sf-hero-glow')).toHaveLength(1)
     expect(wrapper.findAll('.sf-hero-tile')).toHaveLength(1)
     expect(wrapper.findAll('.sf-hero-icon')).toHaveLength(1)
     expect(wrapper.findAll('.sf-hero-label')).toHaveLength(0)
+  })
+
+  it('renders the accent halo behind the tile with the measured tight radius', () => {
+    const wrapper = mountTile({ icon: 'user-round' })
+    const glow = wrapper.find('.sf-hero-glow')
+
+    expect(glow.attributes('cx')).toBe('913.92')
+    expect(glow.attributes('cy')).toBe('700.92')
+    expect(glow.attributes('r')).toBe('156.096') // 0.0813 × 1920 — ink dies by ≈1.34 × tile half
+    expect(glow.attributes('fill')).toBe('url(#sf-hero-glow-gradient)')
+    // The halo derives from the family accent (orangeSpine verbatim).
+    expect(wrapper.find('radialGradient').html()).toContain('#f85721')
   })
 
   it('exposes the measured canvas and an accessible name', () => {
@@ -94,6 +113,33 @@ describe('HeroTile', () => {
     expect(header.html()).toContain('#66fb00')
     expect(header.text()).toContain('SECTION')
     expect(header.text()).toContain('DIVIDER')
+  })
+
+  it('scales the header to recording size and renders the secondary white line', () => {
+    const wrapper = mountTile({
+      icon: 'user-round',
+      title: 'SECTION',
+      titleAccent: 'DIVIDER',
+      subtitle: 'STEPFLOW HOUSE STYLE',
+    })
+    const header = wrapper.find('.sf-hero-header')
+
+    // Report §2 chrome rule 4: primary header at recording scale (ref block
+    // y 0.056–0.119h); secondary line ~40px at 1080 beneath it.
+    expect(header.attributes('font-size')).toBe('91.8') // 0.085 × 1080
+    expect(header.attributes('y')).toBe('127.44') // 0.118 × 1080 baseline
+
+    const subtitle = wrapper.find('.sf-hero-subtitle')
+    expect(subtitle.exists()).toBe(true)
+    expect(subtitle.text()).toBe('STEPFLOW HOUSE STYLE')
+    expect(subtitle.attributes('font-size')).toBe('40')
+    expect(subtitle.attributes('y')).toBe('227.88') // (0.118 + 0.093) × 1080
+  })
+
+  it('omits the secondary header line when no subtitle is passed', () => {
+    const wrapper = mountTile({ icon: 'user-round', title: 'SECTION' })
+
+    expect(wrapper.find('.sf-hero-subtitle').exists()).toBe(false)
   })
 
   it('keeps the locked motion contract: pops forward, snaps backward, reduced-motion freezes', () => {

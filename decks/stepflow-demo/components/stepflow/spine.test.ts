@@ -41,6 +41,17 @@ describe('spineLayout', () => {
     expect(layout.markerH).toBeCloseTo(92.88, 6) // 0.086 × 1080
   })
 
+  it('lays out the footer chrome at the measured rhythm', () => {
+    const layout = spineLayout(3)
+
+    // Rule: 75.2% of 1920, centered on the spine axis, at the measured 0.9703h.
+    expect(layout.footer.ruleCx).toBeCloseTo(913.92, 6)
+    expect(layout.footer.ruleCy).toBeCloseTo(1047.924, 6) // 0.9703 × 1080
+    expect(layout.footer.ruleW).toBeCloseTo(1443.84, 6) // 0.752 × 1920
+    expect(layout.footer.ruleH).toBeCloseTo(5.67, 6) // 0.00525 × 1080
+    expect(layout.footer.lineY).toBeCloseTo(959.04, 6) // 0.888 × 1080
+  })
+
   it('honors custom viewBox and fraction overrides (off-nominal)', () => {
     const layout = spineLayout(3, { width: 960, height: 540, centerXFrac: 0.5, markerYFrac: 0.1, pitchYFrac: 0.2 })
     expect(layout.elements[0].cx).toBeCloseTo(480, 6)
@@ -62,6 +73,8 @@ describe('heroTileLayout', () => {
     expect(layout.size).toBeCloseTo(230.4, 6) // 0.12 × 1920
     expect(layout.cx).toBeCloseTo(913.92, 6) // 0.476 × 1920
     expect(layout.cy).toBeCloseTo(700.92, 6) // 0.649 × 1080
+    // Tight halo ring: ink dies out by ≈ 1.34 × the tile half-side.
+    expect(layout.glowR).toBeCloseTo(156.096, 6) // 0.0813 × 1920
   })
 
   it('honors overrides (off-nominal)', () => {

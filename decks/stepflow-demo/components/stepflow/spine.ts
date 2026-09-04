@@ -43,6 +43,14 @@ export interface SpineOptions {
   markerWFrac?: number
   /** Marker rhombus full height as a fraction of height (measured 98/1144 ≈ 0.086). */
   markerHFrac?: number
+  /** Footer text baseline as a fraction of height (measured 1016/1144 ≈ 0.888). */
+  footerYFrac?: number
+  /** Footer rule center y as a fraction of height (measured 1110/1144 ≈ 0.970). */
+  footerRuleYFrac?: number
+  /** Footer rule width as a fraction of width (measured 75.2%, axis-centered). */
+  footerRuleWFrac?: number
+  /** Footer rule thickness as a fraction of height (measured 6/1144 ≈ 0.00525). */
+  footerRuleHFrac?: number
 }
 
 export interface SpineElementLayout {
@@ -52,6 +60,19 @@ export interface SpineElementLayout {
   cx: number
   /** Element center y in viewBox units, cumulative downward. */
   cy: number
+}
+
+export interface SpineFooterLayout {
+  /** Rule center on the spine axis, in viewBox units. */
+  ruleCx: number
+  /** Rule center y in viewBox units. */
+  ruleCy: number
+  /** Rule width in viewBox units (measured 75.2% of the canvas). */
+  ruleW: number
+  /** Rule thickness in viewBox units. */
+  ruleH: number
+  /** Gray footer-line baseline; line x positions are the card centers. */
+  lineY: number
 }
 
 export interface SpineCardSlot {
@@ -72,6 +93,8 @@ export interface SpineLayout {
   /** Marker rhombus full width / height in viewBox units (measured 90×98 at source). */
   markerW: number
   markerH: number
+  /** Footer chrome: dim axis rule + the gray-line baseline under the cards. */
+  footer: SpineFooterLayout
   viewBox: { width: number; height: number }
 }
 
@@ -90,6 +113,10 @@ const MEASURED = {
   captionYFrac: 0.818,
   markerWFrac: 0.044,
   markerHFrac: 0.086,
+  footerYFrac: 0.888,
+  footerRuleYFrac: 0.9703,
+  footerRuleWFrac: 0.752,
+  footerRuleHFrac: 0.00525,
 } as const
 
 export function spineLayout(count: number, opts?: SpineOptions): SpineLayout {
@@ -124,6 +151,13 @@ export function spineLayout(count: number, opts?: SpineOptions): SpineLayout {
     },
     markerW: (opts?.markerWFrac ?? MEASURED.markerWFrac) * width,
     markerH: (opts?.markerHFrac ?? MEASURED.markerHFrac) * height,
+    footer: {
+      ruleCx: cx,
+      ruleCy: (opts?.footerRuleYFrac ?? MEASURED.footerRuleYFrac) * height,
+      ruleW: (opts?.footerRuleWFrac ?? MEASURED.footerRuleWFrac) * width,
+      ruleH: (opts?.footerRuleHFrac ?? MEASURED.footerRuleHFrac) * height,
+      lineY: (opts?.footerYFrac ?? MEASURED.footerYFrac) * height,
+    },
     viewBox: { width, height },
   }
 }
@@ -144,6 +178,12 @@ export interface HeroTileOptions {
   centerYFrac?: number
   /** Tile side as a fraction of width (measured 244/2038 ≈ 0.12; square in viewBox units). */
   tileWFrac?: number
+  /**
+   * Halo circle radius as a fraction of width. The v7 glow is a tight ring:
+   * halo ink dies out by ≈ 1.34 × the tile half-side (≈ 156/1920), not a wide
+   * ambient wash (measured radial histogram of the settled frame).
+   */
+  glowRFrac?: number
 }
 
 export interface HeroTileLayout {
@@ -152,6 +192,8 @@ export interface HeroTileLayout {
   cy: number
   /** Tile side length in viewBox units (square). */
   size: number
+  /** Ambient halo circle radius in viewBox units (centered on the tile). */
+  glowR: number
   viewBox: { width: number; height: number }
 }
 
@@ -159,6 +201,7 @@ const TILE_MEASURED = {
   centerXFrac: 0.476,
   centerYFrac: 0.649,
   tileWFrac: 0.12,
+  glowRFrac: 0.0813,
 } as const
 
 export function heroTileLayout(opts?: HeroTileOptions): HeroTileLayout {
@@ -168,6 +211,7 @@ export function heroTileLayout(opts?: HeroTileOptions): HeroTileLayout {
     cx: (opts?.centerXFrac ?? TILE_MEASURED.centerXFrac) * width,
     cy: (opts?.centerYFrac ?? TILE_MEASURED.centerYFrac) * height,
     size: (opts?.tileWFrac ?? TILE_MEASURED.tileWFrac) * width,
+    glowR: (opts?.glowRFrac ?? TILE_MEASURED.glowRFrac) * width,
     viewBox: { width, height },
   }
 }

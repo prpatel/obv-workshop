@@ -40,7 +40,7 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (13) · VerticalSpine (4) · HeroTile (1) · SchematicRows (10) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (3) · SegmentTimeline (3) · StackPanels (5) · MilestoneLanes (9) · HexCluster (3)
+├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (13) · VerticalSpine (5) · HeroTile (1) · SchematicRows (10) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (3) · SegmentTimeline (3) · StackPanels (5) · MilestoneLanes (9) · HexCluster (3)
 ├─ components/
 │  ├─ StepFlow.vue                # the serpentine flow diagram (auto-imported by Slidev)
 │  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
@@ -174,8 +174,8 @@ inline on the demo slides; data order is the click order for every family.
 | `StepFlow`      | `steps.ts` — `StepFlowStep[]`                           | 6 — one per step                    | `cyanOnBlack`                                 | 2          | —           |
 | `StairChain`    | `stair.ts` — `StairStep[]` + optional `StairCallout`    | 1 + one per block                   | `chainBlue`                                   | 3          | —           |
 | `NodeEdge`      | `nodeEdge.ts` — `NodeEdgeData` (nodes/edges/status)     | per node, then per edge, then per status | `cyanOnBlack` + measured seed (`#33a5cd`/`#e6b434`/`#5a1e1e`) | 4          | — |
-| `VerticalSpine` | `spine.ts` — `SpineNode[]`; an empty-title center node renders the diamond marker, `side` picks the card slots | 4 — marker, label row, 2 side cards | `chainBlue` cards + `orangeSpine` spine/label | 5          | —           |
-| `HeroTile`      | `spine.ts` — `HeroTileData` (tile + icon + optional label on the spine axis) | 1 — tile, icon, label together | `orangeSpine` verbatim (`#f85721`)            | 6          | `user-round` |
+| `VerticalSpine` | `spine.ts` — `SpineNode[]` + optional `footer`; an empty-title center node renders the diamond marker, `side` picks the card slots | 5 — marker, label row, 2 side cards, footer row | outlined two-tone cards — accent `#24cce5` left / `accentAlt` `#3891e3` right (demo seed), `orangeSpine` spine/label | 5          | —           |
+| `HeroTile`      | `spine.ts` — `HeroTileData` (tile + icon + optional label on the spine axis) | 1 — halo, tile, icon, label together | `orangeSpine` verbatim (`#f85721`), accent-derived halo | 6          | `user-round` |
 | `SchematicRows` | `rows.ts` — `SchematicRowsData` (rows + optional schematic) | one per row; schematic strokes share their attached row's click | override: v6-measured cool `#2f95b9` + amber `#f2ba1f` | 7          | —           |
 | `TwoBarCompare` | `compare.ts` — `CompareBar[]` + `TwoBarCompareData` (bars/xFrac/barHFrac/yFracs + optional `dataText` block — `lines`/`subline`/`caption`/`note`/`rules` — and centered `subhead`) | 3 — bar 1, bar 2, then one shared annotation click for the data-text block, caption/note rows, divider rules, labels, and chips | `statusAmber` (the component's family default; rework adds the measured teal `#1cd797` top-chip tone) | 8          | —           |
 | `ColumnRow`     | `columns.ts` — `ColumnRowData` (columns + `yFrac`/`hFrac` + optional `heading`/`labelRows`) | 5 columns left→right, then the label rows | `cyanOnBlack` base + token mix (`stepBlue` ship endpoint, `orangeSpine`/`statusAmber` accents, `accentTertiary` teal) | 9          | —           |
@@ -196,12 +196,20 @@ the v1 recording's RETRY dip through measured `lift` overrides, and the optional
 VerticalSpine authoring notes: `side: 'center'` nodes stack down the spine axis
 in data order — an empty-title node renders the solid orange diamond marker, a
 titled one renders the label row (flanked by small accent diamonds); `side:
-'left' | 'right'` nodes fill the two measured card slots with `title` inside and
-`caption` beneath.
+'left' | 'right'` nodes fill the two measured card slots as outlined plates —
+near-black `#0b0a11` fill with a 4–5px (source-scale) card-colored stroke, the
+white `title` inside and a big 44px (1080-canvas) card-colored `caption`
+underneath. The two-tone demo cards come from the palette: `accent` on the
+left, `accentAlt` on the right. The optional `footer` prop reveals one last
+gray row — a 75.2%-wide dim `#202020` rule centered on the spine axis plus
+two `#a0a0a0` 24px lines centered under the card columns.
 
 HeroTile authoring notes: single click — `icon` (Lucide key) plus an optional
-`label` beneath the tile; the palette defaults to the measured `orangeSpine`
-preset verbatim, so the tile color needs no override.
+`label` beneath the tile; an accent-derived radial halo (`glowR`, 8.13%w) sits
+under/around the tile and reveals with it. The optional `subtitle` prop adds a
+secondary white header line (~40px at 1080) below the recording-scale primary
+header. The palette defaults to the measured `orangeSpine` preset verbatim, so
+the tile color needs no override.
 
 ColumnRow authoring notes (reworked to the ref t=229.0 composition — wave 2):
 columns are equal-width at the measured 10.3%w × 23.3%h, tops at 51.4%h,
@@ -501,8 +509,8 @@ spacing only), so a varied recorded rhythm is encoded as its mean cadence.
 | ----- | ------ | ------ | ---------------- | ------------- | ------- |
 | 3 | StairChain | 7 | 0.3–0.6 s/click (~300 ms block stagger early, 0.4–0.6 s late) | `4` | ≈0.57 s/click |
 | 4 | NodeEdge | 9 | 0.3–0.9 s/click, mean ≈0.55 s (wave-1 family band) | `5` | ≈0.56 s/click |
-| 5 | VerticalSpine | 4 | ~1.2–1.5 s between phases (marker 0.4 s → bottom rows 5.8 s) | `5` | 1.25 s/click |
-| 7 | SchematicRows | 8 | 0.3–0.5 s/row | `4` | 0.5 s/row |
+| 5 | VerticalSpine | 5 | ~1.2–1.5 s between phases (marker 0.4 s → footer row 5.8 s) | `5` | 1 s/click |
+| 7 | SchematicRows | 10 | 0.3–0.5 s/row | `4` | 0.4 s/row |
 | 8 | TwoBarCompare | 3 | ≥1.5 s between bars | `5` | ≈1.67 s/click |
 | 10 | TileGrid | 6 | ≈1.45 s/tile (measured 27.32→28.77 s) | `8.7` | 1.45 s/tile |
 | 12 | SegmentTimeline | 3 | node pop ≈140ms, then ≈2.4s fill sweep per segment (measured 10–90% over 2.55s) | `7.5` | 2.5 s/click |
