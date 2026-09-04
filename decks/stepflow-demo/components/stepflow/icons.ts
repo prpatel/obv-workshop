@@ -31,6 +31,10 @@ const ICON_REGISTRY: Record<string, string> = {
   database: `<ellipse cx="12" cy="5" rx="9" ry="3" />
   <path d="M3 5V19A9 3 0 0 0 21 19V5" />
   <path d="M3 12A9 3 0 0 0 21 12" />`,
+  // MilestoneLanes footer chip icon: the ref frame's teal ~36×45 chip at
+  // (326,856) reads as a location pin (round head, bottom tail) — map-pin.
+  'map-pin': `<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
+  <circle cx="12" cy="10" r="3" />`,
   cloud: `<path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />`,
   // v7 hero tile icon (visual identification: person glyph — circular head
   // merged into a shoulder arch; user-round over user because the arch touches
