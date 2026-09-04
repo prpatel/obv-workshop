@@ -1,8 +1,21 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { ref } from 'vue'
 import TileGrid from '../TileGrid.vue'
-import { hexPath, tileGridLayout, tileTrackLines, type Tile } from './tiles'
+import {
+  hexPath,
+  tileGridLayout,
+  tileTrackLines,
+  TILE_FADE_MS,
+  TILE_STAGGER_FIRST_MS,
+  TILE_STAGGER_GAPS_MS,
+  TRACK_FADE_MS,
+  TRACK_ROW1_DELAY_MS,
+  TRACK_ROW2_DELAY_MS,
+  tileStaggerSchedule,
+  type Tile,
+} from './tiles'
 
 /**
  * Slidev registers the v-click directive globally at runtime; the render tests
@@ -466,8 +479,9 @@ describe('TileGrid component', () => {
       .map((tag) => tag.textContent ?? '')
       .join('\n')
 
-    expect(css).toContain('150ms') // tile fade
-    expect(css).toContain('120ms') // tile rise
+    expect(css).toContain(`${TILE_FADE_MS}ms`) // tile fade + rise (~100ms soft fade)
+    expect(css).toContain(`${TRACK_ROW1_DELAY_MS}ms`) // track row 1: ~1.5s after tile 6
+    expect(css).toContain(`${TRACK_ROW2_DELAY_MS}ms`) // track row 2: ~983ms after row 1
     // Backward nav snaps: the hidden state disables transitions entirely.
     const hiddenRule = css.match(/\.sf-tg-tile\.slidev-vclick-hidden[^{]*\{[^}]*\}/)?.[0] ?? ''
     expect(hiddenRule).toContain('transition: none')
@@ -480,5 +494,56 @@ describe('TileGrid component', () => {
 
     expect(header.text()).toContain('DATA')
     expect(header.html()).toContain('#66fb00')
+  })
+})
+
+describe('measured motion — exact-trace sheet art_7bTnqSB3 §2.3', () => {
+  const props: TileGridProps = { tiles: gridTiles, ...GRID }
+
+  it('encodes the growing stagger: tile 1 at 550ms, then gaps 400/1383/1434/1050/1800ms', () => {
+    expect(TILE_STAGGER_FIRST_MS).toBe(550)
+    expect([...TILE_STAGGER_GAPS_MS]).toEqual([400, 1383, 1434, 1050, 1800])
+    expect(new Set(TILE_STAGGER_GAPS_MS).size).toBeGreaterThan(1) // growing, not uniform
+
+    // Click k fires at firstMs + Σ gaps — the measured tile reveals (frames 33–405).
+    expect(tileStaggerSchedule(6)).toEqual([550, 950, 2333, 3767, 4817, 6617])
+    expect(tileStaggerSchedule(3)).toEqual([550, 950, 2333]) // smaller grids truncate
+    // Grids larger than the measured six repeat the final (longest) gap.
+    expect(tileStaggerSchedule(7)).toEqual([550, 950, 2333, 3767, 4817, 6617, 8417])
+    expect(() => tileStaggerSchedule(0)).toThrow(RangeError)
+  })
+
+  it('beats the track after the tiles: row 1 ~1.5s after tile 6, row 2 ~983ms later', () => {
+    expect(TRACK_ROW1_DELAY_MS).toBe(1500) // tile 6 at 6617ms → track 8117ms
+    expect(TRACK_ROW2_DELAY_MS).toBe(2483) // → row-2 segment at 9100ms
+    expect(TRACK_ROW2_DELAY_MS - TRACK_ROW1_DELAY_MS).toBe(983)
+    expect(TRACK_FADE_MS).toBe(100)
+  })
+
+  it('fades the connector track in only after every tile is revealed', () => {
+    // Slidev provides the live click state per slide under the branded key
+    // (MilestoneLanes pattern); stub it with a plain ref of { current }.
+    const withClicks = (current: number) => ({
+      global: {
+        directives: { click: { mounted() {} } },
+        provide: { '$$slidev-clicks-context': ref({ current }) },
+      },
+    })
+
+    const mid = mount(TileGrid, { props, ...withClicks(3) })
+    expect(mid.findAll('.sf-tg-track')).toHaveLength(2)
+    for (const line of mid.findAll('.sf-tg-track'))
+      expect(line.classes()).toContain('sf-tg-track-hidden')
+    expect(mid.findAll('.sf-tg-track')[1].classes()).toContain('sf-tg-track-late') // row 2 trails row 1
+
+    const full = mount(TileGrid, { props, ...withClicks(6) })
+    for (const line of full.findAll('.sf-tg-track'))
+      expect(line.classes()).not.toContain('sf-tg-track-hidden')
+
+    // No Slidev context (static renders, other test mounts) → settled: the
+    // track shows immediately.
+    const bare = mountTileGrid(props)
+    for (const line of bare.findAll('.sf-tg-track'))
+      expect(line.classes()).not.toContain('sf-tg-track-hidden')
   })
 })

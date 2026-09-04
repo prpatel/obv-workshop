@@ -456,8 +456,12 @@ canvasWidth: 1920
   TileGrid demo (research §3.5, src 25–35s; wave-2 fidelity rework, report
   art_iHm120ov §TileGrid): six pointed hexagonal tiles (6.2%w × 9.7%h boxes,
   pitch 27.5%w × 31.25%h) on the black canvas, built row-major with six native
-  v-clicks — one per tile. Measured anatomy: saturated #1ed0e8 hex cores with
-  a soft glow halo, a ~12px #353642 connector track through tile centers, a
+  v-clicks — one per tile, fired on the sheet-measured growing stagger
+  (art_7bTnqSB3 §2.3: 550ms after entrance, then gaps 400/1383/1434/1050/
+  1800ms — the stepScheduleSec beats below; uniform spacing cannot express
+  them). Measured anatomy: saturated #1ed0e8 hex cores with a soft glow
+  halo, a ~12px #353642 connector track through tile centers that stays dark
+  until after tile 6 (source 8117–9117ms; row 2 trails row 1 by ~983ms), a
   #a0ecfb sheen at the first tile's lit vertex, ~40px near-black icons, and
   below-tile double label rows (cyan mini over the white label, both ~16px).
   The two-tone header follows the family chrome convention. The matrix
@@ -488,7 +492,12 @@ canvasWidth: 1920
   :y0-frac="0.384722"
 />
 
-<AutoAdvance :duration-sec="8.7" />
+<!-- Measured click-fire beats (s from run start) — tiles.ts
+     tileStaggerSchedule(6): click k at 550 + Σ gaps ms. -->
+<AutoAdvance
+  :duration-sec="8.7"
+  :step-schedule-sec="[0.55, 0.95, 2.333, 3.767, 4.817, 6.617]"
+/>
 
 </div>
 

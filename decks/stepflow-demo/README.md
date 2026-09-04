@@ -713,3 +713,29 @@ reference-measured ink extent via `TitleChrome`'s `titleTextLength` (SVG
 `textLength` + `lengthAdjust="spacingAndGlyphs"` — additive prop, undefined =
 natural mono width). Slide 4 passes `:title-text-length="1105"`; the captured
 title ink lands at x366–1458 vs the reference's x366–1461.
+
+## TileGrid measured-motion note (exact-trace rework)
+
+Supplements the TileGrid authoring notes: the demo slide now plays the
+sheet-measured cadence from the exact-trace reconstruction (art_7bTnqSB3
+§2.3) instead of a uniform beat. Tile 1 fades in 550ms after the slide
+entrance, then the remaining tiles land after gaps of 400 / 1383 / 1434 /
+1050 / 1800ms — a GROWING row-major stagger (clicks fire at 550, 950, 2333,
+3767, 4817, 6617ms), which uniform `durationSec` spacing cannot express.
+The slide passes the measured beats to `<AutoAdvance :step-schedule-sec>`
+(pure helper `tileStaggerSchedule` in `components/stepflow/tiles.ts` keeps
+the numbers testable); `?autoplay` still triggers the run and a `runMs`
+argument is ignored when the schedule covers every click. Each tile fades
+~100ms (sheet-measured soft fade; the old 150/120ms reads were re-measured).
+The #353642 connector track is NOT a v-click: it stays dark until every tile
+is revealed, then fades in ~1.5s after tile 6 with row 2 trailing row 1 by
+~983ms (source 8117–9117ms), via the live clicks-context gate
+(MilestoneLanes pattern) — backward navigation still snaps it away
+instantly. The two-tone header uses the shared chrome at the sheet-measured
+glyph core (78px in the band y99–176, condensed to the measured 674px ink
+extent via `titleTextLength`, the additive TitleChrome condensation prop
+PR #42 introduced):: the trace sheet's "cap 52" read the
+glow-inclusive band, the same correction PR #37 applied to StairChain and
+HexCluster, and the mono face needs the explicit extent to match the
+recordings' condensed title width.
+

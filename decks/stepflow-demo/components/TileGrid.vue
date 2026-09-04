@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed, inject, useId, type InjectionKey, type Ref } from 'vue'
+import type { ClicksContext } from '@slidev/client/constants'
 import {
   hexPath,
   tileGridLayout,
@@ -38,6 +39,11 @@ const props = defineProps<{
   titleAccent?: string
 }>()
 
+// Mirrors `injectionClicksContext` from @slidev/client/constants — the same
+// branded string, restated locally (MilestoneLanes.vue pattern): the runtime
+// import is a build hazard outside Slidev, and tests inject the plain string.
+const injectionClicksContext = '$$slidev-clicks-context' as unknown as InjectionKey<Ref<ClicksContext>>
+
 const p = computed(() => resolvePalette(props.palette))
 const layout = computed(() => tileGridLayout({
   tiles: props.tiles,
@@ -50,6 +56,15 @@ const layout = computed(() => tileGridLayout({
   y0Frac: props.y0Frac,
 }))
 const tracks = computed(() => tileTrackLines(layout.value.tiles))
+
+// Live click state (MilestoneLanes.vue pattern): the connector track is not a
+// v-click — the recording holds it until after tile 6 (art_7bTnqSB3 §2.3,
+// track fades 8117–9117ms), so it fades in only when every tile is on stage
+// and snaps back instantly on backward navigation. Outside Slidev (tests,
+// static renders) the context is absent and the track renders settled.
+const clicksCtx = inject(injectionClicksContext, undefined)
+const clicks = computed(() => clicksCtx?.value.current ?? Number.POSITIVE_INFINITY)
+const trackVisible = computed(() => clicks.value >= layout.value.tiles.length)
 
 // Measured hex-tile anatomy (wave-2 fidelity rework — report art_iHm120ov
 // §TileGrid, t=33.0s reads at the 1920×1080 reference scale):
@@ -161,12 +176,16 @@ function fmt(n: number): string {
 
     <!--
       Connector track behind the tiles (t=33.0s: #353642, ~12px, through tile
-      centers — the source renders it under both rows).
+      centers — the source renders it under both rows). NOT a v-click: the
+      recording fades it in only after tile 6 (art_7bTnqSB3 §2.3), so its
+      visibility derives from the live click state; row 2 trails row 1 by the
+      measured ~983ms (sf-tg-track-late).
     -->
     <line
       v-for="(line, i) in tracks"
       :key="`track-${i}`"
       class="sf-tg-track"
+      :class="{ 'sf-tg-track-hidden': !trackVisible, 'sf-tg-track-late': i > 0 }"
       :x1="line.x1"
       :y1="line.y"
       :x2="line.x2"
@@ -250,15 +269,20 @@ function fmt(n: number): string {
       >{{ hex.tile.label }}</text>
     </g>
 
-    <!-- Shared title chrome: sheet-measured centered two-tone title
-         (TileGrid Title row: cap 52 in the band y97–149, centered ≈x962)
-         plus the recording badge its sheet documents. -->
+    <!-- Shared title chrome: sheet-measured centered two-tone title plus the
+         recording badge its sheet documents. Measured on the settled reference
+         frame (art_7bTnqSB3 §2.2, verified by pixel read): glyph core 78px
+         spanning y99–176 (the sheet's "cap 52" read the glow-inclusive band —
+         the same correction PR #37 applied to StairChain/HexCluster), ink
+         x625–1298 = 674px centered ≈x961.5, near-zero tracking (condensed to
+         the measured extent via textLength). -->
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
-      :cap-height="52"
-      :cap-top="97"
+      :cap-height="78"
+      :cap-top="99"
       :center-x="962"
+      :title-text-length="674"
       badge
     />
   </svg>
@@ -284,7 +308,7 @@ function fmt(n: number): string {
  * .slidev-vclick-target { transition: all .1s ease } — no source-order reliance.
  */
 .sf-tg-tile {
-  transition: opacity 150ms ease-out;
+  transition: opacity 100ms ease-out;
 }
 
 .sf-tg-tile.slidev-vclick-hidden {
@@ -294,7 +318,7 @@ function fmt(n: number): string {
 .sf-tg-hex {
   transform-box: fill-box;
   transform-origin: center;
-  transition: transform 120ms cubic-bezier(0, 0, 0.2, 1), opacity 150ms ease-out;
+  transition: transform 100ms cubic-bezier(0, 0, 0.2, 1), opacity 100ms ease-out;
 }
 
 .sf-tg-tile.slidev-vclick-hidden .sf-tg-hex {
@@ -304,8 +328,30 @@ function fmt(n: number): string {
 
 @media (prefers-reduced-motion: reduce) {
   .sf-tg-tile,
-  .sf-tg-hex {
+  .sf-tg-hex,
+  .sf-tg-track {
     transition: none;
   }
+}
+
+/*
+ * Connector track (art_7bTnqSB3 §2.3): dark until every tile is revealed —
+ * the recording fades it in ~1.5s after tile 6 (track 8117ms vs tile 6 at
+ * 6617ms), then ~100ms fades; row 2 trails row 1 by ~983ms (9100 vs 8117).
+ * Measured constants live in tiles.ts (TRACK_*_DELAY_MS); the hidden state's
+ * transition:none snaps backward navigation instantly — the locked decision.
+ */
+.sf-tg-track {
+  transition: opacity 100ms ease-out;
+  transition-delay: 1500ms;
+}
+
+.sf-tg-track-late {
+  transition-delay: 2483ms;
+}
+
+.sf-tg-track-hidden {
+  opacity: 0;
+  transition: none;
 }
 </style>
