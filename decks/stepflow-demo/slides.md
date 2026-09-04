@@ -265,15 +265,18 @@ canvasWidth: 1920
 
 <!--
   Demo slide: SchematicRows — terminal-style token listing. Each click fades
-  one row up into place (8 clicks, owned by the component); the brace-shaped
+  one row up into place (10 clicks, owned by the component); the brace-shaped
   schematic strokes draw via the StepFlow dashoffset draw within their
-  attached row's click (clicks 5-7). Measured deviation (locked): the v6
+  attached row's click (clicks 5-7), and the dim highlight band behind the
+  `ctx` row fades in on that row's click. Measured deviation (locked): the v6
   recording's continuous auto-run (a typewriter effect) is re-paced to one
-  click per row — no typewriter is built. Seed strings are transcribed from
-  the settled v6 frame (research art_0AzKGXnD §F5 crops); the palette override
-  carries the recording's measured cool #2f95b9 and amber #f2ba1f. AutoAdvance
-  is renderless deck-level wiring: the `a` key toggles a hands-free run and
-  ?autoplay=N in the URL starts one on slide enter.
+  click per row — no typewriter is built. Rows re-transcribed for the wave-1
+  fidelity rework (report art_v4jVdTnp §5): 10 rows of 60-110 chars reaching
+  ~94% of the canvas width, token tones weighted white > green > amber > blue
+  to the measured t=14.1 ratios (42,920 / 14,008 / 8,419 / 3,210 px); the
+  palette override carries the recording's measured cool #2f95b9 and amber
+  #f2ba1f. AutoAdvance is renderless deck-level wiring: the `a` key toggles a
+  hands-free run and ?autoplay=N in the URL starts one on slide enter.
 -->
 
 <div class="sf-demo-stage">
@@ -283,15 +286,18 @@ canvasWidth: 1920
   title-accent="MAINTAIN"
   :palette="{ accent: '#2f95b9', accentAlt: '#f2ba1f' }"
   :rows="[
-    { id: 'file', indent: 1, tokens: [{ text: 'answer_service.py', tone: 'plain' }] },
-    { id: 'imports', tokens: [{ text: 'from ', tone: 'accent' }, { text: 'mrk ', tone: 'plain' }, { text: 'import ', tone: 'accent' }, { text: 'service, depends', tone: 'plain' }] },
-    { id: 'signature', tokens: [{ text: 'def ', tone: 'accent' }, { text: 'answer(question: ', tone: 'plain' }, { text: 'str', tone: 'chrome' }, { text: ') → ', tone: 'plain' }, { text: 'str:', tone: 'chrome' }] },
-    { id: 'comment', tokens: [{ text: '# the AI application', tone: 'plain' }] },
-    { id: 'api', indent: 1, tokens: [{ text: 'api = ', tone: 'plain' }, { text: 'service(', tone: 'accent' }, { text: '&quot;answer-api&quot;)', tone: 'alt' }] },
-    { id: 'ctx', indent: 1, tokens: [{ text: 'ctx = ', tone: 'plain' }, { text: 'depends(', tone: 'accent' }, { text: '&quot;mart.orders&quot;)', tone: 'alt' }] },
-    { id: 'model', indent: 1, tokens: [{ text: 'model = ', tone: 'plain' }, { text: 'depends(', tone: 'accent' }, { text: '&quot;ai.answer_v2&quot;)', tone: 'alt' }] },
-    { id: 'return', indent: 1, tokens: [{ text: 'return ', tone: 'accent' }, { text: 'model.ask(question, ctx)', tone: 'plain' }] },
+    { id: 'banner', tokens: [{ text: '# ── answer_service.py', tone: 'plain' }, { text: ' · streaming answers ', tone: 'plain' }, { text: 'over the orders graph', tone: 'chrome' }, { text: ' · ', tone: 'plain' }, { text: 'uv run uvicorn', tone: 'chrome' }, { text: ' :8443 --reload', tone: 'plain' }] },
+    { id: 'imports', tokens: [{ text: 'from ', tone: 'accent' }, { text: 'dataclasses ', tone: 'plain' }, { text: 'import ', tone: 'accent' }, { text: 'dataclass, field', tone: 'plain' }, { text: '  # persisted answer', tone: 'chrome' }, { text: ' + citation spans, keyed by question hash', tone: 'plain' }] },
+    { id: 'signature', tokens: [{ text: 'def ', tone: 'accent' }, { text: 'stream_answer(', tone: 'plain' }, { text: 'question: ', tone: 'plain' }, { text: 'str', tone: 'chrome' }, { text: ', ctx: ', tone: 'plain' }, { text: 'ServiceContext', tone: 'alt' }, { text: ') -> ', tone: 'plain' }, { text: 'Iterator', tone: 'alt' }, { text: '[', tone: 'plain' }, { text: 'AnswerChunk', tone: 'alt' }, { text: ']:', tone: 'plain' }] },
+    { id: 'comment', tokens: [{ text: '# ', tone: 'plain' }, { text: 'guard:', tone: 'alt' }, { text: ' auth + rate-limit first — the cheap rejections before the expensive calls fan out', tone: 'plain' }] },
+    { id: 'api', indent: 1, tokens: [{ text: 'api = ', tone: 'plain' }, { text: 'service(', tone: 'alt' }, { text: '&quot;answer-api&quot;', tone: 'chrome' }, { text: ', llm=', tone: 'plain' }, { text: '&quot;qwen3-27b&quot;', tone: 'chrome' }, { text: ', stream=', tone: 'plain' }, { text: 'True', tone: 'alt' }, { text: ', cache=', tone: 'plain' }, { text: '&quot;warm&quot;', tone: 'chrome' }, { text: ', tag=', tone: 'plain' }, { text: '&quot;v2&quot;', tone: 'alt' }, { text: ')', tone: 'plain' }] },
+    { id: 'ctx', indent: 1, tokens: [{ text: 'ctx = ', tone: 'plain' }, { text: 'depends(', tone: 'alt' }, { text: '&quot;mart.orders&quot;', tone: 'chrome' }, { text: ', scopes=[', tone: 'plain' }, { text: '&quot;read:orders&quot;', tone: 'chrome' }, { text: ', ', tone: 'plain' }, { text: '&quot;read:customers&quot;', tone: 'plain' }, { text: '], ttl=', tone: 'plain' }, { text: '30', tone: 'alt' }, { text: ')', tone: 'plain' }] },
+    { id: 'model', indent: 1, tokens: [{ text: 'model = ', tone: 'plain' }, { text: 'depends(', tone: 'alt' }, { text: '&quot;ai.answer_v2&quot;', tone: 'chrome' }, { text: ', route=', tone: 'plain' }, { text: '&quot;eu-west&quot;', tone: 'chrome' }, { text: ', fallback=', tone: 'plain' }, { text: '&quot;answer-v1-lat&quot;', tone: 'plain' }, { text: ', shadow=', tone: 'plain' }, { text: 'True', tone: 'alt' }, { text: ')', tone: 'plain' }] },
+    { id: 'guard', indent: 1, tokens: [{ text: 'if ', tone: 'accent' }, { text: 'ctx.expired:', tone: 'plain' }, { text: ' raise ', tone: 'accent' }, { text: 'AuthError(', tone: 'alt' }, { text: '&quot;session expired&quot;', tone: 'chrome' }, { text: ', retry_after=', tone: 'plain' }, { text: '30', tone: 'alt' }, { text: ')', tone: 'plain' }, { text: '  # 401', tone: 'plain' }] },
+    { id: 'stream', indent: 1, tokens: [{ text: 'async for ', tone: 'accent' }, { text: 'chunk ', tone: 'plain' }, { text: 'in ', tone: 'plain' }, { text: 'llm.stream(prompt, ctx): ', tone: 'plain' }, { text: 'yield ', tone: 'plain' }, { text: 'AnswerChunk', tone: 'alt' }, { text: '(chunk.text, meta=ctx)', tone: 'plain' }] },
+    { id: 'footer', tokens: [{ text: '# ', tone: 'plain' }, { text: 'p95 412ms', tone: 'chrome' }, { text: ' · ', tone: 'plain' }, { text: '98.7% grounded', tone: 'chrome' }, { text: ' · tokens 1.2k in / 380 out · ', tone: 'plain' }, { text: '$0.0042', tone: 'chrome' }, { text: ' / answer · cache 86%', tone: 'plain' }] },
   ]"
+  :highlight="{ row: 'ctx' }"
   :schematic="[
     { attach: 'api', tone: 'accent',
       points: [[0.0287, 0.5699], [0.024, 0.5778], [0.0226, 0.5865], [0.0226, 0.611], [0.024, 0.6171], [0.028, 0.6224]] },

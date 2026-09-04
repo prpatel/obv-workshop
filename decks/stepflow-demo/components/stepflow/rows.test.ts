@@ -132,3 +132,35 @@ describe('schematicRowsLayout — schematic lines, hand-computed lengths', () =>
     expect(() => schematicRowsLayout({ rows: [row('a')], schematic: [{ tone: 'accent', points: [[0.5, -0.1], [0.5, 0.5]] }] })).toThrow(RangeError)
   })
 })
+
+describe('schematicRowsLayout — highlight band', () => {
+  const rows = ['a', 'b', 'c', 'd', 'e', 'f', 'g'].map((id) => row(id))
+
+  it('resolves the measured t=14.1 defaults centered on the attached row', () => {
+    const layout = schematicRowsLayout({ rows, highlight: { row: 'd' } })
+    const band = layout.highlight
+
+    expect(band).not.toBeNull()
+    expect(band!.atIndex).toBe(3)
+    expect(band!.x).toBeCloseTo(0.0265 * 1920, 4)
+    expect(band!.width).toBeCloseTo(0.5937 * 1920, 4)
+    expect(band!.height).toBeCloseTo(0.052 * 1080, 4)
+    // centered on the row's glyph box: row top + (glyph − band height) / 2
+    const glyph = 0.025 * 1080
+    expect(band!.y).toBeCloseTo(layout.rows[3].y + (glyph - 0.052 * 1080) / 2, 4)
+  })
+
+  it('accepts canvas-fraction overrides and throws on unknown rows / out-of-range fracs', () => {
+    const custom = schematicRowsLayout({ rows, highlight: { row: 'b', xFrac: 0.1, wFrac: 0.5, hFrac: 0.05 } })
+
+    expect(custom.highlight!.x).toBeCloseTo(192, 4)
+    expect(custom.highlight!.width).toBeCloseTo(960, 4)
+    expect(custom.highlight!.height).toBeCloseTo(54, 4)
+    expect(() => schematicRowsLayout({ rows, highlight: { row: 'ghost' } })).toThrow(RangeError)
+    expect(() => schematicRowsLayout({ rows, highlight: { row: 'b', wFrac: 1.5 } })).toThrow(RangeError)
+  })
+
+  it('is null when omitted', () => {
+    expect(schematicRowsLayout({ rows }).highlight).toBeNull()
+  })
+})
