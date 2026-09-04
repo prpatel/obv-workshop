@@ -3,25 +3,45 @@ import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import NodeEdge from '../NodeEdge.vue'
 import {
+  ambienceLayout,
   edgePoints,
   labelLines,
+  nodeEdgeClickPlan,
   nodeEdgeLayout,
   polylinePath,
+  terminalLogLayout,
   NODE_PLATE,
   NODE_RX,
   NODE_SIZE_FRAC,
   NODE_STROKE,
   STATUS_RED,
   STATUS_SQUARE,
+  TERMINAL_LOG_AMBIENCE,
+  TERMINAL_LOG_MEASURED,
   type FlowEdge,
   type FlowNode,
   type FlowStatus,
+  type TerminalLogData,
 } from './nodeEdge'
 import { polylineLength } from './paths'
 
-/** Slidev registers the v-click directive globally at runtime; the render tests stub it as a no-op. */
-function mountNodeEdge(props: { nodes: FlowNode[]; edges: FlowEdge[]; status?: FlowStatus[]; palette?: object; title?: string; titleAccent?: string; terminal?: string[] }) {
-  return mount(NodeEdge, { props, global: { directives: { click: {} } } })
+/**
+ * Slidev registers the v-click directive globally at runtime; the render
+ * tests stub it with the same dataset contract the real directive fulfills
+ * (slidev's source: el.dataset.slidevClicksStart/End from the resolved range).
+ * The stub writes data-click-start / data-click-end attributes so the cut-beat
+ * sequencing is assertable end-to-end from the component bindings.
+ */
+const clickDirectiveStub = {
+  mounted(el: Element, dir: { value: number | [number, number] }) {
+    const [start, end] = Array.isArray(dir.value) ? [dir.value[0], dir.value[1]] : [dir.value, null]
+    el.setAttribute('data-click-start', String(start))
+    if (end !== null) el.setAttribute('data-click-end', String(end))
+  },
+}
+
+function mountNodeEdge(props: { nodes: FlowNode[]; edges: FlowEdge[]; status?: FlowStatus[]; palette?: object; title?: string; titleAccent?: string; titleTextLength?: number; terminalLog?: TerminalLogData }) {
+  return mount(NodeEdge, { props, global: { directives: { click: clickDirectiveStub } } })
 }
 
 /**
@@ -52,6 +72,7 @@ const status: FlowStatus[] = [
   { attach: 'lake', text: 'SLOW 5m', tone: 'alt', kind: 'block' },
   { attach: 'serve', text: 'REPLAY', tone: 'accent', kind: 'arrow' },
 ]
+const terminalLog: TerminalLogData = { command: 'meshctl status --verbose', stat: 'nodes : 6 healthy · 2' }
 
 /** All rendered <style> text — scoped styles are injected on mount. */
 function renderedCss(): string {
@@ -104,6 +125,103 @@ describe('edgePoints — fraction to px conversion', () => {
   it('rejects out-of-range fractions — a typo like 12.0 throws, not explodes', () => {
     expect(() => edgePoints([[12.0, 0.5], [0.5, 0.5]])).toThrow(RangeError)
     expect(() => edgePoints([[0.5, -0.1], [0.5, 0.5]])).toThrow(RangeError)
+  })
+})
+
+describe('nodeEdgeClickPlan — cut-beat sequencing (exact-trace sheet art_4A7yguGJ §2)', () => {
+  it('plans the demo seed: nodes 1-6, edges 7-12 with the final two sharing a beat, cut at 13', () => {
+    const plan = nodeEdgeClickPlan(6, 7)
+    expect(plan.nodeClicks).toEqual([1, 2, 3, 4, 5, 6])
+    expect(plan.edgeClicks).toEqual([7, 8, 9, 10, 11, 12, 12])
+    expect(plan.statusClicks).toEqual([])
+    expect(plan.cutClick).toBe(13)
+    expect(plan.total).toBe(13)
+  })
+
+  it('keeps total === cutClick so ?clicks=13 is the settled end state', () => {
+    expect(nodeEdgeClickPlan(6, 7).total).toBe(nodeEdgeClickPlan(6, 7).cutClick)
+  })
+
+  it('pops every network-scene element strictly before the cut', () => {
+    const plan = nodeEdgeClickPlan(6, 7, 2)
+    for (const click of [...plan.nodeClicks, ...plan.edgeClicks, ...plan.statusClicks]) {
+      expect(click).toBeLessThan(plan.cutClick)
+      expect(click).toBeGreaterThanOrEqual(1)
+    }
+  })
+
+  it('scales to other seeds — the final two edges always share the last pre-cut beat', () => {
+    expect(nodeEdgeClickPlan(2, 3)).toEqual({
+      nodeClicks: [1, 2],
+      edgeClicks: [3, 4, 4],
+      statusClicks: [],
+      cutClick: 5,
+      total: 5,
+    })
+  })
+
+  it('handles a single edge (no pair), edges after nodes, and status after edges', () => {
+    expect(nodeEdgeClickPlan(2, 1)).toEqual({
+      nodeClicks: [1, 2],
+      edgeClicks: [3],
+      statusClicks: [],
+      cutClick: 4,
+      total: 4,
+    })
+    expect(nodeEdgeClickPlan(1, 2, 1)).toEqual({
+      nodeClicks: [1],
+      edgeClicks: [2, 2],
+      statusClicks: [3],
+      cutClick: 4,
+      total: 4,
+    })
+  })
+})
+
+describe('terminalLogLayout — measured end-state geometry (sheet §2.2)', () => {
+  it('resolves the traffic lights at the measured centers, radius, and colors', () => {
+    const tl = terminalLogLayout(terminalLog)
+    expect(tl.lights.map(l => l.cx)).toEqual([43, 78, 112.5])
+    expect(tl.lights[0].cy).toBe(369)
+    expect(tl.lights[0].r).toBe(11)
+    expect(tl.lights.map(l => l.color)).toEqual(['#f85c53', '#f9b82d', '#27c43d'])
+  })
+
+  it('splits the command line into the amber prompt and the pinned gray body extent', () => {
+    const tl = terminalLogLayout(terminalLog)
+    expect(tl.prompt.text).toBe('$')
+    expect(tl.prompt.x).toBe(128)
+    expect(tl.prompt.color).toBe('#f9b82d')
+    // Body sits one mono advance after the prompt: `$ meshctl status --verbose`.
+    const advance = TERMINAL_LOG_MEASURED.command.advance
+    expect(tl.command.x).toBeCloseTo(128 + advance, 6)
+    expect(tl.command.color).toBe('#838288')
+    expect(tl.command.text).toBe(' meshctl status --verbose')
+    // 25 glyphs (leading space + 24 chars) at the measured 18.38px advance → right edge ≈ 606.
+    expect(tl.command.textLength).toBeCloseTo(advance * 25, 6)
+    expect(tl.command.x + tl.command.textLength).toBeCloseTo(606, 4)
+  })
+
+  it('pins the condensed stat row to its measured 259px extent beside the teal cursor', () => {
+    const tl = terminalLogLayout(terminalLog)
+    expect(tl.stat.text).toBe('nodes : 6 healthy · 2')
+    expect(tl.stat.x).toBe(128)
+    expect(tl.stat.color).toBe('#5e5d62')
+    expect(tl.stat.textLength).toBeCloseTo(259, 6) // 21 glyphs × 12.33px
+    expect(tl.cursor).toEqual({ x: 77, y: 461, w: 28, h: 39, color: '#225d66' })
+  })
+
+  it('places the dim late center element at x873 y540 81×102', () => {
+    const tl = terminalLogLayout(terminalLog)
+    expect(tl.center).toEqual({ x: 873, y: 540, w: 81, h: 102, color: '#16202a' })
+  })
+
+  it('honors a custom viewBox', () => {
+    const tl = terminalLogLayout(terminalLog, { width: 960, height: 540 })
+    expect(tl.lights[0].cx).toBeCloseTo(21.5, 6)
+    expect(tl.lights[0].cy).toBeCloseTo(184.5, 6)
+    expect(tl.cursor.w).toBeCloseTo(14, 6)
+    expect(tl.stat.textLength).toBeCloseTo(129.5, 6)
   })
 })
 
@@ -170,11 +288,10 @@ describe('NodeEdge component', () => {
     expect(wrapper.findAll('.sf-ne-status')).toHaveLength(2)
   })
 
-  it('renders no circle primitive and no dashoffset draw machinery (the corrected contract)', () => {
+  it('renders no dashoffset draw machinery (the corrected contract)', () => {
     const wrapper = mountNodeEdge({ nodes, edges })
     const css = renderedCss()
 
-    expect(wrapper.find('circle').exists()).toBe(false)
     expect(css).not.toContain('stroke-dashoffset')
     expect(css).not.toContain('stroke-dasharray')
     expect(css).not.toContain('--sf-drawn')
@@ -245,30 +362,94 @@ describe('NodeEdge component', () => {
     expect(css).toContain('80ms') // edge pop (§ measured: 1–2 frames)
     expect(css).toContain('70ms') // node pop (§ measured: ~2–3 frames)
     expect(css).not.toContain('300ms') // the dashoffset draw is gone
-    // Backward nav snaps: hidden states carry transition:none (locked decision).
-    // Vue scoping appends the [data-v-*] attribute to the compound selector.
+    // The hard cut AND backward nav snap: hidden states carry transition:none
+    // (locked decision). Vue scoping appends the [data-v-*] attribute to the
+    // compound selector.
     expect(css).toMatch(/\.sf-ne-edge\.slidev-vclick-hidden(\[data-v[^\]]+\])?\s*\{[^}]*transition:\s*none/)
     expect(css).toMatch(/\.sf-ne-node\.slidev-vclick-hidden(\[data-v[^\]]+\])?\s*\{[^}]*transition:\s*none/)
+    expect(css).toMatch(/\.sf-ne-wash\.slidev-vclick-hidden(\[data-v[^\]]+\])?\s*\{[^}]*transition:\s*none/)
     expect(css).toContain('prefers-reduced-motion') // transitions disabled, instant state
   })
 
-  it('renders the red ambient wash behind the network zone as static chrome (not click-bound)', () => {
+  it('binds the red ambient wash to the network MID-state range [1, cutClick)', () => {
     const wrapper = mountNodeEdge({ nodes, edges })
 
     const wash = wrapper.find('ellipse.sf-ne-wash')
     expect(wash.exists()).toBe(true)
     expect(wash.attributes('fill')).toMatch(/^url\(#/)
+    expect(wash.attributes('data-click-start')).toBe('1')
+    expect(wash.attributes('data-click-end')).toBe('13') // cut at 13 (no status layer)
   })
 
-  it('renders the terminal readout lines bottom-left in white at the measured column', () => {
-    const wrapper = mountNodeEdge({ nodes, edges, terminal: ['LAST DEPLOY 14M AGO', 'VER 2.4.1'] })
-    const lines = wrapper.findAll('text.sf-ne-terminal')
+  it('binds the network scene to ranges ending at the hard cut: nodes [i,13), edges [reveal,13)', () => {
+    const wrapper = mountNodeEdge({ nodes, edges })
 
-    expect(lines).toHaveLength(2)
-    expect(lines[0].text()).toBe('LAST DEPLOY 14M AGO')
-    expect(lines[1].text()).toBe('VER 2.4.1')
-    expect(lines[0].attributes('x')).toBe('167.04') // 8.7% of 1920
-    expect(lines[0].attributes('fill')).toBe('#ffffff')
+    const nodeStarts = wrapper.findAll('.sf-ne-node').map(g => g.attributes('data-click-start'))
+    expect(nodeStarts).toEqual(['1', '2', '3', '4', '5', '6'])
+    for (const group of wrapper.findAll('.sf-ne-node')) {
+      expect(group.attributes('data-click-end')).toBe('13')
+    }
+
+    const edgeBindings = wrapper.findAll('path.sf-ne-edge').map(p => [p.attributes('data-click-start'), p.attributes('data-click-end')])
+    expect(edgeBindings).toEqual([
+      ['7', '13'], ['8', '13'], ['9', '13'], ['10', '13'], ['11', '13'], ['12', '13'], ['12', '13'],
+    ])
+  })
+
+  it('reveals the dim center element AT the cut and leaves it monotonic (no end)', () => {
+    const wrapper = mountNodeEdge({ nodes, edges, terminalLog })
+
+    const center = wrapper.find('.sf-ne-center')
+    expect(center.exists()).toBe(true)
+    expect(center.attributes('data-click-start')).toBe('13')
+    expect(center.attributes('data-click-end')).toBeUndefined()
+  })
+
+  it('renders the terminal/log end-state panel as static chrome (never click-bound)', () => {
+    const wrapper = mountNodeEdge({ nodes, edges, terminalLog })
+    const panel = wrapper.find('.sf-ne-terminal-log')
+
+    expect(panel.exists()).toBe(true)
+    // Traffic lights: measured colors.
+    const lights = panel.findAll('circle')
+    expect(lights).toHaveLength(3)
+    expect(lights.map(c => c.attributes('fill'))).toEqual(['#f85c53', '#f9b82d', '#27c43d'])
+    // Command line: amber `$` prompt, gray pinned body.
+    expect(panel.find('text.sf-ne-cmd-prompt').text()).toBe('$')
+    expect(panel.find('text.sf-ne-cmd-prompt').attributes('fill')).toBe('#f9b82d')
+    // Raw textContent — the leading space IS the gap after the `$` prompt.
+    expect(panel.find('text.sf-ne-cmd').element.textContent).toBe(' meshctl status --verbose')
+    expect(panel.find('text.sf-ne-cmd').attributes('fill')).toBe('#838288')
+    expect(Number(panel.find('text.sf-ne-cmd').attributes('textLength'))).toBeCloseTo(459.615, 2)
+    // Stat row: teal block cursor + condensed gray extent.
+    expect(panel.find('rect.sf-ne-cursor').attributes('fill')).toBe('#225d66')
+    expect(panel.find('text.sf-ne-stat').text()).toBe('nodes : 6 healthy · 2')
+    expect(panel.find('text.sf-ne-stat').attributes('fill')).toBe('#5e5d62')
+    expect(Number(panel.find('text.sf-ne-stat').attributes('textLength'))).toBeCloseTo(259, 2)
+    // Static chrome: no member carries a click binding.
+    for (const el of panel.findAll('*')) {
+      expect(el.attributes('data-click-start')).toBeUndefined()
+    }
+  })
+
+  it('renders the terminal/log panel at the measured sheet geometry', () => {
+    const wrapper = mountNodeEdge({ nodes, edges, terminalLog })
+    const panel = wrapper.find('.sf-ne-terminal-log')
+
+    const lights = panel.findAll('circle')
+    expect(lights.map(c => c.attributes('cx'))).toEqual(['43', '78', '112.5'])
+    expect(lights[0].attributes('cy')).toBe('369')
+    expect(panel.find('text.sf-ne-cmd-prompt').attributes('x')).toBe('128')
+    expect(panel.find('rect.sf-ne-cursor').attributes('x')).toBe('77')
+    expect(panel.find('rect.sf-ne-cursor').attributes('y')).toBe('461')
+  })
+
+  it('renders no terminal/log panel when terminalLog is omitted', () => {
+    const wrapper = mountNodeEdge({ nodes, edges })
+
+    expect(wrapper.find('.sf-ne-terminal-log').exists()).toBe(false)
+    expect(wrapper.find('.sf-ne-center').exists()).toBe(false)
+    expect(wrapper.findAll('circle')).toHaveLength(0)
   })
 
   it('renders the chrome at the sheet-measured cap height', () => {
@@ -294,5 +475,68 @@ describe('NodeEdge component', () => {
 
   it('surfaces the layout RangeError for unknown edge endpoints instead of rendering blank', () => {
     expect(() => mountNodeEdge({ nodes, edges: [{ ...edges[0], from: 'ghost' }] })).toThrow(RangeError)
+  })
+})
+
+describe('terminal-log ambience — measured dark-field (reference frame profiles)', () => {
+  it('exposes the measured floor, feathered band, and left glow plateau', () => {
+    expect(TERMINAL_LOG_AMBIENCE.floor).toEqual({ x: 0, y: 330, w: 1920, h: 750, color: '#08070a' })
+    expect(TERMINAL_LOG_AMBIENCE.band).toEqual({ x: 110, y: 341, w: 1700, h: 84, color: '#141318', blur: 24 })
+    expect(TERMINAL_LOG_AMBIENCE.glow).toEqual({ x: 60, y: 470, w: 790, h: 210, color: '#0f0e11', blur: 50 })
+  })
+
+  it('scales every shape (and the blur sigmas) for a custom viewBox', () => {
+    const a = ambienceLayout({ width: 960, height: 540 })
+    expect(a.floor.w).toBe(960)
+    expect(a.floor.h).toBe(375)
+    expect(a.band.x).toBeCloseTo(55, 6)
+    expect(a.band.blur).toBeCloseTo(12, 6)
+    expect(a.glow.y).toBeCloseTo(235, 6)
+    expect(a.glow.blur).toBeCloseTo(25, 6)
+  })
+
+  it('renders the ambience inside the terminal-log panel, behind its content, as static chrome', () => {
+    const wrapper = mountNodeEdge({ nodes, edges, terminalLog })
+    const panel = wrapper.find('.sf-ne-terminal-log')
+
+    const floor = panel.find('rect.sf-ne-ambience-floor')
+    const band = panel.find('rect.sf-ne-ambience-band')
+    const glow = panel.find('rect.sf-ne-ambience-glow')
+    expect(floor.exists() && band.exists() && glow.exists()).toBe(true)
+    expect(floor.attributes('y')).toBe('330')
+    expect(floor.attributes('fill')).toBe('#08070a')
+    expect(band.attributes('fill')).toBe('#141318')
+    expect(Number(band.attributes('filter'))).toBeNaN() // filter="url(#…)"
+    expect(String(band.attributes('filter'))).toMatch(/^url\(#/)
+    expect(glow.attributes('fill')).toBe('#0f0e11')
+
+    // Static chrome: the ambience carries no click bindings either.
+    for (const cls of ['sf-ne-ambience-floor', 'sf-ne-ambience-band', 'sf-ne-ambience-glow']) {
+      expect(panel.find(`rect.${cls}`).attributes('data-click-start')).toBeUndefined()
+    }
+  })
+
+  it('renders no ambience when terminalLog is omitted', () => {
+    const wrapper = mountNodeEdge({ nodes, edges })
+
+    expect(wrapper.find('rect.sf-ne-ambience-floor').exists()).toBe(false)
+  })
+})
+
+describe('title condensation — mono face vs the recordings’ condensed face', () => {
+  it('pins the title extent when titleTextLength is set (textLength + spacingAndGlyphs)', () => {
+    const wrapper = mountNodeEdge({ nodes, edges, title: 'DATA', titleAccent: 'PLATFORM', titleTextLength: 1105 })
+    const title = wrapper.find('.sf-chrome-title')
+
+    expect(Number(title.attributes('textLength'))).toBe(1105)
+    expect(title.attributes('lengthAdjust')).toBe('spacingAndGlyphs')
+  })
+
+  it('leaves the natural mono width when titleTextLength is omitted', () => {
+    const wrapper = mountNodeEdge({ nodes, edges, title: 'DATA', titleAccent: 'PLATFORM' })
+    const title = wrapper.find('.sf-chrome-title')
+
+    expect(title.attributes('textLength')).toBeUndefined()
+    expect(title.attributes('lengthAdjust')).toBeUndefined()
   })
 })
