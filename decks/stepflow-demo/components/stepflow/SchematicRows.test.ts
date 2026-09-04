@@ -6,11 +6,12 @@ import SchematicRows from '../SchematicRows.vue'
 import {
   CONNECTOR_RAIL,
   HIGHLIGHT_BAND,
+  HIGHLIGHT_BANDS,
   PATH_TEXT,
   ROW_BASELINE,
+  ROW_EM_TO_INK,
   ROW_FONT,
   ROW_NUMBER_STYLE,
-  ROW_SCALE_X,
   SCHEMATIC_ROWS_CALLOUTS,
   SCHEMATIC_ROWS_ROWS,
   TAB_TEXT,
@@ -63,13 +64,13 @@ describe('SchematicRows component — title chrome', () => {
 })
 
 describe('SchematicRows component — window chrome', () => {
-  it('pops the whole chrome group on click 1: four rules, three dots, tab, underline, path', () => {
+  it('pops the whole chrome group on click 1: the top rule, three dots, tab, path', () => {
     const wrapper = mountCapturing()
     const chrome = wrapper.find('.sf-rows-window')
 
     expect(chrome.exists()).toBe(true)
     expect(chrome.attributes('data-sfc-click')).toBe('1')
-    expect(chrome.findAll('rect').length).toBe(5) // 4 frame rules + the tab underline
+    expect(chrome.findAll('rect').length).toBe(1) // the single dim top rule
     expect(chrome.findAll('circle')).toHaveLength(3)
   })
 
@@ -81,18 +82,14 @@ describe('SchematicRows component — window chrome', () => {
     expect(dots[0].attributes('cx')).toBe(String(TRAFFIC_DOTS[0].cx))
   })
 
-  it('renders the tab text at the x-height-matched font, condensed, with its underline', () => {
+  it('renders the tab text at its measured position, uncondensed, with no underline', () => {
     const wrapper = mountRows()
     const tab = wrapper.findAll('.sf-rows-window text')[0]
 
     expect(tab.text()).toBe(TAB_TEXT.text)
     expect(tab.attributes('transform')).toContain(`translate(${TAB_TEXT.x} ${TAB_TEXT.baseline})`)
-    expect(tab.attributes('transform')).toContain(`scale(${TAB_TEXT.scaleX} 1)`)
-
-    // The underline ships at the measured extent (x234.75, w152.25 — right-shifted per frame).
-    const rects = wrapper.findAll('.sf-rows-window rect')
-    const underlineRect = rects[rects.length - 1]
-    expect(underlineRect.attributes('width')).toBe(String(TAB_TEXT.underline.w))
+    expect(tab.attributes('transform')).not.toContain('scale(')
+    expect(wrapper.findAll('.sf-rows-window rect')).toHaveLength(1) // top rule only — the y360+ ink is descenders
   })
 
   it('right-aligns the gray path at its measured right edge', () => {
@@ -106,15 +103,19 @@ describe('SchematicRows component — window chrome', () => {
 })
 
 describe('SchematicRows component — band, rail, callouts', () => {
-  it('ships the teal band at the measured rows 4–5 extent, revealed on row 4\'s click (7)', () => {
+  it('ships the two teal strips at the measured rows 4–5 extents, revealed on row 4\'s click (7)', () => {
     const wrapper = mountCapturing()
-    const band = wrapper.find('.sf-rows-band')
+    const strips = wrapper.findAll('.sf-rows-band')
 
-    expect(band.attributes('data-sfc-click')).toBe('7')
-    expect(band.attributes('x')).toBe(String(HIGHLIGHT_BAND.x))
-    expect(band.attributes('y')).toBe(String(HIGHLIGHT_BAND.y))
-    expect(band.attributes('width')).toBe(String(HIGHLIGHT_BAND.w))
-    expect(band.attributes('fill')).toBe(HIGHLIGHT_BAND.fill)
+    expect(strips).toHaveLength(2)
+    strips.forEach((strip, k) => {
+      expect(strip.attributes('data-sfc-click')).toBe('7')
+      expect(strip.attributes('x')).toBe(String(HIGHLIGHT_BAND.x))
+      expect(strip.attributes('y')).toBe(String(HIGHLIGHT_BANDS[k].y))
+      expect(strip.attributes('height')).toBe(String(HIGHLIGHT_BANDS[k].h))
+      expect(strip.attributes('width')).toBe(String(HIGHLIGHT_BAND.w))
+      expect(strip.attributes('fill')).toBe(HIGHLIGHT_BAND.fill)
+    })
   })
 
   it('draws the cyan rail top-down on click 6 via the normalized dashoffset', () => {
@@ -180,7 +181,7 @@ describe('SchematicRows component — band, rail, callouts', () => {
 })
 
 describe('SchematicRows component — the listing', () => {
-  it('renders one condensed div per row at its measured x/ink-top with the gutter numbers on the shared baseline', () => {
+  it('renders one uncondensed div per row at its measured x/ink-top with the gutter numbers on the shared baseline', () => {
     const wrapper = mountRows()
     const rows = wrapper.findAll('.sf-rows-row')
 
@@ -190,9 +191,9 @@ describe('SchematicRows component — the listing', () => {
       const style = row.attributes('style') ?? ''
       expect(style).toContain(`left: ${spec.x}px`)
       // px() prints the shortest 4-decimal form (no trailing zeros).
-      expect(style).toMatch(new RegExp(`top: ${(spec.inkTop - 4.67).toFixed(2)}px`))
+      expect(style).toContain(`top: ${String(spec.inkTop - ROW_EM_TO_INK)}px`)
       expect(style).toContain(`font-size: ${ROW_FONT}px`)
-      expect(style).toContain(`scaleX(${ROW_SCALE_X.toFixed(4)})`)
+      expect(style).toContain('scaleX(1)') // no condensation — the reference advance is the deck mono's 0.6em
     })
 
     const numbers = wrapper.findAll('.sf-rows-number')
@@ -212,6 +213,16 @@ describe('SchematicRows component — the listing', () => {
     expect(row1.map((c) => c.element.textContent ?? '').join('')).toBe('from mrk import service, depends')
     expect(row1[0].attributes('style')).toContain(TOKEN_COLORS.keyword) // 'f' of from
     expect(row1[5].attributes('style')).toContain(TOKEN_COLORS.ident) // 'm' of mrk
+  })
+
+  it('carries the measured +2.1px/char tracking on string chars only (row 4 literals)', () => {
+    const wrapper = mountRows()
+    const row4 = wrapper.findAll('.sf-rows-row')[3].findAll('.sf-rows-char')
+
+    const tracked = row4.filter((c) => (c.attributes('style') ?? '').includes('letter-spacing'))
+    expect(tracked.map((c) => c.element.textContent ?? '').join('')).toBe('"answer-api"')
+    expect((tracked[0].attributes('style') ?? '')).toContain('2.1px')
+    expect(row4[0].attributes('style')).not.toContain('letter-spacing') // ident chars stay untracked
   })
 
   it('paces the typewriter per character: each row completes its ≈1.4s share', () => {

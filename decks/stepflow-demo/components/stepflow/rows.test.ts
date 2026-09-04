@@ -5,13 +5,16 @@ import {
   SCHEMATIC_ROWS_SCENE,
   schematicRowsLayout,
   TOKEN_COLORS,
+  STRING_EXTRA_TRACKING,
   CLICK_BAND,
   CLICK_CALLOUT_1,
   CLICK_CHROME,
   CLICK_RAIL,
   FIRST_ROW_CLICK,
   HIGHLIGHT_BAND,
+  HIGHLIGHT_BANDS,
   CONNECTOR_RAIL,
+  PATH_TEXT,
   ROW_BASELINE,
   ROW_EM_TO_INK,
   ROW_FONT,
@@ -49,11 +52,11 @@ describe('verbatim listing (sheet §2.2, crops resolved)', () => {
     expect(SCHEMATIC_ROWS_ROWS.map((row) => row.number)).toEqual(['1', '2', '3', '4', '5', '6', '7'])
   })
 
-  it('indents rows 3–7 one step (measured x160.5) and leaves rows 1–2 at the code margin (x99)', () => {
+  it('indents rows 3–7 one 4-slot step (measured x204) and leaves rows 1–2 at the code margin (x124)', () => {
     for (const i of [0, 1])
-      expect(SCHEMATIC_ROWS_ROWS[i].x, `row ${i + 1}`).toBe(99)
+      expect(SCHEMATIC_ROWS_ROWS[i].x, `row ${i + 1}`).toBe(124)
     for (const i of [2, 3, 4, 5, 6])
-      expect(SCHEMATIC_ROWS_ROWS[i].x, `row ${i + 1}`).toBe(160.5)
+      expect(SCHEMATIC_ROWS_ROWS[i].x, `row ${i + 1}`).toBe(204)
   })
 
   it('tokens row 1: blue keywords, near-white identifiers', () => {
@@ -65,12 +68,35 @@ describe('verbatim listing (sheet §2.2, crops resolved)', () => {
     ])
   })
 
-  it('tokens row 4: the string core is its own near-white token (no trailing ; — crop-verified)', () => {
+  it('tokens row 2: teal fn name, green `str` annotations (measured cores)', () => {
+    expect(SCHEMATIC_ROWS_ROWS[1].tokens).toEqual([
+      { text: 'def ', tone: 'keyword' },
+      { text: 'answer', tone: 'fn' },
+      { text: '(question: ', tone: 'ident' },
+      { text: 'str', tone: 'type' },
+      { text: ') -> ', tone: 'ident' },
+      { text: 'str', tone: 'type' },
+      { text: ':', tone: 'ident' },
+    ])
+  })
+
+  it('tokens row 4: the literal is its own amber token; no trailing ; (crop-verified)', () => {
     expect(SCHEMATIC_ROWS_ROWS[3].tokens).toEqual([
       { text: 'api = ', tone: 'ident' },
-      { text: 'service(', tone: 'ident' },
+      { text: 'service', tone: 'fn' },
+      { text: '(', tone: 'ident' },
       { text: '"answer-api"', tone: 'string' },
       { text: ')', tone: 'ident' },
+    ])
+  })
+
+  it('tokens row 7: the call is `model.ask` with a teal fn token', () => {
+    expect(SCHEMATIC_ROWS_ROWS[6].tokens).toEqual([
+      { text: 'return ', tone: 'keyword' },
+      { text: 'model', tone: 'ident' },
+      { text: '.', tone: 'ident' },
+      { text: 'ask', tone: 'fn' },
+      { text: '(question, ctx)', tone: 'ident' },
     ])
   })
 
@@ -83,18 +109,24 @@ describe('verbatim listing (sheet §2.2, crops resolved)', () => {
   })
 })
 
-describe('token colors (sheet-sampled tone constants)', () => {
-  it('exposes the four measured tones', () => {
+describe('token colors (measured stroke cores, frame 861)', () => {
+  it('exposes the six measured tones', () => {
     expect(TOKEN_COLORS.keyword).toBe('#4298f2')
     expect(TOKEN_COLORS.ident).toBe('#f2f2f2')
-    expect(TOKEN_COLORS.string).toBe('#e6ebf1')
-    expect(TOKEN_COLORS.comment).toBe('#888791')
+    expect(TOKEN_COLORS.fn).toBe('#38d3ec')
+    expect(TOKEN_COLORS.type).toBe('#34d59e')
+    expect(TOKEN_COLORS.string).toBe('#ebbe3a')
+    expect(TOKEN_COLORS.comment).toBe('#8f8e99')
   })
 
-  it('every token tone is one of the four constants', () => {
+  it('every token tone is one of the measured constants', () => {
     for (const row of SCHEMATIC_ROWS_ROWS)
       for (const token of row.tokens)
         expect(TOKEN_COLORS[token.tone]).toMatch(/^#[0-9a-f]{6}$/)
+  })
+
+  it('string tokens carry the measured +2.1px/char extra tracking (literals render ~25px wide)', () => {
+    expect(STRING_EXTRA_TRACKING).toBeCloseTo(2.1, 6)
   })
 })
 
@@ -108,54 +140,70 @@ describe('rowChars — the typewriter stream', () => {
     expect(chars.map((c) => c.ch).join('')).toBe(VERBATIM_ROWS[0])
   })
 
+  it('carries the fn tone through row 2 (chars 4–9 are `answer`)', () => {
+    const chars = rowChars(SCHEMATIC_ROWS_ROWS[1])
+    expect(chars.slice(4, 10).map((c) => c.tone)).toEqual(Array.from({ length: 6 }, () => 'fn'))
+    expect(chars.slice(4, 10).map((c) => c.ch).join('')).toBe('answer')
+  })
+
   it('preserves spaces (mono, white-space: pre)', () => {
     expect(rowChars(SCHEMATIC_ROWS_ROWS[6])[6]).toEqual({ ch: ' ', tone: 'keyword' })
   })
 })
 
-describe('window chrome + measured geometry (native × 0.75)', () => {
+describe('window chrome + measured geometry (true 1920-scale)', () => {
   it('ships the three traffic dots in macOS order with the sampled colors', () => {
     expect(TRAFFIC_DOTS.map((d) => d.fill)).toEqual(['#fb5c55', '#f5b839', '#30bf49'])
-    expect(TRAFFIC_DOTS.every((d) => d.r === 7.2)).toBe(true)
+    expect(TRAFFIC_DOTS.every((d) => d.r === 10)).toBe(true)
+    expect(TRAFFIC_DOTS.map((d) => d.cy)).toEqual([348.9, 348.9, 348.9])
   })
 
-  it('ships the tab text, underline, and right-aligned path', () => {
+  it('ships the tab text and right-aligned path (no underline — the y360+ ink is descenders)', () => {
     expect(TAB_TEXT.text).toBe('answer_service.py')
-    expect(TAB_TEXT.underline.w).toBeCloseTo(152.25, 2)
-    expect(TAB_TEXT.underline.y).toBeGreaterThan(TAB_TEXT.baseline - 1)
+    expect(TAB_TEXT.x).toBe(165)
+    expect(TAB_TEXT.baseline).toBe(358.5)
+    expect('underline' in TAB_TEXT).toBe(false)
+    expect(PATH_TEXT.rightEdge).toBe(1408)
   })
 
-  it('the frame is four rules with the divider at the code pane edge', () => {
-    expect(WINDOW_FRAME.top.w).toBeCloseTo(1398.75, 2)
-    expect(WINDOW_FRAME.divider.x).toBeCloseTo(972, 2)
+  it('the window is a single dim top rule — no left/right rules, no divider', () => {
+    expect(WINDOW_FRAME.top.x).toBe(46)
+    expect(WINDOW_FRAME.top.y).toBe(302)
+    expect(WINDOW_FRAME.top.w).toBe(1413)
+    expect(Object.keys(WINDOW_FRAME)).toEqual(['top'])
   })
 
-  it('row geometry: per-row measured tops at ~49.5px pitch (the frame, not the sheet note)', () => {
+  it('row geometry: per-row measured tops at ≈62.3px pitch (sheet-consistent)', () => {
     const tops = SCHEMATIC_ROWS_ROWS.map((row) => row.inkTop)
-    expect(tops[0]).toBe(355.5)
+    expect(tops).toEqual([446, 507, 572, 632, 695, 757, 820])
     for (let i = 1; i < tops.length; i++)
-      expect(tops[i] - tops[i - 1]).toBeGreaterThan(45)
-    expect(tops[6] - tops[0]).toBeCloseTo(298.5, 2)
+      expect(tops[i] - tops[i - 1]).toBeGreaterThan(55)
+    expect(tops[6] - tops[0]).toBe(374)
   })
 
-  it('typography constants: 32px rows condensed to the 16px measured advance', () => {
-    expect(ROW_FONT).toBe(32)
-    expect(ROW_SCALE_X).toBeCloseTo(16 / (0.6 * 32), 6)
+  it('typography constants: 32.5px rows at the deck mono natural advance (no condensation)', () => {
+    expect(ROW_FONT).toBe(32.5)
+    expect(ROW_SCALE_X).toBe(1)
     expect(ROW_EM_TO_INK).toBeGreaterThan(0)
-    expect(ROW_BASELINE).toBeCloseTo(23.33, 2)
+    expect(ROW_BASELINE).toBeCloseTo(23.7, 2)
   })
 
-  it('band behind rows 4–5 and rail alongside rows 4–6 (frame-corrected extents)', () => {
+  it('teal strips behind rows 4 and 5 with the measured 5px gap; rail alongside rows 4–6', () => {
     expect(HIGHLIGHT_BAND.fill).toBe('#08272c')
-    expect(HIGHLIGHT_BAND.y).toBeLessThan(SCHEMATIC_ROWS_ROWS[3].inkTop)
-    expect(HIGHLIGHT_BAND.y + HIGHLIGHT_BAND.h).toBeGreaterThan(SCHEMATIC_ROWS_ROWS[4].inkTop)
+    expect(HIGHLIGHT_BANDS).toHaveLength(2)
+    for (const strip of HIGHLIGHT_BANDS) {
+      expect(strip.y).toBeGreaterThan(SCHEMATIC_ROWS_ROWS[2].inkTop) // below row 3
+      expect(strip.y + strip.h).toBeGreaterThan(SCHEMATIC_ROWS_ROWS[3].inkTop)
+    }
+    // 5px gap between the strips (y672.5–677)
+    expect(HIGHLIGHT_BANDS[1].y - (HIGHLIGHT_BANDS[0].y + HIGHLIGHT_BANDS[0].h)).toBeCloseTo(4.5, 6)
     expect(CONNECTOR_RAIL.fill).toBe('#35c2ea')
     expect(CONNECTOR_RAIL.y + CONNECTOR_RAIL.h).toBeGreaterThan(SCHEMATIC_ROWS_ROWS[5].inkTop)
-    expect(CONNECTOR_RAIL.x + CONNECTOR_RAIL.w).toBeLessThan(60)
+    expect(CONNECTOR_RAIL.x + CONNECTOR_RAIL.w).toBeCloseTo(48.5, 6)
   })
 })
 
-describe('callout ladder (four measured circle+label pairs)', () => {
+describe('callout ladder (four measured ring+label pairs)', () => {
   it('carries the OCR-verified labels in order', () => {
     expect(SCHEMATIC_ROWS_CALLOUTS.map((c) => c.label)).toEqual([
       'DEPENDENCIES TO MAINTAIN',
@@ -166,28 +214,38 @@ describe('callout ladder (four measured circle+label pairs)', () => {
   })
 
   it('uses the frame-measured ring tones (callout 1 amber, not the sheet-assumed gray)', () => {
-    expect(SCHEMATIC_ROWS_CALLOUTS.map((c) => c.ring.fill)).toEqual(['#f5b839', '#3dc0d4', '#4791de', '#39c596'])
+    expect(SCHEMATIC_ROWS_CALLOUTS.map((c) => c.ring.fill)).toEqual(['#f9bc28', '#4ec3d8', '#4e92e2', '#46c797'])
   })
 
-  it('labels 1/4 gray, 2/3 white (small caps gray, large caps white)', () => {
-    expect(SCHEMATIC_ROWS_CALLOUTS[0].ink.fill).toBe('#a5a5af')
+  it('labels 1/4 gray, 2/3 white (measured ink tones)', () => {
+    expect(SCHEMATIC_ROWS_CALLOUTS[0].ink.fill).toBe('#9d9ca6')
     expect(SCHEMATIC_ROWS_CALLOUTS[3].ink.fill).toBe('#afaeb2')
     expect(SCHEMATIC_ROWS_CALLOUTS[1].ink.fill).toBe('#f5f4f7')
     expect(SCHEMATIC_ROWS_CALLOUTS[2].ink.fill).toBe('#f5f4f7')
   })
 
-  it('rings sit in the right-hand ladder column', () => {
-    expect(SCHEMATIC_ROWS_CALLOUTS.every((c) => c.ring.cx > 1000 && c.ring.cx < 1100)).toBe(true)
+  it('rings sit in the right-hand ladder column (x≈1290–1340), descending in order', () => {
+    expect(SCHEMATIC_ROWS_CALLOUTS.every((c) => c.ring.cx > 1290 && c.ring.cx < 1340)).toBe(true)
     // cy ascends down the ladder in callout order
     const cys = SCHEMATIC_ROWS_CALLOUTS.map((c) => c.ring.cy)
     expect([...cys].sort((a, b) => a - b)).toEqual(cys)
   })
 
+  it('ring 1 is the tall ellipse ABOVE its label; rings 2–4 sit left of theirs', () => {
+    const c1 = SCHEMATIC_ROWS_CALLOUTS[0]
+    expect(c1.ring.ry).toBeGreaterThan(c1.ring.rx) // ry 53.5 vs rx 35 — the one tall ellipse
+    expect(c1.ink.inkTop).toBeGreaterThan(c1.ring.cy)
+    for (const i of [1, 2, 3]) {
+      expect(SCHEMATIC_ROWS_CALLOUTS[i].ink.x).toBeGreaterThan(SCHEMATIC_ROWS_CALLOUTS[i].ring.cx)
+      expect(SCHEMATIC_ROWS_CALLOUTS[i].ring.ry).toBeLessThan(30)
+    }
+  })
+
   it('tails are optional short strokes off the ring (callouts 2 and 4)', () => {
     expect(SCHEMATIC_ROWS_CALLOUTS[0].tail).toBeUndefined()
-    expect(SCHEMATIC_ROWS_CALLOUTS[1].tail).toEqual([[1043, 628], [1034, 638]])
+    expect(SCHEMATIC_ROWS_CALLOUTS[1].tail).toEqual([[1312, 781], [1294, 802]])
     expect(SCHEMATIC_ROWS_CALLOUTS[2].tail).toBeUndefined()
-    expect(SCHEMATIC_ROWS_CALLOUTS[3].tail).toEqual([[1051, 772], [1047, 754]])
+    expect(SCHEMATIC_ROWS_CALLOUTS[3].tail).toEqual([[1322, 958], [1318, 934]])
   })
 })
 
@@ -243,8 +301,8 @@ describe('schematicRowsLayout', () => {
     expect(layout.rows).toHaveLength(7)
 
     const first = layout.rows[0]
-    expect(first.x).toBe(99)
-    expect(first.y).toBeCloseTo(355.5 - ROW_EM_TO_INK, 6)
+    expect(first.x).toBe(124)
+    expect(first.y).toBeCloseTo(446 - ROW_EM_TO_INK, 6)
     expect(first.click).toBe(3)
     expect(first.chars).toHaveLength(rowText(SCHEMATIC_ROWS_ROWS[0]).length)
     expect(first.charDelayMs).toBeCloseTo(1400 / first.chars.length, 6)
@@ -265,10 +323,16 @@ describe('schematicRowsLayout', () => {
     }
   })
 
+  it('resolves negative tracking for the condensed caps labels (advance < 0.6·font)', () => {
+    const layout = schematicRowsLayout()
+    expect(layout.callouts[1].ink.tracking).toBeLessThan(0) // API IT CALLS
+    expect(layout.callouts[0].ink.tracking).toBeGreaterThan(0) // small-caps label 1
+  })
+
   it('keeps tails (empty when the spec omits them) and passes rings through verbatim', () => {
     const layout = schematicRowsLayout()
     expect(layout.callouts[0].tail).toEqual([])
-    expect(layout.callouts[1].tail).toEqual([[1043, 628], [1034, 638]])
+    expect(layout.callouts[1].tail).toEqual([[1312, 781], [1294, 802]])
     expect(layout.callouts[3].ring).toEqual(SCHEMATIC_ROWS_CALLOUTS[3].ring)
   })
 

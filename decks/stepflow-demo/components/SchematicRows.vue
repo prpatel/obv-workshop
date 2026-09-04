@@ -8,11 +8,13 @@ import {
   CLICK_RAIL,
   CONNECTOR_RAIL,
   HIGHLIGHT_BAND,
+  HIGHLIGHT_BANDS,
   PATH_TEXT,
   ROW_BASELINE,
   ROW_FONT,
   ROW_NUMBER_STYLE,
   ROW_SCALE_X,
+  STRING_EXTRA_TRACKING,
   TAB_TEXT,
   TOKEN_COLORS,
   TRAFFIC_DOTS,
@@ -60,10 +62,6 @@ function fmt(n: number): string {
 function px(n: number): string {
   return `${fmt(n)}px`
 }
-
-function scaleTransform(scale: number): string {
-  return `scale(${fmt(scale)} 1)`
-}
 </script>
 
 <template>
@@ -92,7 +90,7 @@ function scaleTransform(scale: number): string {
       -->
       <g v-click="CLICK_CHROME" class="sf-rows-window">
         <rect
-          v-for="(rule, k) in [WINDOW_FRAME.top, WINDOW_FRAME.left, WINDOW_FRAME.right, WINDOW_FRAME.divider]"
+          v-for="(rule, k) in [WINDOW_FRAME.top]"
           :key="`rule-${k}`"
           :x="rule.x"
           :y="rule.y"
@@ -110,20 +108,13 @@ function scaleTransform(scale: number): string {
         />
         <text
           class="sf-rows-chrome-text"
-          :transform="`translate(${TAB_TEXT.x} ${TAB_TEXT.baseline}) ${scaleTransform(TAB_TEXT.scaleX)}`"
+          :transform="`translate(${TAB_TEXT.x} ${TAB_TEXT.baseline})`"
           :font-size="TAB_TEXT.font"
           :fill="TAB_TEXT.fill"
         >{{ TAB_TEXT.text }}</text>
-        <rect
-          :x="TAB_TEXT.underline.x"
-          :y="TAB_TEXT.underline.y"
-          :width="TAB_TEXT.underline.w"
-          :height="TAB_TEXT.underline.h"
-          :fill="TAB_TEXT.underline.fill"
-        />
         <text
           class="sf-rows-chrome-text"
-          :transform="`translate(${PATH_TEXT.rightEdge} ${PATH_TEXT.baseline}) ${scaleTransform(PATH_TEXT.scaleX)}`"
+          :transform="`translate(${PATH_TEXT.rightEdge} ${PATH_TEXT.baseline})`"
           :font-size="PATH_TEXT.font"
           :fill="PATH_TEXT.fill"
           text-anchor="end"
@@ -131,16 +122,19 @@ function scaleTransform(scale: number): string {
       </g>
 
       <!--
-        Teal band behind rows 4–5 (click 7, row 4's click — sheet f450). Painted
-        before the rows layer so it sits behind them; fade-only reveal.
+        Teal highlight strips behind rows 4 and 5 (click 7, row 4's click — the
+        frame shows two per-row strips with a 5px gap, not one solid band).
+        Painted before the rows layer so they sit behind; fade-only reveal.
       -->
       <rect
+        v-for="(strip, k) in HIGHLIGHT_BANDS"
+        :key="`strip-${k}`"
         v-click="CLICK_BAND"
         class="sf-rows-band"
         :x="HIGHLIGHT_BAND.x"
-        :y="HIGHLIGHT_BAND.y"
+        :y="strip.y"
         :width="HIGHLIGHT_BAND.w"
-        :height="HIGHLIGHT_BAND.h"
+        :height="strip.h"
         :fill="HIGHLIGHT_BAND.fill"
       />
 
@@ -218,8 +212,9 @@ function scaleTransform(scale: number): string {
       Rows type character by character (the recording's ≈9.8s typewriter re-paced to
       one row per click): each char's animation starts at ci × charDelay after the
       row's click removes .slidev-vclick-hidden; backward nav snaps via animation:none.
-      The row div condenses horizontally (scaleX) to the reference's narrower mono
-      advance at the matched cap height.
+      No horizontal condensation (ROW_SCALE_X is 1 — the reference mono advance is
+      the deck mono's natural 0.6em); string tokens carry the measured +2.1px/char
+      tracking via per-span letter-spacing.
     -->
     <div
       v-for="row in layout.rows"
@@ -232,7 +227,7 @@ function scaleTransform(scale: number): string {
         v-for="(char, ci) in row.chars"
         :key="ci"
         class="sf-rows-char"
-        :style="{ color: tokenColor(char.tone), '--ci': String(ci), '--cd': `${fmt(row.charDelayMs)}ms` }"
+        :style="{ color: tokenColor(char.tone), '--ci': String(ci), '--cd': `${fmt(row.charDelayMs)}ms`, letterSpacing: char.tone === 'string' ? px(STRING_EXTRA_TRACKING) : undefined }"
       >{{ char.ch }}</span>
     </div>
   </div>
