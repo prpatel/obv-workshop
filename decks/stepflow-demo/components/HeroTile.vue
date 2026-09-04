@@ -36,9 +36,9 @@ const GLOW_ID = 'sf-hero-glow-gradient'
 // tile edge, exhausted by the measured cutoff radius so the visible ring
 // lands in the measured #200000/#400000 dark-red classes.
 const glowStops = [
-  { offset: 0, opacity: 0.29 },
-  { offset: 0.735, opacity: 0.29 },
-  { offset: 0.88, opacity: 0.13 },
+  { offset: 0, opacity: 0.32 },
+  { offset: 0.735, opacity: 0.32 },
+  { offset: 0.88, opacity: 0.14 },
   { offset: 1, opacity: 0 },
 ]
 
