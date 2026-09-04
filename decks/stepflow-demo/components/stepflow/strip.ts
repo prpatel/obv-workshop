@@ -1,31 +1,36 @@
 /**
  * RatioStrip data contract + pure layout math (Wave-2 addendum, spec
- * art_3VsrSvLm; fidelity rework per report art_iHm120ov §RatioStrip — source
- * video 95–101s, settled frame t=99.1s read at 1920×1080).
+ * art_3VsrSvLm; exact-trace rebuild per sheet art_7bTnqSB3 §RatioStrip —
+ * source video 95–101s, settled clip frame t≈5.97s read at 1920×1080).
  *
  * One proportional band with a two-phase build: click 1 pops the band at
- * initial segment proportions; click 2 re-flows the teal region to its
- * settled share in three bursts ~470ms apart (measured 99.10 / 99.57 /
- * 99.83s); click 3 fades in the mint chip and the tone-colored caption row.
- * All clicks are state-driven transitions on revealed-state classes; this
- * module computes the width states, the re-flow burst waypoints, and the
- * re-proportion spans between them.
+ * initial segment proportions; click 2 re-flows the band to its settled
+ * three-segment shares in three bursts (measured clip-relative windows
+ * 650–1350 / 1783–2133 / 3617–3967ms), then the mint segment settles
+ * (4083–4200ms); click 3 reveals the in-band dark display text in two
+ * left→right sweeps (4567–4950ms) with the caption row. All clicks are
+ * state-driven transitions on revealed-state classes; this module computes
+ * the width states, the re-flow burst waypoints, and the re-proportion
+ * spans between them.
  *
- * Measured (t=99.1s, 1920×1080): band x276–1648 (14.4–85.9%w), y554–791
- * (238px tall); the red segment x276–609 (334px = 17.4%w) is a red→salmon
- * gradient #ec423f→#f98c8c — the "salmon segment" earlier research read as
- * a separate amber block is this gradient's tail; the teal region x604–1647
- * is a single bright left-to-right gradient #76eec5→#1fd898 (no dark
- * sub-band — that earlier read was a misread tone); the mint chip x605–700
- * (95px) sits at the region's left edge; the caption row of small glyphs
- * sits at y837–857. Above the band: a dark panel plate y331–440 (x234–1685)
- * and a white heading row (~y465–490).
+ * Measured (settled frame, 1920×1080, sheet art_7bTnqSB3 §3.2 + native
+ * 2560×1440 pixel reads): band x276–1648 (1372.5px), y555–791 (237px tall);
+ * three segments — red gradient x276–605 (330px, 24.0%), solid-mint median
+ * #9dfcd7 x605–760 (155px, 11.3%), teal gradient to #1bd69e-class x760–1648
+ * (888px, 64.7%). Native reads show the mint→teal fill is ONE continuous
+ * ramp (#a0fbd9 → #1ed496 sampled at the region edges, no discontinuity at
+ * x760), so the mint and teal segments sample one shared gradient field —
+ * the sheet's per-region medians are that ramp's slice medians. Above the
+ * band: a dark panel plate y331–469 (x234–1685) with a 13px gray heading
+ * row inside, a 16px gray second heading row under it, and a 9-tick
+ * measurement row y509–534. In-band dark display text and the red caption
+ * row complete the settled frame (constants below).
  *
  * Pure and SSR-safe: no DOM access, no mutation of the inputs.
  */
 
 /** Palette role of one strip segment. */
-export type StripTone = 'accent' | 'alt' | 'tertiary' | 'plain'
+export type StripTone = 'accent' | 'alt' | 'mint' | 'tertiary' | 'plain'
 
 /** One proportional segment of the band. */
 export interface StripSegment {
@@ -68,39 +73,87 @@ export interface Canvas {
 export const BAND_X0_FRAC = 184 / 1280 // 0.14375
 export const BAND_X1_FRAC = 1099 / 1280 // 0.85859375
 
-/** Caption-row baseline (measured glyph row at y557 of the 720px source height). */
-export const CAPTION_Y_FRAC = 557 / 720 // 0.773611
+/** Caption-row baseline — measured glyph band y836–858, caps sit on the baseline. */
+export const CAPTION_Y_FRAC = 858 / 1080 // 0.794444
 
-/** Measured panel plate above the band (t=99.1s): y331–440, x234–1685. */
+/** Caption ink: measured red (sheet #e84442; slide passes it via `caption-color`). */
+export const CAPTION_COLOR = '#e84442'
+
+/** Measured panel plate above the band: y331–469 (h139), x234–1685. */
 export const PLATE_X0_FRAC = 234 / 1920
 export const PLATE_X1_FRAC = 1685 / 1920
 export const PLATE_Y_FRAC = 331 / 1080
-export const PLATE_H_FRAC = 109 / 1080
-
-/** White heading row above the band (t=99.1s): glyph baseline at y490. */
-export const HEADING_Y_FRAC = 490 / 1080
+export const PLATE_H_FRAC = 139 / 1080
 
 /**
- * Measured internals of the teal region (settled frame t=99.1s): the mint
- * label chip 95px wide at the region's LEFT edge, full band height, as a
- * fraction of the 1043px region. Rendered on `tertiary` segments only.
+ * Plate heading row 1 (inside the plate, sheet §3.2): gray tracked caps,
+ * cap ≈13px, mask band y361–384, x259–708. Baseline at the band bottom
+ * (chrome convention); cap height → font size via the shared chrome ratio.
  */
-export const CHIP_WFRAC = 95 / 1043 // 0.0910834
+export const HEADING1_X_FRAC = 259 / 1920
+export const HEADING1_BASELINE_FRAC = 383 / 1080
+export const HEADING1_CAP_PX = 13
+export const HEADING1_WIDTH_PX = 449
 
-/** Measured teal gradient (t=99.1s): bright-mint left edge → the teal token. */
-export const TEAL_GRADIENT_START = '#76eec5'
+/** Heading row color: measured gray of both heading rows (glyph interiors). */
+export const HEADING_COLOR = '#a8a8b8'
+
+/**
+ * Heading row 2 (under the plate, sheet §3.2): `COMPUTE UNITS · FY26`,
+ * gray caps cap ≈16px, band y465–480, x276–672 (19 glyph components ✅).
+ */
+export const HEADING2_X_FRAC = 276 / 1920
+export const HEADING2_BASELINE_FRAC = 480 / 1080
+export const HEADING2_CAP_PX = 16
+export const HEADING2_WIDTH_PX = 396
+
+/**
+ * Tick measurement row (sheet §3.2): 9 ticks 4×26px, y509–534, #3a3b42.
+ * X-centers as measured (the first eight sit on a 171.57px pitch; the
+ * ninth reads at 1639 — 13px left of the pitch, reproduced as measured).
+ */
+export const TICK_X_CENTERS: readonly number[] = [280, 451.6, 623.1, 794.7, 966.3, 1137.9, 1309.4, 1481, 1639]
+export const TICK_Y_FRAC = 509 / 1080
+export const TICK_W_PX = 4
+export const TICK_H_PX = 26
+export const TICK_COLOR = '#3a3b42'
+
+/**
+ * In-band dark display text (sheet §3.2, digits verified against
+ * ratiostrip-band-right): bbox x706–1659, cap band y628–718 (cap ≈90px,
+ * ~38% of band height), #0a0a0a bold condensed. Sweep split at x1282 —
+ * the measured two-sweep reveal breaks between `·` and the digits.
+ */
+export const IN_BAND_X_FRAC = 706 / 1920
+export const IN_BAND_RIGHT_FRAC = 1659 / 1920
+export const IN_BAND_CAP_TOP_PX = 628
+export const IN_BAND_CAP_PX = 90
+export const IN_BAND_SWEEP_SPLIT_FRAC = 1282 / 1920
+export const IN_BAND_COLOR = '#0a0a0a'
+
+/**
+ * Shared mint→teal gradient field: ONE continuous ramp across both the
+ * mint and teal segments (native reads: #a0fbd9 at the mint's left edge →
+ * #1ed496 at the band's right edge, no discontinuity at x760). The field
+ * spans the mint segment's final left edge to the band's right edge.
+ */
+export const BAND_FIELD_START = '#a0fbd9'
+export const BAND_FIELD_END = '#1ed496'
 
 /** Measured red-segment gradient tail (t=99.1s): accentAlt red → salmon. */
 export const RED_GRADIENT_END = '#f98c8c'
 
 /**
- * Three-burst teal re-flow (click 2), measured at 99.10 / 99.57 / 99.83s —
- * ~470ms between bursts. BURST_WFRACS are the teal region's intermediate
+ * Three-burst re-flow (click 2), measured clip-relative windows 650–1350 /
+ * 1783–2133 / 3617–3967ms with the click applied at the burst-1 onset:
+ * delays 0 / 1133 / 2967ms. BURST_WFRACS are the teal region's intermediate
  * band shares at bursts 1–2 (re-paced waypoints [I]; burst 3 is the
- * segment's settled width). BURST_DELAYS_MS pace the stacked burst rects.
+ * segment's settled width). BURST_DELAYS_MS pace the stacked burst rects;
+ * the mint segment settles after burst 3 (measured 4083–4200ms → 3433ms).
  */
 export const BURST_WFRACS: readonly [number, number] = [0.35, 0.55]
-export const BURST_DELAYS_MS: readonly [number, number, number] = [0, 470, 730]
+export const BURST_DELAYS_MS: readonly [number, number, number] = [0, 1133, 2967]
+export const MINT_SETTLE_DELAY_MS = 3433
 
 /**
  * Stepped px widths for the three-burst re-flow: the two burst waypoints

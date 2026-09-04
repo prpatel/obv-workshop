@@ -531,33 +531,45 @@ canvasWidth: 1920
 <!--
   Demo slide: RatioStrip — one proportional band with a two-phase build:
   click 1 pops the band at initial proportions (~120ms), click 2 re-flows the
-  teal region to its settled share in three bursts ~470ms apart (measured
-  99.10 / 99.57 / 99.83s), click 3 fades in the mint chip and the
-  tone-colored caption row. Measured from the source video's 95–101s strip
-  (report art_iHm120ov §RatioStrip, settled frame t=99.1s at 1920×1080): band
-  x 14.4–85.9%w × y 51.4–73.3%h; settled shares red 24.3% / teal 75.7% — the
-  red segment is the measured 334px = 17.4%w, and its salmon tail is the red
-  gradient's end (the earlier "amber segment" was a misread of that tail: no
-  amber exists in the source). The teal region is the bright left-to-right
-  gradient #76eec5→#1fd898 (no dark sub-band). A dark panel plate
-  (y≈331–440, x≈234–1685) and a white heading row sit above the band.
-  Initial proportions are [I]: the teal region starts at ~1/5 of its settled
-  share (the measured 22k→108k px re-flow), red holding the rest. All three
-  v-clicks are pure revealed-state transitions — backward nav snaps instantly.
+  mint + teal regions to their settled shares in three bursts ~1.1s apart
+  (measured 650 / 1783 / 3617ms after the burst trigger), click 3 sweeps the
+  in-band display text left→right in two strokes (4567–4950ms clip time) and
+  fades in the red caption row. Measured from the exact-trace sheet's settled
+  clip frame t≈5.97s at 1920×1080 (art_7bTnqSB3 §3; band x 14.4–85.9%w × y
+  51.4–73.3%h): settled shares red 24% (330px, red→salmon gradient) / mint
+  11.3% (155px) / teal 64.7% (888px), with the mint and teal regions reading
+  as ONE continuous bright ramp #a0fbd9→#1ed496 (shared userSpaceOnUse
+  field; the teal gradient starts at the mint's left edge x605, crossing the
+  x760 mint/teal boundary with no discontinuity). Above the band: a dark
+  panel plate x234–1685 × y331–469 (139px tall) with a gray 13px-cap tracked
+  heading row inside (y361–384), a gray 16px-cap second heading row
+  'COMPUTE UNITS · FY26' under the plate (y465–480, verified from crop), and
+  a 9-tick measurement row (4×26px, pitch ≈171.6px, #3a3b42). The in-band
+  display text 'PLATFORM · 75.7%' is #0a0a0a 90px caps spanning x706–1659,
+  revealed last in two left→right sweeps split at x1282. The caption row is
+  the measured red 'SHARE OF COMPUTE' 22px caps at y836–858. Initial
+  proportions are [I]: the teal region starts at ~1/5 of its settled share
+  and the mint segment near-closed; red holds the rest. All three v-clicks
+  are pure revealed-state transitions — backward nav snaps instantly.
 -->
 
 <div class="sf-demo-stage">
 
 <RatioStrip
-  title="RUNTIME"
-  title-accent="SHARE"
+  title="RUNTIME SHARE"
+  title-accent="· FY26 SPLIT"
   heading="SHARE OF TOTAL"
-  :palette="{ accentAlt: '#ec423f', accentTertiary: '#1cd798' }"
+  heading2="COMPUTE UNITS · FY26"
+  band-text="PLATFORM · 75.7%"
+  caption="SHARE OF COMPUTE"
+  caption-color="#e84442"
+  :palette="{ accentAlt: '#ec423f' }"
   :y-frac="0.513889"
   :h-frac="0.219444"
   :segments="[
-    { id: 'sources', tone: 'alt', wFrac: 0.85, wFracFinal: 0.2434, label: 'INGEST' },
-    { id: 'platform', tone: 'tertiary', wFrac: 0.15, wFracFinal: 0.7566, label: 'PLATFORM' },
+    { id: 'sources', tone: 'alt', wFrac: 0.84, wFracFinal: 0.24 },
+    { id: 'mint', tone: 'mint', wFrac: 0.03, wFracFinal: 0.113 },
+    { id: 'platform', tone: 'tertiary', wFrac: 0.13, wFracFinal: 0.647 },
   ]"
 />
 

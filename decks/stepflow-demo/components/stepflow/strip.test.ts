@@ -3,19 +3,40 @@ import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
 import RatioStrip from '../RatioStrip.vue'
 import {
+  BAND_FIELD_END,
+  BAND_FIELD_START,
   BAND_X0_FRAC,
   BAND_X1_FRAC,
   BURST_DELAYS_MS,
   BURST_WFRACS,
+  CAPTION_COLOR,
   CAPTION_Y_FRAC,
-  CHIP_WFRAC,
-  HEADING_Y_FRAC,
+  HEADING1_BASELINE_FRAC,
+  HEADING1_CAP_PX,
+  HEADING1_WIDTH_PX,
+  HEADING1_X_FRAC,
+  HEADING2_BASELINE_FRAC,
+  HEADING2_CAP_PX,
+  HEADING2_WIDTH_PX,
+  HEADING2_X_FRAC,
+  HEADING_COLOR,
+  IN_BAND_CAP_PX,
+  IN_BAND_CAP_TOP_PX,
+  IN_BAND_COLOR,
+  IN_BAND_RIGHT_FRAC,
+  IN_BAND_SWEEP_SPLIT_FRAC,
+  IN_BAND_X_FRAC,
+  MINT_SETTLE_DELAY_MS,
   PLATE_H_FRAC,
   PLATE_X0_FRAC,
   PLATE_X1_FRAC,
   PLATE_Y_FRAC,
   RED_GRADIENT_END,
-  TEAL_GRADIENT_START,
+  TICK_COLOR,
+  TICK_H_PX,
+  TICK_W_PX,
+  TICK_X_CENTERS,
+  TICK_Y_FRAC,
   ratioStripLayout,
   tealBurstWidths,
   type RatioStripData,
@@ -25,29 +46,33 @@ import {
 /**
  * The demo seed mirrors the slide data: band placement is the measured §3.3
  * blueprint (research art_2kSBGNmJ, source video 95–101s), reworked to the
- * fidelity report's measured two-segment anatomy (art_iHm120ov §RatioStrip,
- * settled frame t=99.1s at 1920×1080) — no amber segment exists in the source.
+ * exact-trace sheet's measured three-segment anatomy (art_7bTnqSB3 §3,
+ * settled clip frame t≈5.97s at 1920×1080) — red gradient / mint / teal.
  */
 const Y_FRAC = 0.513889 // 555/1080
 const H_FRAC = 0.219444 // 237/1080
 
 /**
- * Initial proportions (click 1), [I]: the measured 22k→108k px teal re-flow
- * (§3.3) puts the teal region at ~1/5 of its settled share at build time;
- * red holds the rest of the band.
+ * Initial proportions (click 1), [I]: the measured teal re-flow puts the teal
+ * region at ~1/5 of its settled share at build time and the mint segment
+ * near-closed; red holds the rest of the band.
  */
-const INIT = { sources: 0.85, platform: 0.15 }
+const INIT = { sources: 0.84, mint: 0.03, platform: 0.13 }
 
-/** Settled shares (click 2): measured px of the 1372.5px band (334/1038.4). */
-const FINAL = { sources: 0.2434, platform: 0.7566 }
+/**
+ * Settled shares (click 2): measured px of the 1372.5px band — red x276–605
+ * (330px), mint x605–760 (155px), teal x760–1648 (888px). Sum = 1.
+ */
+const FINAL = { sources: 0.24, mint: 0.113, platform: 0.647 }
 
-/** The demo slide's measured palette override (slides.md line 479). */
-const SLIDE_PALETTE = { accentAlt: '#ec423f', accentTertiary: '#1cd798' }
+/** The demo slide's measured palette override (slides.md slide 11). */
+const SLIDE_PALETTE = { accentAlt: '#ec423f' }
 
 function seed(): StripSegment[] {
   return [
-    { id: 'sources', tone: 'alt', wFrac: INIT.sources, wFracFinal: FINAL.sources, label: 'INGEST' },
-    { id: 'platform', tone: 'tertiary', wFrac: INIT.platform, wFracFinal: FINAL.platform, label: 'PLATFORM' },
+    { id: 'sources', tone: 'alt', wFrac: INIT.sources, wFracFinal: FINAL.sources },
+    { id: 'mint', tone: 'mint', wFrac: INIT.mint, wFracFinal: FINAL.mint },
+    { id: 'platform', tone: 'tertiary', wFrac: INIT.platform, wFracFinal: FINAL.platform },
   ]
 }
 
@@ -55,12 +80,12 @@ function data(): RatioStripData {
   return { segments: seed(), yFrac: Y_FRAC, hFrac: H_FRAC }
 }
 
-// Hand-computed px on the 1920×1080 viewBox (the measured t=99.1s frame is
+// Hand-computed px on the 1920×1080 viewBox (the settled reference frame is
 // 1920×1080, so source px map 1:1 here).
 const BAND_X = 276
 const BAND_W = 1372.5
 /** The demo finals sum to exactly 1 — no normalization drift. */
-const W1_SUM = FINAL.sources + FINAL.platform // 1.0
+const W1_SUM = FINAL.sources + FINAL.mint + FINAL.platform // 1.0
 
 /** Slidev registers the v-click directive globally at runtime; the render tests stub it and record click indices. */
 function mountRatioStrip(props: Record<string, unknown>, captured: number[] = []) {
@@ -86,35 +111,72 @@ describe('measured constants — hand-computed to 1e-6', () => {
     expect(BAND_X1_FRAC - BAND_X0_FRAC).toBeCloseTo(0.714844, 6) // 915/1280 = 71.5%w
   })
 
-  it('caption row sits at the measured glyph row y557', () => {
-    expect(CAPTION_Y_FRAC).toBeCloseTo(0.773611, 6)
-    expect(CAPTION_Y_FRAC * 1080).toBeCloseTo(835.5, 6) // 557 × 1.5
+  it('caption row sits on the measured glyph band bottom y858', () => {
+    expect(CAPTION_Y_FRAC).toBeCloseTo(0.794444, 6)
+    expect(CAPTION_Y_FRAC * 1080).toBeCloseTo(858, 6)
+    expect(CAPTION_COLOR).toBe('#e84442')
   })
 
-  it('panel plate spans the measured x234–1685 × y331–440, heading baseline y490', () => {
+  it('panel plate spans the measured x234–1685 × y331–469 (139px tall)', () => {
     expect(PLATE_X0_FRAC * 1920).toBeCloseTo(234, 6)
     expect(PLATE_X1_FRAC * 1920).toBeCloseTo(1685, 6)
     expect(PLATE_Y_FRAC * 1080).toBeCloseTo(331, 6)
-    expect(PLATE_H_FRAC * 1080).toBeCloseTo(109, 6)
-    expect(HEADING_Y_FRAC * 1080).toBeCloseTo(490, 6)
+    expect(PLATE_H_FRAC * 1080).toBeCloseTo(139, 6)
   })
 
-  it('teal-region chip is the measured 95px of the 1043px region', () => {
-    expect(CHIP_WFRAC).toBeCloseTo(95 / 1043, 6)
+  it('plate heading row 1: gray tracked caps, cap 13px, band y361–384, x259–708', () => {
+    expect(HEADING1_X_FRAC * 1920).toBeCloseTo(259, 6)
+    expect(HEADING1_BASELINE_FRAC * 1080).toBeCloseTo(383, 6)
+    expect(HEADING1_CAP_PX).toBe(13)
+    expect(HEADING1_WIDTH_PX).toBe(449)
+    expect(HEADING_COLOR).toBe('#a8a8b8')
   })
 
-  it('measured gradient stops: teal bright-mint start, red salmon tail', () => {
-    expect(TEAL_GRADIENT_START).toBe('#76eec5')
+  it('heading row 2: gray tracked caps, cap 16px, band y465–480, x276–672', () => {
+    expect(HEADING2_X_FRAC * 1920).toBeCloseTo(276, 6)
+    expect(HEADING2_BASELINE_FRAC * 1080).toBeCloseTo(480, 6)
+    expect(HEADING2_CAP_PX).toBe(16)
+    expect(HEADING2_WIDTH_PX).toBe(396)
+  })
+
+  it('tick row: 9 measured x-centers (first 8 on a 171.57px pitch, 9th at 1639), 4×26px at y509', () => {
+    expect(TICK_X_CENTERS).toHaveLength(9)
+    expect(TICK_X_CENTERS[0]).toBe(280)
+    expect(TICK_X_CENTERS[7]).toBeCloseTo(1481, 1)
+    expect(TICK_X_CENTERS[8]).toBe(1639)
+    // First-eight pitch matches the sheet's ≈171.6 reading.
+    expect((TICK_X_CENTERS[7] - TICK_X_CENTERS[0]) / 7).toBeCloseTo(171.57, 1)
+    expect(TICK_Y_FRAC * 1080).toBeCloseTo(509, 6)
+    expect(TICK_W_PX).toBe(4)
+    expect(TICK_H_PX).toBe(26)
+    expect(TICK_COLOR).toBe('#3a3b42')
+  })
+
+  it('in-band display text: ink box x706–1659, cap band y628–718 (cap 90px), sweep split x1282', () => {
+    expect(IN_BAND_X_FRAC * 1920).toBeCloseTo(706, 6)
+    expect(IN_BAND_RIGHT_FRAC * 1920).toBeCloseTo(1659, 6)
+    expect(IN_BAND_CAP_TOP_PX).toBe(628)
+    expect(IN_BAND_CAP_PX).toBe(90)
+    expect(IN_BAND_SWEEP_SPLIT_FRAC * 1920).toBeCloseTo(1282, 6)
+    expect(IN_BAND_COLOR).toBe('#0a0a0a')
+  })
+
+  it('shared mint→teal field: measured continuous ramp endpoints', () => {
+    expect(BAND_FIELD_START).toBe('#a0fbd9')
+    expect(BAND_FIELD_END).toBe('#1ed496')
+  })
+
+  it('measured red-segment gradient tail (accentAlt red → salmon)', () => {
     expect(RED_GRADIENT_END).toBe('#f98c8c')
   })
 })
 
 describe('tealBurstWidths — the three-burst re-flow waypoints', () => {
   it('returns the two burst waypoints then the settled width, monotonically', () => {
-    const [b1, b2, fin] = tealBurstWidths(1372.5, 1038.4335)
+    const [b1, b2, fin] = tealBurstWidths(1372.5, 888.0075)
     expect(b1).toBeCloseTo(480.375, 6) // 0.35 × band
     expect(b2).toBeCloseTo(754.875, 6) // 0.55 × band
-    expect(fin).toBeCloseTo(1038.4335, 6)
+    expect(fin).toBeCloseTo(888.0075, 6)
   })
 
   it('clamps waypoints to the final width when the region is narrower than a burst share', () => {
@@ -126,9 +188,10 @@ describe('tealBurstWidths — the three-burst re-flow waypoints', () => {
     expect(() => tealBurstWidths(1372.5, 0)).toThrow(RangeError)
   })
 
-  it('paces the bursts at the measured ~470ms cadence (99.10 / 99.57 / 99.83s)', () => {
+  it('paces the bursts at the measured clip-relative cadence and the mint settle after burst 3', () => {
     expect(BURST_WFRACS).toEqual([0.35, 0.55])
-    expect(BURST_DELAYS_MS).toEqual([0, 470, 730])
+    expect(BURST_DELAYS_MS).toEqual([0, 1133, 2967]) // measured 650 / 1783 / 3617ms clip-relative
+    expect(MINT_SETTLE_DELAY_MS).toBe(3433) // measured 4083–4200ms settle window
   })
 })
 
@@ -141,47 +204,48 @@ describe('ratioStripLayout — band geometry (demo seed)', () => {
     expect(l.band.h).toBeCloseTo(H_FRAC * 1080, 6) // 236.99952
     expect(l.band.x + l.band.w).toBeCloseTo(1648.5, 6) // 1099 × 1.5
     expect(l.viewBox).toEqual({ width: 1920, height: 1080 })
-    expect(l.captionY).toBeCloseTo(835.5, 6)
+    expect(l.captionY).toBeCloseTo(858, 6)
   })
 
-  it('resolves the measured panel plate: x234, y331, 1451×109', () => {
+  it('resolves the measured panel plate: x234, y331, 1451×139', () => {
     const l = ratioStripLayout(data())
     expect(l.plate.x).toBeCloseTo(234, 6)
     expect(l.plate.y).toBeCloseTo(331, 6)
     expect(l.plate.w).toBeCloseTo(1451, 6)
-    expect(l.plate.h).toBeCloseTo(109, 6)
+    expect(l.plate.h).toBeCloseTo(139, 6)
   })
 
   it('click-1 state: segments at the initial proportions, contiguous left → right', () => {
     const l = ratioStripLayout(data())
-    const [s, p] = l.segments
-    // 0.85 / 0.15 of the band (sums to exactly 1 — no normalization drift).
-    expect(s.w0).toBeCloseTo(0.85 * BAND_W, 6) // 1166.625
-    expect(p.w0).toBeCloseTo(0.15 * BAND_W, 6) // 205.875
+    const [s, m, p] = l.segments
+    expect(s.w0).toBeCloseTo(0.84 * BAND_W, 6) // 1152.9
+    expect(m.w0).toBeCloseTo(0.03 * BAND_W, 6) // 41.175
+    expect(p.w0).toBeCloseTo(0.13 * BAND_W, 6) // 178.425
     expect(s.x0).toBeCloseTo(276, 6)
-    expect(p.x0).toBeCloseTo(276 + 1166.625, 6) // 1442.625
+    expect(m.x0).toBeCloseTo(276 + 1152.9, 6) // 1428.9
+    expect(p.x0).toBeCloseTo(1428.9 + 41.175, 6) // 1470.075
     expect(p.x0 + p.w0).toBeCloseTo(1648.5, 6) // the initial state fills the band too
   })
 
-  it('click-2 state: settled measured shares (334px red / 1038.4px teal)', () => {
+  it('click-2 state: settled measured shares (330px red / 155px mint / 888px teal)', () => {
     const l = ratioStripLayout(data())
-    const [s, p] = l.segments
-    expect(s.w1).toBeCloseTo((FINAL.sources / W1_SUM) * BAND_W, 6) // ≈ 334.0665
-    expect(p.w1).toBeCloseTo((FINAL.platform / W1_SUM) * BAND_W, 6) // ≈ 1038.4335
-    expect(s.w1 + p.w1).toBeCloseTo(BAND_W, 6) // shares of 100%
+    const [s, m, p] = l.segments
+    expect(s.w1).toBeCloseTo((FINAL.sources / W1_SUM) * BAND_W, 6) // 329.4
+    expect(m.w1).toBeCloseTo((FINAL.mint / W1_SUM) * BAND_W, 6) // 155.0925
+    expect(p.w1).toBeCloseTo((FINAL.platform / W1_SUM) * BAND_W, 6) // 888.0075
+    expect(s.w1 + m.w1 + p.w1).toBeCloseTo(BAND_W, 6) // shares of 100%
     expect(s.x1).toBeCloseTo(276, 6)
-    expect(p.x1).toBeCloseTo(276 + s.w1, 6) // ≈ 610.0665
+    expect(m.x1).toBeCloseTo(605.4, 6) // measured mint left edge
+    expect(p.x1).toBeCloseTo(760.4925, 4) // measured teal left edge x760
   })
 
-  it('re-proportion spans conserve the band: Σdw = 0, and the teal segment absorbs the shrink', () => {
+  it('re-proportion spans conserve the band: Σdw = 0', () => {
     const l = ratioStripLayout(data())
-    const [s, p] = l.segments
-    expect(s.dw).toBeCloseTo(s.w1 - s.w0, 6) // ≈ −832.5585
-    expect(p.dw).toBeCloseTo(p.w1 - p.w0, 6) // ≈ +832.5585
-    expect(s.dw + p.dw).toBeCloseTo(0, 6)
-    // Contiguity identity: each dx is the sum of the previous dw values.
-    expect(p.dx).toBeCloseTo(s.dw, 6)
-    expect(p.dx).toBeCloseTo(-p.dw, 6) // the last segment's left edge moves by exactly its growth
+    const [s, m, p] = l.segments
+    expect(s.dw).toBeCloseTo(s.w1 - s.w0, 6) // ≈ −823.5
+    expect(m.dw).toBeCloseTo(m.w1 - m.w0, 6) // ≈ +113.9175
+    expect(p.dw).toBeCloseTo(p.w1 - p.w0, 6) // ≈ +709.5825
+    expect(s.dw + m.dw + p.dw).toBeCloseTo(0, 6)
   })
 
   it('the final state tiles the band exactly — no residue under the stacked final copy', () => {
@@ -267,7 +331,7 @@ describe('ratioStripLayout — validation throws instead of rendering blank', ()
 })
 
 describe('RatioStrip component', () => {
-  it('binds exactly 3 native v-clicks: band pop, three-burst re-flow, then caption state', () => {
+  it('binds exactly 3 native v-clicks: band pop, three-burst re-flow, then band-text/caption state', () => {
     const captured: number[] = []
     mountRatioStrip({ ...data(), title: 'RUNTIME', titleAccent: 'SHARE' }, captured)
     expect(captured).toEqual([1, 2, 3])
@@ -276,64 +340,92 @@ describe('RatioStrip component', () => {
   it('renders one build rect and one final rect per segment on the measured band', () => {
     const wrapper = mountRatioStrip(data())
     expect(wrapper.find('svg.ratiostrip').exists()).toBe(true)
-    expect(wrapper.findAll('rect.sf-rs-seg0')).toHaveLength(2)
-    expect(wrapper.findAll('rect.sf-rs-seg1')).toHaveLength(2)
+    expect(wrapper.findAll('rect.sf-rs-seg0')).toHaveLength(3)
+    expect(wrapper.findAll('rect.sf-rs-seg1')).toHaveLength(3)
     const svg = wrapper.find('svg.ratiostrip')
     expect(svg.attributes('viewBox')).toBe('0 0 1920 1080')
     expect(svg.attributes('role')).toBe('img')
-    expect(svg.attributes('aria-label')).toBe('2-segment ratio strip')
+    expect(svg.attributes('aria-label')).toBe('3-segment ratio strip')
   })
 
   it('carries both width states in the markup: initial w0 on the build copy, settled w1 on the final copy', () => {
     const wrapper = mountRatioStrip(data())
     const w0 = wrapper.findAll('rect.sf-rs-seg0').map((r) => Number(r.attributes('width')))
     const w1 = wrapper.findAll('rect.sf-rs-seg1').map((r) => Number(r.attributes('width')))
-    expect(w0[0]).toBeCloseTo(1166.625, 6)
-    expect(w0[1]).toBeCloseTo(205.875, 6)
-    expect(w1[0]).toBeCloseTo(334.0665, 4)
-    expect(w1[1]).toBeCloseTo(1038.4335, 4)
+    expect(w0[0]).toBeCloseTo(1152.9, 6)
+    expect(w0[1]).toBeCloseTo(41.175, 6)
+    expect(w0[2]).toBeCloseTo(178.425, 6)
+    expect(w1[0]).toBeCloseTo(329.4, 4)
+    expect(w1[1]).toBeCloseTo(155.0925, 4)
+    expect(w1[2]).toBeCloseTo(888.0075, 4)
     const x1 = wrapper.findAll('rect.sf-rs-seg1').map((r) => Number(r.attributes('x')))
     expect(x1[0]).toBeCloseTo(276, 6)
-    expect(x1[1]).toBeCloseTo(610.0665, 4)
+    expect(x1[1]).toBeCloseTo(605.4, 4)
+    expect(x1[2]).toBeCloseTo(760.4925, 4)
   })
 
-  it('fills segments with measured gradients: red→salmon per-rect, teal as a fixed final-region field', () => {
+  it('fills segments with measured gradients: red→salmon per-rect, mint+teal from the shared ramp field', () => {
     const wrapper = mountRatioStrip({ ...data(), palette: SLIDE_PALETTE })
     const fills = wrapper.findAll('rect.sf-rs-seg1').map((r) => r.attributes('fill'))
     expect(fills[0]).toBe('url(#sf-rs-grad-alt)')
-    expect(fills[1]).toBe('url(#sf-rs-grad-tertiary-platform)')
+    expect(fills[1]).toBe('url(#sf-rs-field)')
+    expect(fills[2]).toBe('url(#sf-rs-field)')
     const defs = wrapper.find('defs').html()
     // Red gradient carries the resolved accentAlt + the measured salmon tail.
     expect(defs).toContain('id="sf-rs-grad-alt"')
     expect(defs).toContain('stop-color="#ec423f"')
     expect(defs).toContain('stop-color="#f98c8c"')
-    // Teal gradient is userSpaceOnUse, anchored to the FINAL region
-    // (x 610.0665 → 1648.5 — its right edge lands on the band's right edge).
-    expect(defs).toContain('id="sf-rs-grad-tertiary-platform"')
+    // The shared field is userSpaceOnUse, spanning the mint segment's final
+    // left edge (605.4) to the band's right edge (1648.5) — the measured
+    // continuous ramp with no discontinuity at the x760 boundary.
+    expect(defs).toContain('id="sf-rs-field"')
     expect(defs).toContain('gradientUnits="userSpaceOnUse"')
-    expect(defs).toContain('stop-color="#76eec5"')
-    expect(defs).toContain('stop-color="#1cd798"')
-    const teal = wrapper.find('linearGradient[id="sf-rs-grad-tertiary-platform"]')
-    expect(Number(teal.attributes('x1'))).toBeCloseTo(610.0665, 4)
-    expect(Number(teal.attributes('x2'))).toBeCloseTo(1648.5, 4)
+    expect(defs).toContain('stop-color="#a0fbd9"')
+    expect(defs).toContain('stop-color="#1ed496"')
+    const field = wrapper.find('linearGradient[id="sf-rs-field"]')
+    expect(Number(field.attributes('x1'))).toBeCloseTo(605.4, 4)
+    expect(Number(field.attributes('x2'))).toBeCloseTo(1648.5, 4)
   })
 
-  it('renders the measured panel plate and the white heading row as static chrome', () => {
-    const wrapper = mountRatioStrip({ ...data(), heading: 'SHARE OF TOTAL' })
+  it('renders the measured panel plate, gray tracked heading rows, and tick row as static chrome', () => {
+    const wrapper = mountRatioStrip({ ...data(), heading: 'SHARE OF TOTAL', heading2: 'COMPUTE UNITS · FY26' })
     const plate = wrapper.find('rect.sf-rs-plate')
-    expect(plate.attributes('fill')).toBe('#18181b')
+    expect(plate.attributes('fill')).toBe('#19181d')
     expect(Number(plate.attributes('x'))).toBeCloseTo(234, 4)
     expect(Number(plate.attributes('y'))).toBeCloseTo(331, 4)
     expect(Number(plate.attributes('width'))).toBeCloseTo(1451, 4)
-    expect(Number(plate.attributes('height'))).toBeCloseTo(109, 4)
+    expect(Number(plate.attributes('height'))).toBeCloseTo(139, 4)
+    // Row 1: gray 13px-cap caps inside the plate, spread over the measured 449px.
     const heading = wrapper.find('text.sf-rs-heading')
     expect(heading.text()).toBe('SHARE OF TOTAL')
-    expect(heading.attributes('fill')).toBe('#ffffff')
-    expect(Number(heading.attributes('y'))).toBeCloseTo(490, 4)
-    // Without the prop no heading row renders; the plate is always present.
+    expect(heading.attributes('fill')).toBe('#a8a8b8')
+    expect(Number(heading.attributes('x'))).toBeCloseTo(259, 4)
+    expect(Number(heading.attributes('y'))).toBeCloseTo(383, 4)
+    expect(heading.attributes('textLength')).toBe('449')
+    expect(Number(heading.attributes('font-size'))).toBeCloseTo(13 / 0.752, 3)
+    // Row 2: gray 16px-cap caps under the plate, spread over the measured 396px.
+    const heading2 = wrapper.find('text.sf-rs-heading2')
+    expect(heading2.text()).toBe('COMPUTE UNITS · FY26')
+    expect(heading2.attributes('fill')).toBe('#a8a8b8')
+    expect(Number(heading2.attributes('x'))).toBeCloseTo(276, 4)
+    expect(Number(heading2.attributes('y'))).toBeCloseTo(480, 4)
+    expect(heading2.attributes('textLength')).toBe('396')
+    expect(Number(heading2.attributes('font-size'))).toBeCloseTo(16 / 0.752, 3)
+    // 9 measurement ticks: 4×26px at y509, first tick centered on x280.
+    const ticks = wrapper.findAll('.sf-rs-ticks rect')
+    expect(ticks).toHaveLength(9)
+    expect(Number(ticks[0].attributes('x'))).toBeCloseTo(278, 4)
+    expect(Number(ticks[0].attributes('y'))).toBeCloseTo(509, 4)
+    expect(Number(ticks[0].attributes('width'))).toBe(4)
+    expect(Number(ticks[0].attributes('height'))).toBe(26)
+    expect(ticks[0].attributes('fill')).toBe('#3a3b42')
+    expect(Number(ticks[8].attributes('x'))).toBeCloseTo(1637, 4)
+    // Without the props no heading rows render; plate and ticks are always present.
     const bare = mountRatioStrip(data())
     expect(bare.find('text.sf-rs-heading').exists()).toBe(false)
+    expect(bare.find('text.sf-rs-heading2').exists()).toBe(false)
     expect(bare.find('rect.sf-rs-plate').exists()).toBe(true)
+    expect(bare.findAll('.sf-rs-ticks rect')).toHaveLength(9)
   })
 
   it('renders the burst copies with stepped reveal widths for the three-burst re-flow', () => {
@@ -344,109 +436,150 @@ describe('RatioStrip component', () => {
     expect(bursts[1].classes()).toContain('sf-rs-burst1')
     expect(Number(bursts[0].attributes('width'))).toBeCloseTo(480.375, 4) // 0.35 × band
     expect(Number(bursts[1].attributes('width'))).toBeCloseTo(754.875, 4) // 0.55 × band
-    expect(Number(bursts[0].attributes('x'))).toBeCloseTo(610.0665, 4) // teal region's left edge
-    expect(bursts[0].attributes('fill')).toBe('url(#sf-rs-grad-tertiary-platform)')
-    expect(bursts[1].attributes('fill')).toBe('url(#sf-rs-grad-tertiary-platform)')
+    expect(Number(bursts[0].attributes('x'))).toBeCloseTo(760.4925, 4) // teal region's left edge
+    expect(bursts[0].attributes('fill')).toBe('url(#sf-rs-field)')
+    expect(bursts[1].attributes('fill')).toBe('url(#sf-rs-field)')
   })
 
-  it('ships width-transition classes with burst delays and hidden-state snap (transition: none)', () => {
+  it('renders the mint segment (not a chip): full band height, settling on its own delay', () => {
+    const wrapper = mountRatioStrip(data())
+    const mintFinal = wrapper.findAll('rect.sf-rs-seg1')[1]
+    expect(mintFinal.classes()).toContain('sf-rs-mint')
+    expect(mintFinal.attributes('fill')).toBe('url(#sf-rs-field)')
+    expect(Number(mintFinal.attributes('x'))).toBeCloseTo(605.4, 4)
+    expect(Number(mintFinal.attributes('width'))).toBeCloseTo(155.0925, 4) // 11.3% share, not the old 95px chip
+    expect(Number(mintFinal.attributes('height'))).toBeCloseTo(H_FRAC * 1080, 4)
+    // No chip overlay exists anymore — the mint segment IS the chip.
+    expect(wrapper.find('rect.sf-rs-chip').exists()).toBe(false)
+  })
+
+  it('ships width-transition classes with measured delays and hidden-state snap (transition: none)', () => {
     mountRatioStrip(data())
     const css = Array.from(document.querySelectorAll('style'))
       .map((tag) => tag.textContent ?? '')
       .join('\n')
 
-    // Revealed states: 120ms pop (click 1), 140ms burst ease (click 2).
+    // Revealed states: 120ms pop (click 1), measured burst eases (click 2).
     expect(css).toMatch(/\.sf-rs-seg0[^{]*\{[^}]*width 120ms/)
-    expect(css).toMatch(/\.sf-rs-seg1[^{]*\{[^}]*width 140ms/)
-    expect(css).toMatch(/\.sf-rs-burst(?!0|1)[^{]*\{[^}]*width 140ms/)
-    // Stepped burst delays: 0ms / 470ms / 730ms (the final copy carries 730).
-    expect(css).toMatch(/\.sf-rs-burst1[^{]*\{[^}]*transition-delay:\s*470ms/)
-    expect(css).toMatch(/\.sf-rs-seg1[^{]*\{[^}]*transition-delay:\s*730ms/)
+    expect(css).toMatch(/\.sf-rs-burst0[^{]*\{[^}]*width 700ms/)
+    expect(css).toMatch(/\.sf-rs-burst1[^{]*\{[^}]*width 350ms/)
+    expect(css).toMatch(/\.sf-rs-seg1[^{]*\{[^}]*width 350ms/)
+    // Stepped burst delays: 0 / 1133 / 2967ms (the final copies carry 2967),
+    // the mint settle after burst 3 at 3433ms, sweep 2 at 283ms.
+    expect(css).toMatch(/\.sf-rs-burst1[^{]*\{[^}]*transition-delay:\s*1133ms/)
+    expect(css).toMatch(/\.sf-rs-seg1[^{]*\{[^}]*transition-delay:\s*2967ms/)
+    expect(css).toMatch(/\.sf-rs-mint[^{]*\{[^}]*transition-delay/)
+    expect(css).toMatch(/\.sf-rs-sweep1[^{]*\{[^}]*transition-delay:\s*283ms/)
     // Hidden states: width 0 + transition none → forward reveal animates,
     // backward nav snaps (the locked decision).
     expect(css).toMatch(/\.sf-rs-build\.slidev-vclick-hidden[^{]*\.sf-rs-seg0[^{]*\{[^}]*width:\s*0/)
     expect(css).toMatch(/\.sf-rs-final\.slidev-vclick-hidden[^{]*\.sf-rs-seg1[^{]*\{[^}]*width:\s*0/)
     expect(css).toMatch(/\.sf-rs-final\.slidev-vclick-hidden[^{]*\.sf-rs-burst[^{]*\{[^}]*width:\s*0/)
     expect(css).toMatch(/\.sf-rs-final\.slidev-vclick-hidden[^{]*\.sf-rs-seg1[^{]*\{[^}]*transition:\s*none/)
-    // Chip and caption fades also snap back (the caption on its own third click).
-    expect(css).toMatch(/\.sf-rs-final\.slidev-vclick-hidden[^{]*\.sf-rs-chip[^{]*\{[^}]*transition:\s*none/)
+    expect(css).toMatch(/\.sf-rs-text\.slidev-vclick-hidden[^{]*\.sf-rs-sweep[^{]*\{[^}]*width:\s*0/)
     expect(css).toMatch(/\.sf-rs-text\.slidev-vclick-hidden[^{]*\.sf-rs-caption[^{]*\{[^}]*transition:\s*none/)
     // Reduced motion freezes every reveal.
     expect(css).toContain('prefers-reduced-motion')
   })
 
-  it('maps tones to gradient/palette roles: alt → red gradient, accent → accent, tertiary → teal gradient, plain → chrome white', () => {
+  it('maps tones to gradient/palette roles: alt → red gradient, accent → accent, mint/tertiary → shared field, plain → chrome white', () => {
     const wrapper = mountRatioStrip({
       segments: [
-        { id: 'alt', tone: 'alt', wFrac: 0.25 },
-        { id: 'accent', tone: 'accent', wFrac: 0.25 },
-        { id: 'tert', tone: 'tertiary', wFrac: 0.25 },
-        { id: 'plain', tone: 'plain', wFrac: 0.25 },
+        { id: 'alt', tone: 'alt', wFrac: 0.2 },
+        { id: 'accent', tone: 'accent', wFrac: 0.2 },
+        { id: 'mint', tone: 'mint', wFrac: 0.2 },
+        { id: 'tert', tone: 'tertiary', wFrac: 0.2 },
+        { id: 'plain', tone: 'plain', wFrac: 0.2 },
       ],
       yFrac: 0.5,
       hFrac: 0.2,
-      palette: { accent: '#f7ba20', accentAlt: '#e5413f', accentTertiary: '#1cd798' },
+      palette: { accent: '#f7ba20', accentAlt: '#e5413f' },
     })
     const fills = wrapper.findAll('rect.sf-rs-seg1').map((r) => r.attributes('fill'))
     expect(fills).toEqual([
       'url(#sf-rs-grad-alt)',
       '#f7ba20',
-      'url(#sf-rs-grad-tertiary-tert)',
+      'url(#sf-rs-field)',
+      'url(#sf-rs-field)',
       '#f5f4f7',
     ])
   })
 
-  it('falls back tertiary → accent when the palette omits accentTertiary', () => {
+  it('falls back mint/tertiary field to the band extent and renders even without a mint segment', () => {
     const wrapper = mountRatioStrip({
       segments: [{ id: 'teal', tone: 'tertiary', wFrac: 1 }],
       yFrac: 0.5,
       hFrac: 0.2,
-      palette: { accent: '#f7ba20' },
     })
-    expect(wrapper.find('rect.sf-rs-seg1').attributes('fill')).toBe('url(#sf-rs-grad-tertiary-teal)')
-    expect(wrapper.find('defs').html()).toContain('stop-color="#f7ba20"')
+    expect(wrapper.find('rect.sf-rs-seg1').attributes('fill')).toBe('url(#sf-rs-field)')
+    const field = wrapper.find('linearGradient[id="sf-rs-field"]')
+    // One tertiary segment spans the whole band: the field anchors to it.
+    expect(Number(field.attributes('x1'))).toBeCloseTo(276, 4)
+    expect(Number(field.attributes('x2'))).toBeCloseTo(1648.5, 4)
   })
 
-  it('renders the mint chip on tertiary segments at the region\'s left edge, measured 95/1043 wide', () => {
-    const wrapper = mountRatioStrip(data())
-    const teal = wrapper.findAll('rect.sf-rs-seg1')[1]
-    const tealX = Number(teal.attributes('x'))
-    const tealW = Number(teal.attributes('width'))
-
-    const chip = wrapper.find('rect.sf-rs-chip')
-    expect(chip.attributes('fill')).toBe('#a0fcd9')
-    expect(Number(chip.attributes('x'))).toBeCloseTo(tealX, 4) // left edge of the region
-    expect(Number(chip.attributes('width'))).toBeCloseTo(tealW * (95 / 1043), 4)
+  it('renders the in-band display text with the two-sweep clip reveal', () => {
+    const wrapper = mountRatioStrip({ ...data(), bandText: 'PLATFORM · 75.7%' })
+    const text = wrapper.find('text.sf-rs-bandtext')
+    expect(text.text()).toBe('PLATFORM · 75.7%')
+    expect(text.attributes('fill')).toBe('#0a0a0a')
+    expect(text.attributes('font-weight')).toBe('700')
+    expect(Number(text.attributes('x'))).toBeCloseTo(706, 4)
+    expect(Number(text.attributes('y'))).toBeCloseTo(718, 4) // cap band bottom = baseline
+    expect(Number(text.attributes('font-size'))).toBeCloseTo(90 / 0.752, 3)
+    expect(Number(text.attributes('textLength'))).toBeCloseTo(953, 3)
+    expect(text.attributes('lengthAdjust')).toBe('spacingAndGlyphs')
+    expect(text.attributes('clip-path')).toBe('url(#sf-rs-band-sweep)')
+    // Two sweep rects: [706→1282] then [1282→1659] — the measured sweep split.
+    const sweeps = wrapper.findAll('rect.sf-rs-sweep')
+    expect(sweeps).toHaveLength(2)
+    expect(Number(sweeps[0].attributes('x'))).toBeCloseTo(706, 4)
+    expect(Number(sweeps[0].attributes('width'))).toBeCloseTo(576, 4)
+    expect(Number(sweeps[1].attributes('x'))).toBeCloseTo(1282, 4)
+    expect(Number(sweeps[1].attributes('width'))).toBeCloseTo(377, 4)
+    // No bandText prop → no in-band text, but the clip scaffolding is harmless.
+    const bare = mountRatioStrip(data())
+    expect(bare.find('text.sf-rs-bandtext').exists()).toBe(false)
   })
 
-  it('renders the caption row on the third click with tone-family label colors', () => {
-    const labeled = mountRatioStrip({ ...data(), palette: SLIDE_PALETTE })
-    const texts = labeled.findAll('text.sf-rs-caption')
-    expect(texts).toHaveLength(2)
-    expect(texts[0].text()).toBe('INGEST')
-    expect(texts[0].attributes('fill')).toBe('#ec423f') // red label under the red segment
-    expect(texts[1].attributes('fill')).toBe('#70e8c0') // mint/green under the teal region
-    expect(Number(texts[0].attributes('x'))).toBeCloseTo(276, 4)
-    expect(Number(texts[1].attributes('x'))).toBeCloseTo(610.0665, 4)
-    expect(Number(texts[0].attributes('y'))).toBeCloseTo(835.5, 4)
+  it('renders the caption row on the third click with the measured red ink override', () => {
+    const wrapper = mountRatioStrip({
+      ...data(),
+      caption: 'SHARE OF COMPUTE',
+      captionColor: CAPTION_COLOR,
+    })
+    const capTexts = wrapper.findAll('text.sf-rs-caption')
+    expect(capTexts).toHaveLength(1)
+    expect(capTexts[0].text()).toBe('SHARE OF COMPUTE')
+    expect(capTexts[0].attributes('fill')).toBe('#e84442') // measured red, not chrome-dim
+    expect(Number(capTexts[0].attributes('x'))).toBeCloseTo(276, 4)
+    expect(Number(capTexts[0].attributes('y'))).toBeCloseTo(858, 4)
+    expect(Number(capTexts[0].attributes('font-size'))).toBeCloseTo(22 / 0.752, 3)
 
-    const capped = mountRatioStrip({
-      segments: [{ id: 'a', tone: 'accent', wFrac: 1 }],
+    // Without the override the caption falls back to chrome-dim subtext.
+    const dim = mountRatioStrip({ ...data(), caption: 'SHARE OF RUNTIME' })
+    expect(dim.findAll('text.sf-rs-caption')[0].attributes('fill')).toBe('#a6a8ae')
+
+    // Per-segment labels keep their tone-family colors (mechanism retained).
+    const labeled = mountRatioStrip({
+      segments: [
+        { id: 'a', tone: 'alt', wFrac: 0.5, label: 'INGEST' },
+        { id: 'b', tone: 'tertiary', wFrac: 0.5, label: 'PLATFORM' },
+      ],
       yFrac: 0.5,
       hFrac: 0.2,
-      caption: 'SHARE OF RUNTIME',
+      palette: SLIDE_PALETTE,
     })
-    const capTexts = capped.findAll('text.sf-rs-caption')
-    expect(capTexts).toHaveLength(1)
-    expect(capTexts[0].text()).toBe('SHARE OF RUNTIME')
-    expect(capTexts[0].attributes('fill')).toBe('#a6a8ae') // chrome-dim subtext
-    expect(Number(capTexts[0].attributes('x'))).toBeCloseTo(276, 4)
+    const labelTexts = labeled.findAll('text.sf-rs-caption')
+    expect(labelTexts).toHaveLength(2)
+    expect(labelTexts[0].attributes('fill')).toBe('#ec423f') // red label under the red segment
+    expect(labelTexts[1].attributes('fill')).toBe('#70e8c0') // mint/green under the teal region
   })
 
   it('renders the two-tone header: white title + chrome-green titleAccent tail', () => {
-    const wrapper = mountRatioStrip({ ...data(), title: 'RUNTIME', titleAccent: 'SHARE' })
+    const wrapper = mountRatioStrip({ ...data(), title: 'RUNTIME SHARE', titleAccent: '· FY26 SPLIT' })
     const header = wrapper.find('.sf-chrome-title')
-    expect(header.text()).toContain('RUNTIME')
+    expect(header.text()).toContain('RUNTIME SHARE')
     expect(header.html()).toContain('#66fb00')
   })
 
