@@ -40,7 +40,7 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (13) · VerticalSpine (5) · HeroTile (1) · SchematicRows (10) · TwoBarCompare (3) · ColumnRow (6) · TileGrid (6) · RatioStrip (3) · SegmentTimeline (3) · StackPanels (5) · MilestoneLanes (9) · HexCluster (3)
+├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (13) · VerticalSpine (5) · HeroTile (1) · SchematicRows (10) · TwoBarCompare (3) · ColumnRow (8) · TileGrid (6) · RatioStrip (3) · SegmentTimeline (3) · StackPanels (5) · MilestoneLanes (9) · HexCluster (3)
 ├─ components/
 │  ├─ StepFlow.vue                # the serpentine flow diagram (auto-imported by Slidev)
 │  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
@@ -187,7 +187,7 @@ inline on the demo slides; data order is the click order for every family.
 | `HeroTile`      | `spine.ts` — `HeroTileData` (tile + icon + optional label on the spine axis) | 1 — halo, tile, icon, label together | `orangeSpine` verbatim (`#f85721`), accent-derived halo | 6          | `user-round` |
 | `SchematicRows` | `rows.ts` — `SchematicRowsData` (rows + optional schematic) | one per row; schematic strokes share their attached row's click | override: v6-measured cool `#2f95b9` + amber `#f2ba1f` | 7          | —           |
 | `TwoBarCompare` | `compare.ts` — `CompareBar[]` + `TwoBarCompareData` (bars/xFrac/barHFrac/yFracs + optional `dataText` block — `lines`/`subline`/`caption`/`note`/`rules` — and centered `subhead`) | 3 — bar 1, bar 2, then one shared annotation click for the data-text block, caption/note rows, divider rules, labels, and chips | `statusAmber` (the component's family default; rework adds the measured teal `#1cd797` top-chip tone) | 8          | —           |
-| `ColumnRow`     | `columns.ts` — `ColumnRowData` (columns + `yFrac`/`hFrac` + optional `heading`/`labelRows`) | 5 columns left→right, then the label rows | `cyanOnBlack` base + token mix (`stepBlue` ship endpoint, `orangeSpine`/`statusAmber` accents, `accentTertiary` teal) | 9          | —           |
+| `ColumnRow`     | `columns.ts` — `ColumnRowData` (columns + `yFrac`/`hFrac` + optional `heading`/`labelRows`/`labelPosition`/`numerals`/`lateLabels`/`note`) | 8 (exact trace): columns 1,2,3,4,6 — deferred below-labels 5,7 — heading numeral with col-5 (6) — note row last (8); legacy compositions stay at 5 + label rows | `cyanOnBlack` base + token mix (`stepBlue` ship endpoint, `orangeSpine`/`statusAmber` accents, `accentTertiary` teal) | 9          | —           |
 | `TileGrid`      | `tiles.ts` — `TileGridData` (tiles/cols + tile & pitch fracs; per-tile `tone`/`wFrac`/`hFrac`/`mini` overrides) | 6 — one per tile, row-major | `cyanOnBlack` (measured hex core `#1ed0e8` + matrix/row tones via `accentAlt`/`accentTertiary` + status/plain constants) | 10         | `cpu` · `boxes` · `layers` (candidates; fallback covers a wrong guess) |
 | `RatioStrip`    | `strip.ts` — `RatioStripData` (segments + `yFrac`/`hFrac` + optional heading/caption) | 3 — band pop at initial proportions, three-burst teal re-flow, then chip + tone-colored caption row | measured gradients on the `accentAlt`/`accentTertiary` tokens — hue decisions in the notes below | 11         | —           |
 | `SegmentTimeline` | `timeline.ts` — `TimelineSegment[]` (`tone` is `'accent'`/`'tertiary'`/`'alt'`, optional proportional `wFrac`, optional `label`/`sublabel`) | 3 — one per segment: node pop + fill sweep together | measured blue/cyan/red trio over `chainBlue` (no preset added) | 12         | —           |
@@ -239,6 +239,19 @@ the optional `labelRows` carry text rows below the columns — one string per
 column, revealed together on the final click; plain rows keep the legacy white
 dot/label sizing, while `{ texts, tone: 'column' }` rows render at the
 measured tinted-label size with every cell filled in its column's tone.
+
+ColumnRow authoring notes (exact-trace composition, sheet art_7yZkdmCE):
+`labelPosition: 'below'` moves each label under its plate as tone-colored text
+on the measured y868 baseline; `numerals` centers dark two-digit numerals
+(`01`…) inside the plates riding their rise; `lateLabels` (ascending, unique
+indices) gives those columns' below-labels a private beat right after their
+column's; `note` renders a centered amber row under the field on the strictly
+final beat; `heading: { numeral, caption }` swaps the badge disc for a white
+display numeral gated to the last column's beat (chip bars land with it); the
+caption carries the measured 0.135em tracking. `titleTextLength` pins the
+title's measured ink extent (slide 9: 1097px). Columns 1–3's label cadence is
+unrecoverable from the source — they ride their column beats, flagged
+unverifiable.
 RatioStrip authoring notes (wave 2, research art_2kSBGNmJ §3.3 — source video
 95–101s; fidelity rework per report art_iHm120ov §RatioStrip, settled frame
 t=99.1s at 1920×1080): one proportional band, 71.5%w × 21.9%h at y 51.4%h,

@@ -4,6 +4,7 @@ import { mount } from '@vue/test-utils'
 import ColumnRow from '../ColumnRow.vue'
 import {
   BADGE_FRAC,
+  capSize,
   CAPTION_BASELINE_FRAC,
   CHIP_BAR_BOTTOM_FRAC,
   CHIP_BAR_HEIGHTS_FRAC,
@@ -15,10 +16,15 @@ import {
   COL_TOP_Y_FRAC,
   COL_W_FRAC,
   COL_X0_FRAC,
+  columnRowBeats,
   columnRowLayout,
   DOT_ROW_Y_FRAC,
   headingLayout,
+  LABEL_BELOW_BASELINE_FRAC,
   LABEL_ROW_Y_FRAC,
+  NOTE_BASELINE_FRAC,
+  NOTE_CX_FRAC,
+  HEADING_NUMERAL_BASELINE_FRAC,
   PLATE_PAD,
   RAIL_GAP,
   RAIL_H_FRAC,
@@ -64,6 +70,11 @@ function mountColumnRow(props: {
   yFrac: number
   hFrac: number
   labelRows?: LabelRowInput[]
+  labelPosition?: 'inside' | 'below'
+  numerals?: boolean
+  lateLabels?: number[]
+  note?: string
+  titleTextLength?: number
   heading?: ColumnRowHeading
   palette?: object
   title?: string
@@ -491,3 +502,221 @@ describe('columnRowLayout rework — measured column glow halo', () => {
     })
   })
 })
+
+describe('columnRowBeats — exact-trace click choreography (sheet art_7yZkdmCE)', () => {
+  const trace: Column[] = [
+    { id: 'practices', tone: 'blue', label: 'SOFTWARE PRACTICES' },
+    { id: 'integration', tone: 'accent', label: 'DEEPER INTEGRATION' },
+    { id: 'collaboration', tone: 'alt', label: 'CLOSER COLLABORATION' },
+    { id: 'assisted', tone: 'tertiary', label: 'AI ASSISTED' },
+    { id: 'products', tone: 'status', label: 'DATA PRODUCTS' },
+  ]
+
+  it('resolves the slide-9 schedule: columns 1,2,3,4,6 — deferred labels 5,7 — heading 6 — note 8', () => {
+    const b = columnRowBeats({ columns: trace, yFrac, hFrac, lateLabels: [3, 4], note: 'SHAPE OF THE WORK, NOT THE TOOL LIST' })
+
+    expect(b.columnClicks).toEqual([1, 2, 3, 4, 6])
+    expect(b.labelClicks).toEqual([1, 2, 3, 5, 7])
+    expect(b.headingNumeralClick).toBe(6)
+    expect(b.noteClick).toBe(8)
+    expect(b.total).toBe(8)
+  })
+
+  it('degrades to the legacy identity schedule without lateLabels or note', () => {
+    const b = columnRowBeats({ columns: trace, yFrac, hFrac })
+
+    expect(b.columnClicks).toEqual([1, 2, 3, 4, 5])
+    expect(b.labelClicks).toEqual([1, 2, 3, 4, 5])
+    expect(b.headingNumeralClick).toBe(5)
+    expect(b.noteClick).toBeUndefined()
+    expect(b.total).toBe(5)
+  })
+})
+
+describe('columnRowLayout exact-trace — below-labels, numerals, note', () => {
+  const trace: Column[] = [
+    { id: 'practices', tone: 'blue', label: 'SOFTWARE PRACTICES' },
+    { id: 'integration', tone: 'accent', label: 'DEEPER INTEGRATION' },
+    { id: 'collaboration', tone: 'alt', label: 'CLOSER COLLABORATION' },
+    { id: 'assisted', tone: 'tertiary', label: 'AI ASSISTED' },
+    { id: 'products', tone: 'status', label: 'DATA PRODUCTS' },
+  ]
+
+  it('lays one tone-carried label per column on the measured y868 baseline', () => {
+    const l = columnRowLayout({ columns: trace, yFrac, hFrac, labelPosition: 'below' })
+
+    expect(l.labels).toHaveLength(5)
+    l.labels.forEach((label, i) => {
+      // Centered under its column (col x + w/2 = 431.04 + i·264).
+      expect(label.x).toBeCloseTo(431.04 + i * 264, 6)
+      expect(label.y).toBeCloseTo(LABEL_BELOW_BASELINE_FRAC * 1080, 6)
+      expect(LABEL_BELOW_BASELINE_FRAC * 1080).toBeCloseTo(868, 6)
+      expect(label.size).toBeCloseTo(capSize(13), 6)
+      expect(label.text).toBe(trace[i].label)
+      expect(label.tone).toBe(trace[i].tone)
+    })
+  })
+
+  it('keeps below-labels empty unless labelPosition is below (legacy compositions unaffected)', () => {
+    const l = columnRowLayout({ columns: trace, yFrac, hFrac })
+    expect(l.labels).toEqual([])
+  })
+
+  it('mounts centered two-digit numerals riding each plate at the measured band', () => {
+    const l = columnRowLayout({ columns: trace, yFrac, hFrac, numerals: true })
+
+    l.columns.forEach((col, i) => {
+      expect(col.numeral).toBeDefined()
+      expect(col.numeral?.text).toBe(String(i + 1).padStart(2, '0'))
+      expect(col.numeral?.x).toBeCloseTo(431.04 + i * 264, 6)
+      // Baseline sits a fixed fraction of the column height above the block
+      // bottom (555.12 + 251.64·(1−0.0905) ≈ 783.99 — the measured y761–784 band).
+      expect(col.numeral?.y).toBeCloseTo(555.12 + 251.64 * (1 - 0.0905), 4)
+      expect(col.numeral?.size).toBeCloseTo(capSize(23), 6)
+    })
+  })
+
+  it('omits numerals unless requested', () => {
+    const l = columnRowLayout({ columns: trace, yFrac, hFrac })
+    l.columns.forEach((col) => expect(col.numeral).toBeUndefined())
+  })
+
+  it('resolves the note row to its measured slot: centered x958.5 on baseline y943', () => {
+    const l = columnRowLayout({ columns: trace, yFrac, hFrac, note: 'SHAPE OF THE WORK, NOT THE TOOL LIST' })
+
+    expect(l.note?.x).toBeCloseTo(NOTE_CX_FRAC * 1920, 6)
+    expect(NOTE_CX_FRAC * 1920).toBeCloseTo(958.5, 6)
+    expect(l.note?.y).toBeCloseTo(NOTE_BASELINE_FRAC * 1080, 6)
+    expect(NOTE_BASELINE_FRAC * 1080).toBeCloseTo(943, 6)
+    expect(l.note?.size).toBeCloseTo(capSize(23), 6)
+    expect(l.note?.text).toBe('SHAPE OF THE WORK, NOT THE TOOL LIST')
+  })
+
+  it('rejects late-label indices that are out of range, unordered, or duplicated', () => {
+    expect(() => columnRowLayout({ columns: trace, yFrac, hFrac, lateLabels: [5] })).toThrow(RangeError)
+    expect(() => columnRowLayout({ columns: trace, yFrac, hFrac, lateLabels: [-1] })).toThrow(RangeError)
+    expect(() => columnRowLayout({ columns: trace, yFrac, hFrac, lateLabels: [4, 3] })).toThrow(RangeError)
+    expect(() => columnRowLayout({ columns: trace, yFrac, hFrac, lateLabels: [3, 3] })).toThrow(RangeError)
+    // Valid indices pass.
+    expect(() => columnRowLayout({ columns: trace, yFrac, hFrac, lateLabels: [3, 4] })).not.toThrow()
+  })
+})
+
+describe('headingLayout exact-trace — white display-numeral slot', () => {
+  it('exposes the badge-axis numeral slot at the measured cap-89 baseline', () => {
+    const h = headingLayout()
+
+    expect(h.numeral.x).toBeCloseTo(BADGE_FRAC.cx * 1920, 6)
+    expect(BADGE_FRAC.cx * 1920).toBeCloseTo(999, 6)
+    expect(h.numeral.y).toBeCloseTo(HEADING_NUMERAL_BASELINE_FRAC * 1080, 6)
+    expect(HEADING_NUMERAL_BASELINE_FRAC * 1080).toBeCloseTo(411, 6)
+    expect(h.numeral.size).toBeCloseTo(capSize(89), 6)
+  })
+})
+
+describe('ColumnRow exact-trace — numerals, below-labels, gated heading, note', () => {
+  const trace: Column[] = [
+    { id: 'practices', tone: 'blue', label: 'SOFTWARE PRACTICES' },
+    { id: 'integration', tone: 'accent', label: 'DEEPER INTEGRATION' },
+    { id: 'collaboration', tone: 'alt', label: 'CLOSER COLLABORATION' },
+    { id: 'assisted', tone: 'tertiary', label: 'AI ASSISTED' },
+    { id: 'products', tone: 'status', label: 'DATA PRODUCTS' },
+  ]
+
+  function mountTrace() {
+    return mountColumnRow({
+      columns: trace,
+      yFrac,
+      hFrac,
+      labelPosition: 'below',
+      numerals: true,
+      lateLabels: [3, 4],
+      note: 'SHAPE OF THE WORK, NOT THE TOOL LIST',
+      titleTextLength: 1097,
+      heading: { numeral: '5', caption: 'TRENDS RESHAPING THE WORK' },
+      title: 'PIPELINE',
+      titleAccent: 'DISRUPTION',
+    })
+  }
+
+  it('consumes the exact 8-beat schedule in mount order', () => {
+    const { clicks } = mountTrace()
+
+    // Column groups (1,2,3,4,6) → heading gate (6) → below-labels (1,2,3,5,7)
+    // → note row (8).
+    expect(clicks).toEqual([1, 2, 3, 4, 6, 6, 1, 2, 3, 5, 7, 8])
+  })
+
+  it('renders numerals inside the plates and drops the inside labels', () => {
+    const { wrapper } = mountTrace()
+    const numerals = wrapper.findAll('.sf-col-numeral')
+
+    expect(numerals).toHaveLength(5)
+    numerals.forEach((n, i) => expect(n.text()).toBe(String(i + 1).padStart(2, '0')))
+    // The measured in-plate ink is near-black.
+    expect(numerals[0].attributes('fill')).toBe('#030406')
+    // 'below' mode: no white in-block labels.
+    expect(wrapper.findAll('.sf-col-label')).toHaveLength(0)
+  })
+
+  it('renders below-plate labels in each column’s tone on the measured baseline', () => {
+    const { wrapper } = mountTrace()
+    const labels = wrapper.findAll('.sf-col-label-below')
+    const blocks = wrapper.findAll('.sf-col-block')
+
+    expect(labels).toHaveLength(5)
+    labels.forEach((label, i) => {
+      expect(label.text()).toBe(trace[i].label)
+      // Hue-matched to its plate.
+      expect(label.attributes('fill')).toBe(blocks[i].attributes('fill'))
+      expect(Number(label.attributes('y'))).toBeCloseTo(868, 6)
+    })
+  })
+
+  it('gates the chip + white numeral on the last column’s beat and keeps the caption static', () => {
+    const { wrapper } = mountTrace()
+
+    // Numeral mode: no legacy badge disc, no icon glyph.
+    expect(wrapper.find('.sf-col-badge').exists()).toBe(false)
+    const display = wrapper.find('.sf-col-numeral-display')
+    expect(display.exists()).toBe(true)
+    expect(display.text()).toBe('5')
+    expect(Number(display.attributes('y'))).toBeCloseTo(411, 6)
+    // Chip bars ride the gated group.
+    expect(wrapper.findAll('.sf-col-heading-gate rect').length).toBeGreaterThan(0)
+    // Caption stays static: it is outside the gate and carries the measured tracking.
+    const caption = wrapper.find('.sf-col-caption')
+    expect(caption.text()).toBe('TRENDS RESHAPING THE WORK')
+    expect(caption.attributes('letter-spacing')).toBe('0.135em')
+  })
+
+  it('renders the note row in the status amber as the final layer', () => {
+    const { wrapper } = mountTrace()
+    const note = wrapper.find('.sf-col-note')
+
+    expect(note.exists()).toBe(true)
+    expect(note.text()).toBe('SHAPE OF THE WORK, NOT THE TOOL LIST')
+    expect(Number(note.attributes('x'))).toBeCloseTo(958.5, 6)
+    expect(note.attributes('fill')).toBe(wrapper.find('.sf-col-chip-baseline').attributes('fill'))
+    expect(Number(note.attributes('y'))).toBeCloseTo(943, 6)
+    // Measured span x619–1297 (678px) fits with ≈0.017em over the mono advance.
+    expect(note.attributes('letter-spacing')).toBe('0.017em')
+  })
+
+  it('pins the title’s measured ink extent through to TitleChrome', () => {
+    const { wrapper } = mountTrace()
+    const title = wrapper.findComponent({ name: 'TitleChrome' })
+
+    expect(title).toBeDefined()
+    expect(title?.props('titleTextLength')).toBe(1097)
+  })
+
+  it('keeps the legacy static badge heading when no numeral is authored', () => {
+    const { wrapper } = mountColumnRow({ columns: trace, yFrac, hFrac, heading: { icon: 'flask-conical', caption: 'FIVE STAGES · ONE PIPELINE' } })
+
+    expect(wrapper.find('.sf-col-badge').exists()).toBe(true)
+    expect(wrapper.find('.sf-col-numeral-display').exists()).toBe(false)
+    expect(wrapper.find('.sf-col-heading-gate').exists()).toBe(false)
+  })
+})
+

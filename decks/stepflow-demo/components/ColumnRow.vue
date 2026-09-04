@@ -2,8 +2,14 @@
 import { computed, useId } from 'vue'
 import {
   BADGE_ICON_AT_1080,
+  capSize,
+  CAPTION_TRACKING,
+  columnRowBeats,
   columnRowLayout,
   headingLayout,
+  LABEL_BELOW_TRACKING,
+  NOTE_TRACKING,
+  NUMERAL_FILL,
   RISE_FRAC,
   TINTED_LABEL_SIZE_SOURCE,
   typeScale,
@@ -25,7 +31,17 @@ const props = withDefaults(defineProps<{
   hFrac: number
   /** Optional text rows below the columns — plain rows or `{ texts, tone: 'column' }` tinted rows. */
   labelRows?: LabelRowInput[]
-  /** Measured heading chrome above the field: amber bar-chip, white icon badge, white caption. */
+  /** `'inside'` (default) keeps the legacy in-block white label; `'below'` moves it under the plate as tone-colored text (exact-trace treatment). */
+  labelPosition?: 'inside' | 'below'
+  /** Render centered dark two-digit numerals (`01`…) inside the plates; they ride their column's rise. */
+  numerals?: boolean
+  /** Column indices (ascending, unique) whose below-labels take a private beat right after their column instead of riding it. */
+  lateLabels?: number[]
+  /** Centered amber note row under the field, landing on the final beat. */
+  note?: string
+  /** Sheet/reference-measured title ink extent in canvas px — pins TitleChrome's `textLength` condensation. */
+  titleTextLength?: number
+  /** Measured heading chrome above the field: amber bar-chip, white icon badge (or white numeral), white caption. */
   heading?: ColumnRowHeading
   /** Partial palette merged over the measured `cyanOnBlack` preset. */
   palette?: StepFlowPaletteOverride
@@ -43,7 +59,30 @@ const HALO_OPACITY = 0.6
 const HALO_BLUR = 18
 
 const p = computed(() => resolvePalette(props.palette))
-const layout = computed(() => columnRowLayout({ columns: props.columns, yFrac: props.yFrac, hFrac: props.hFrac, labelRows: props.labelRows }))
+const layout = computed(() => columnRowLayout({
+  columns: props.columns,
+  yFrac: props.yFrac,
+  hFrac: props.hFrac,
+  labelRows: props.labelRows,
+  labelPosition: props.labelPosition,
+  numerals: props.numerals,
+  lateLabels: props.lateLabels,
+  note: props.note,
+}))
+
+// Click choreography resolved from the same data (pure; columns left→right,
+// deferred below-labels on private beats, heading numeral with the last
+// column, note row last).
+const beats = computed(() => columnRowBeats({
+  columns: props.columns,
+  yFrac: props.yFrac,
+  hFrac: props.hFrac,
+  labelRows: props.labelRows,
+  labelPosition: props.labelPosition,
+  numerals: props.numerals,
+  lateLabels: props.lateLabels,
+  note: props.note,
+}))
 
 // Heading chrome resolves with the viewBox; the data (icon key + caption text)
 // travels with the geometry so the template needs a single guarded object.
@@ -51,7 +90,10 @@ const headingView = computed(() => {
   if (!props.heading) return null
   return {
     ...headingLayout(layout.value.viewBox),
-    icon: resolveIcon(props.heading.icon),
+    // Numeral mode (exact-trace): the badge slot carries a white display
+    // numeral gated to the last column's beat instead of the static badge+icon.
+    numeralText: props.heading.numeral,
+    icon: props.heading.icon ? resolveIcon(props.heading.icon) : '',
     // The caption string rides as captionText so the layout's caption geometry
     // (x / baseline y / size) survives the spread above.
     captionText: props.heading.caption,
@@ -96,6 +138,11 @@ function resolveIcon(key: string): string {
 const UNDERLINE_FILL = statusAmber.accent
 const HEADING_FILL = '#f4f4f6'
 const PLATE_FILL = '#0d1a26'
+// Exact-trace typography: the below-label, numeral, and note glyph sizes come
+// from their measured cap heights through the shared cap-height ratio.
+const belowLabelSize = computed(() => capSize(13) * (layout.value.viewBox.height / 1080))
+const numeralSize = computed(() => capSize(23) * (layout.value.viewBox.height / 1080))
+const noteSize = computed(() => capSize(23) * (layout.value.viewBox.height / 1080))
 
 // Chrome constants: white column labels (title chrome lives in the shared
 // TitleChrome component).
@@ -171,7 +218,7 @@ function px(n: number): string {
     <g
       v-for="(col, i) in layout.columns"
       :key="col.id"
-      v-click="i + 1"
+      v-click="beats.columnClicks[i]"
       class="sf-col"
       :style="{ '--sf-rise': px(risePx) }"
     >
@@ -203,7 +250,19 @@ function px(n: number): string {
         :height="col.underlineRect.h"
         :fill="UNDERLINE_FILL"
       />
+      <!-- Exact-trace numerals ride the plate (no click of their own); the
+           legacy inside label drops out in 'below' mode. -->
       <text
+        v-if="col.numeral"
+        class="sf-col-numeral"
+        :x="col.numeral.x"
+        :y="col.numeral.y"
+        text-anchor="middle"
+        :font-size="col.numeral.size"
+        :fill="NUMERAL_FILL"
+      >{{ col.numeral.text }}</text>
+      <text
+        v-if="labelPosition !== 'below'"
         class="sf-col-label"
         :x="col.x + col.w / 2"
         :y="col.y + col.h / 2"
@@ -215,45 +274,79 @@ function px(n: number): string {
       >{{ col.label }}</text>
     </g>
 
-    <!-- Measured heading chrome: amber bar-chip (four bars on a baseline) and
-         white icon badge over the middle column, with the white caption line
-         underneath. Static chrome — the recording shows chip and badge already
-         present when the first column pops. -->
+    <!-- Measured heading chrome: amber bar-chip over the middle column with
+         the white caption line underneath. Two badge modes: the legacy static
+         white icon badge (icon data), or the exact-trace white display numeral
+         gated to the last column's beat (the motion trace measures chip +
+         numeral + col-5 as one beat). The caption is static either way. -->
     <g v-if="headingView" class="sf-col-heading">
-      <rect
-        v-for="(bar, bi) in headingView.bars"
-        :key="`chip-bar-${bi}`"
-        :x="bar.x"
-        :y="bar.y"
-        :width="bar.w"
-        :height="bar.h"
-        :fill="UNDERLINE_FILL"
-      />
-      <rect
-        class="sf-col-chip-baseline"
-        :x="headingView.chip.x"
-        :y="headingView.baseline.y"
-        :width="headingView.chip.w"
-        :height="headingView.baseline.h"
-        :fill="UNDERLINE_FILL"
-      />
-      <circle
-        class="sf-col-badge"
-        :cx="headingView.badge.cx"
-        :cy="headingView.badge.cy"
-        :r="headingView.badge.r"
-        :fill="HEADING_FILL"
-      />
       <g
-        class="sf-col-heading-icon"
-        :transform="`translate(${fmt(headingView.badge.cx - iconSize / 2)} ${fmt(headingView.badge.cy - iconSize / 2)}) scale(${fmt(iconSize / 24)})`"
-        fill="none"
-        stroke="#000000"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        v-html="headingView.icon"
-      />
+        v-if="headingView.numeralText"
+        v-click="beats.headingNumeralClick"
+        class="sf-col-heading-gate"
+      >
+        <rect
+          v-for="(bar, bi) in headingView.bars"
+          :key="`gate-bar-${bi}`"
+          :x="bar.x"
+          :y="bar.y"
+          :width="bar.w"
+          :height="bar.h"
+          :fill="UNDERLINE_FILL"
+        />
+        <rect
+          class="sf-col-chip-baseline"
+          :x="headingView.chip.x"
+          :y="headingView.baseline.y"
+          :width="headingView.chip.w"
+          :height="headingView.baseline.h"
+          :fill="UNDERLINE_FILL"
+        />
+        <text
+          class="sf-col-numeral-display"
+          :x="headingView.numeral.x"
+          :y="headingView.numeral.y"
+          text-anchor="middle"
+          :font-size="headingView.numeral.size"
+          :fill="HEADING_FILL"
+        >{{ headingView.numeralText }}</text>
+      </g>
+      <template v-else>
+        <rect
+          v-for="(bar, bi) in headingView.bars"
+          :key="`chip-bar-${bi}`"
+          :x="bar.x"
+          :y="bar.y"
+          :width="bar.w"
+          :height="bar.h"
+          :fill="UNDERLINE_FILL"
+        />
+        <rect
+          class="sf-col-chip-baseline"
+          :x="headingView.chip.x"
+          :y="headingView.baseline.y"
+          :width="headingView.chip.w"
+          :height="headingView.baseline.h"
+          :fill="UNDERLINE_FILL"
+        />
+        <circle
+          class="sf-col-badge"
+          :cx="headingView.badge.cx"
+          :cy="headingView.badge.cy"
+          :r="headingView.badge.r"
+          :fill="HEADING_FILL"
+        />
+        <g
+          class="sf-col-heading-icon"
+          :transform="`translate(${fmt(headingView.badge.cx - iconSize / 2)} ${fmt(headingView.badge.cy - iconSize / 2)}) scale(${fmt(iconSize / 24)})`"
+          fill="none"
+          stroke="#000000"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          v-html="headingView.icon"
+        />
+      </template>
       <text
         class="sf-col-caption"
         :x="headingView.caption.x"
@@ -261,9 +354,39 @@ function px(n: number): string {
         text-anchor="middle"
         :font-size="headingView.caption.size"
         :fill="HEADING_FILL"
-        letter-spacing="0.08em"
+        :letter-spacing="CAPTION_TRACKING"
       >{{ headingView.captionText }}</text>
     </g>
+
+    <!-- Exact-trace below-plate labels: one tone-colored text per column on
+         the measured baseline; deferred columns take a private beat right
+         after their column's. -->
+    <text
+      v-for="(label, li) in layout.labels"
+      :key="`label-below-${li}`"
+      v-click="beats.labelClicks[li]"
+      class="sf-col-label-below"
+      :x="label.x"
+      :y="label.y"
+      text-anchor="middle"
+      :font-size="label.size"
+      :fill="toneColor(label.tone)"
+      :letter-spacing="LABEL_BELOW_TRACKING"
+    >{{ label.text }}</text>
+
+    <!-- Exact-trace note row: centered amber line under the field, strictly
+         the final beat. -->
+    <text
+      v-if="layout.note"
+      v-click="beats.noteClick"
+      class="sf-col-note"
+      :x="layout.note.x"
+      :y="layout.note.y"
+      text-anchor="middle"
+      :font-size="layout.note.size"
+      :fill="UNDERLINE_FILL"
+      :letter-spacing="NOTE_TRACKING"
+    >{{ layout.note.text }}</text>
 
     <!-- Label rows: one shared click after the columns (n + 1). Plain rows keep
          the legacy white dot/label sizing; tinted rows render at the measured
@@ -295,6 +418,7 @@ function px(n: number): string {
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
+      :title-text-length="titleTextLength"
       :cap-height="78"
       :cap-top="98"
       badge
@@ -342,9 +466,27 @@ function px(n: number): string {
   transition: none;
 }
 
+/* Exact-trace gated layers (below-labels, note row, heading numeral group)
+   share the fade-in / instant-hidden pattern. */
+.sf-col-label-below,
+.sf-col-note,
+.sf-col-heading-gate {
+  transition: opacity 150ms ease-out;
+}
+
+.sf-col-label-below.slidev-vclick-hidden,
+.sf-col-note.slidev-vclick-hidden,
+.sf-col-heading-gate.slidev-vclick-hidden {
+  opacity: 0;
+  transition: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sf-col,
-  .sf-col-rows {
+  .sf-col-rows,
+  .sf-col-label-below,
+  .sf-col-note,
+  .sf-col-heading-gate {
     transition: none;
   }
 }
