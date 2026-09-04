@@ -571,31 +571,40 @@ canvasWidth: 1920
 ---
 
 <!--
-  Demo slide: SegmentTimeline — a thin dim track at the node axis with bright
-  segment fills sweeping between glowing nodes (one click per segment: the
-  node pops ~140ms while its fill starts a gradual ~2.4s sweep, then its
-  tick + two-row white label block fades in after a beat — sweep-then-pop).
-  Segment shares and track geometry are the source recording's measured
-  canvas fractions (art_iHm120ov §SegmentTimeline, ref frame t=220.5 of the
-  1920×1080 read, src 211–222s); nodes derive from the fills they cap, so
-  ticks and labels can never drift. AutoAdvance is renderless deck-level
-  wiring: the `a` key toggles a hands-free run and `?autoplay=N` in the URL
-  starts one on slide enter.
+  Demo slide: SegmentTimeline — a thin dim track (x315–1460, y494–499)
+  carries three contiguous bright fills that tile it node-edge → node-edge,
+  one solid hue disc (d≈103, dark 01/02/03 step number) per segment, a 4px
+  hue-matched tick dropping 142px to a two-row label block (bold white row 1
+  offset 27px right of the node, dim row 2 on nodes 1–2 only), a white end
+  arrow past the track's right end, and a legend column on node 3's axis
+  (three hue words + bars + dim note) that fades in LAST. One click per
+  segment: the node pops ~100ms while its fill sweeps ~150ms ease-out with a
+  hard hold, the tick + row-1 label cascade ~400ms after the pop, the row-2
+  dim label ~1300ms after it. Geometry and strings are the source recording's
+  measured canvas fractions (art_lYM2KXza §SegmentTimeline, settled ref frame
+  of the 1920×1080 read; OCR-confirmed labels); node centers (511/960/1408)
+  drive every tick, label, fill boundary, and the legend column, so they can
+  never drift. AutoAdvance is renderless deck-level wiring: the `a` key
+  toggles a hands-free run and `?autoplay=N` in the URL starts one on slide
+  enter. stepScheduleSec pins the three clicks to the measured pops
+  2300/4730/6880ms exactly (0ms drift vs the recording), and the legend lands
+  8400–10000 with a ≈10.1s settle exactly on the recording.
 -->
 
 <div class="sf-demo-stage">
 
 <SegmentTimeline
-  title="MIGRATION"
-  title-accent="TIMELINE"
+  title="Where is it"
+  title-accent="heading?"
+  :title-text-length="795"
   :segments="[
-    { id: 'batch', tone: 'accent', label: 'BATCH', sublabel: 'nightly warehouse exports', wFrac: 227 / 1920 },
-    { id: 'stream', tone: 'tertiary', label: 'STREAMING', sublabel: 'change-data-capture feed', wFrac: 400 / 1920 },
-    { id: 'cutover', tone: 'alt', label: 'CUTOVER', sublabel: 'dual-write drain-down', wFrac: 480 / 1920 },
+    { id: 'practices', tone: 'accent', nodeFrac: 511 / 1920, label: 'SOFTWARE PRACTICES', sublabel: 'GIT, TESTS AND REVIEW ON PIPELINES' },
+    { id: 'integration', tone: 'tertiary', nodeFrac: 960 / 1920, label: 'BETTER INTEGRATION', sublabel: 'ONE PLATFORM INSTEAD OF SIX TOOLS' },
+    { id: 'collaboration', tone: 'alt', nodeFrac: 1408 / 1920, label: 'CLOSER COLLABORATION' },
   ]"
 />
 
-<AutoAdvance :duration-sec="7.5" />
+<AutoAdvance :step-schedule-sec="[2.3, 4.73, 6.88]" />
 
 </div>
 

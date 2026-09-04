@@ -1,18 +1,21 @@
 <script setup lang="ts">
-import { computed, useId } from 'vue'
+import { computed } from 'vue'
 import {
+  ARROW_WHITE,
+  DIGIT_INK,
   LABEL_SIZE,
   LABEL_WHITE,
-  LEAD_WHITE,
+  LEGEND_SIZE,
   NODE_BLUE,
   NODE_CYAN,
+  NODE_DIGIT_SIZE,
   NODE_RED,
+  NOTE_SIZE,
   SUBLABEL_SIZE,
+  SUB_GRAY,
   TICK_STROKE,
   TRACK_DIM,
-  GLOW_SPREAD,
   segmentTimelineLayout,
-  type SegmentLayout,
   type TimelineSegment,
   type TimelineTone,
 } from './stepflow/timeline'
@@ -29,31 +32,38 @@ const props = withDefaults(defineProps<{
   x1Frac?: number
   /** Partial palette merged over the family's measured blue/cyan/red composition. */
   palette?: StepFlowPaletteOverride
-  /** Mono header line, e.g. 'MIGRATION'. */
+  /** White lead line of the two-tone title. */
   title?: string
   /** Header tail rendered in chrome green after `title` (two-tone chrome convention). */
   titleAccent?: string
+  /** Title cap height override (measured 54 for this family's title band). */
+  capHeight?: number
+  /** Title band top override (measured 122 — the white caps' top). */
+  capTop?: number
+  /** Pins the title's measured ink extent (x563–1358 = 795px) via TitleChrome's
+   * SVG textLength — the mono face runs ~15–18% wider than the recording's
+   * condensed face at the same 78px cap. */
+  titleTextLength?: number
 }>(), {
-  // Measured composition (art_iHm120ov §SegmentTimeline, ref t=220.5 of the
-  // 1920×1080 read): track x306–1653, y490–502.
-  yFrac: 490 / 1080,
-  hFrac: 12 / 1080,
-  x0Frac: 306 / 1920,
-  x1Frac: 1653 / 1920,
+  // Measured composition (art_lYM2KXza §SegmentTimeline, settled ref frame of
+  // the 1920×1080 read): track x315–1460, y494–499.
+  yFrac: 494 / 1080,
+  hFrac: 6 / 1080,
+  x0Frac: 315 / 1920,
+  x1Frac: 1460 / 1920,
+  capHeight: 54,
+  capTop: 122,
 })
 
-// The family's measured trio — blue/cyan/red nodes, dim track, tight glow —
-// composed over chainBlue so unmeasured fields keep house values. No new
-// preset (wave-2 palette neutrality); an override can still re-tint any field.
+// The family's measured trio — blue/cyan/red nodes and dim track — composed
+// over chainBlue so unmeasured fields keep house values. No persistent glow:
+// the settled ref frame shows crisp disc edges with no halo skirt.
 const p = computed(() => resolvePalette({
   ...chainBlue,
   accent: NODE_BLUE,
   accentTertiary: NODE_CYAN,
   accentAlt: NODE_RED,
   track: TRACK_DIM,
-  // Measured halo: 35px reach at peak 0.34 — the ref's halos register in the
-  // census glow band (lum 41–110), which the family's 0.28 default misses.
-  glow: { peak: 0.34, spread: GLOW_SPREAD },
   ...props.palette,
 }))
 
@@ -73,19 +83,13 @@ function toneColor(tone: TimelineTone): string {
   return p.value.accentAlt ?? p.value.accent
 }
 
-// Per-node glow gradients (the StepFlow radialGradient pattern) — one per
-// segment because each halo takes its node's color. useId keeps SSR safe.
-const glowId = useId()
-function glowRef(seg: SegmentLayout): string {
-  return `${glowId}-${seg.id}`
+// Chevron head polyline points for the white end arrow: apex at the shaft's
+// right end, back corners `headDepth` left and `headHalf` above/below.
+function arrowHeadPoints(): string {
+  const arrow = layout.value.arrow
+  const back = arrow.x1 - arrow.headDepth
+  return `${back},${arrow.shaftY - arrow.headHalf} ${arrow.x1},${arrow.shaftY} ${back},${arrow.shaftY + arrow.headHalf}`
 }
-function glowEdgeFrac(seg: SegmentLayout): number {
-  return seg.nodeR / seg.glowR
-}
-
-// Chrome constants: white in label rows (title chrome lives in the shared
-// TitleChrome component).
-const LEAD_FILL = LEAD_WHITE
 
 function fmt(n: number): string {
   return String(parseFloat(n.toFixed(4)))
@@ -103,16 +107,8 @@ function px(n: number): string {
     role="img"
     :aria-label="`${segments.length}-segment timeline diagram`"
   >
-    <defs>
-      <radialGradient v-for="seg in layout.segments" :id="glowRef(seg)" :key="seg.id">
-        <stop offset="0" :stop-color="toneColor(seg.tone)" :stop-opacity="p.glow.peak" />
-        <stop :offset="glowEdgeFrac(seg)" :stop-color="toneColor(seg.tone)" :stop-opacity="p.glow.peak" />
-        <stop offset="1" :stop-color="toneColor(seg.tone)" stop-opacity="0" />
-      </radialGradient>
-    </defs>
-
-    <!-- Dim base track + bright white lead: always visible (the source shows
-         the track axis and its capped end before the first node pops). -->
+    <!-- Dim base track: always visible (the source shows the empty track axis
+         before the first node pops). -->
     <rect
       class="sf-tl-track"
       :x="layout.track.x"
@@ -121,21 +117,13 @@ function px(n: number): string {
       :height="layout.track.height"
       :fill="p.track"
     />
-    <rect
-      class="sf-tl-lead"
-      :x="layout.lead.x"
-      :y="layout.lead.y"
-      :width="layout.lead.width"
-      :height="layout.lead.height"
-      :fill="LEAD_FILL"
-    />
 
     <!--
       Reveal binding (the .sf-track-fill pattern applied to a rect): one sweep
       rect per segment, carrying v-click i + 1. Slidev toggles each rect's OWN
       slidev-vclick-hidden class — hidden = width 0 + transition:none (backward
-      nav snaps), revealed = a gradual ~2.4s ease left→right width sweep
-      (measured: 10–90% over 2550ms). No path-length math.
+      nav snaps), revealed = a ~150ms ease-out sweep with a hard hold (measured
+      ≈150ms per fill; the fill never drifts through the following beats).
     -->
     <rect
       v-for="(seg, i) in layout.segments"
@@ -150,18 +138,25 @@ function px(n: number): string {
       :style="{ '--seg-w': px(seg.width) }"
     />
 
-    <!-- One sibling group per segment (never nested v-clicks): the glowing
-         node pops (~140ms scale), then its tick + two-row white label block
-         fade in after a beat (120ms delay) — the source reveals each node's
-         lettering with the node, not in one end-of-run layer. -->
+    <!-- One sibling group per segment (never nested v-clicks): the solid node
+         disc pops (~100ms scale/fade) with its dark step number, then its tick
+         + row-1 label cascade in ~400ms after the pop, and the row-2 dim label
+         ~1300ms after it (nodes 1–2 only in the measured composition). -->
     <g
       v-for="(seg, i) in layout.segments"
       :key="`node-${seg.id}`"
       v-click="i + 1"
       class="sf-tl-node"
     >
-      <circle class="glow" :cx="seg.nodeCx" :cy="seg.nodeCy" :r="seg.glowR" :fill="`url(#${glowRef(seg)})`" />
       <circle class="disc" :cx="seg.nodeCx" :cy="seg.nodeCy" :r="seg.nodeR" :fill="toneColor(seg.tone)" />
+      <text
+        class="sf-tl-digit"
+        :x="seg.digitCx"
+        :y="seg.digitBaseline"
+        text-anchor="middle"
+        :font-size="NODE_DIGIT_SIZE"
+        :fill="DIGIT_INK"
+      >{{ seg.digit }}</text>
       <line
         class="sf-tl-tick"
         :x1="seg.tickX"
@@ -179,28 +174,85 @@ function px(n: number): string {
         text-anchor="middle"
         :font-size="LABEL_SIZE"
         :fill="LABEL_WHITE"
-        letter-spacing="0.08em"
       >{{ seg.label }}</text>
       <text
         v-if="seg.sublabel"
         class="sf-tl-sublabel"
-        :x="seg.labelCx"
+        :x="seg.sublabelCx"
         :y="seg.sublabelBaseline"
         text-anchor="middle"
         :font-size="SUBLABEL_SIZE"
-        :fill="LABEL_WHITE"
-        letter-spacing="0.08em"
+        :fill="SUB_GRAY"
+        letter-spacing="0.06em"
       >{{ seg.sublabel }}</text>
     </g>
 
+    <!-- White end arrow past the track's right end: 6px shaft on the track
+         axis + open chevron head (always visible with the track). -->
+    <g class="sf-tl-arrow" :stroke="ARROW_WHITE" fill="none">
+      <line
+        class="sf-tl-arrow-shaft"
+        :x1="layout.arrow.x0"
+        :x2="layout.arrow.x1"
+        :y1="layout.arrow.shaftY"
+        :y2="layout.arrow.shaftY"
+        :stroke-width="layout.arrow.stroke"
+      />
+      <polyline
+        class="sf-tl-arrow-head"
+        :points="arrowHeadPoints()"
+        :stroke-width="layout.arrow.stroke"
+      />
+    </g>
+
+    <!-- Legend column centered on the last node's axis — fades in LAST, 1.5s
+         after the final click over 1.6s (measured 8400–10000ms): three hue
+         words, a 5px hue bar under each, then the dim note. Shares the final
+         click with the last segment. -->
+    <g
+      v-click="layout.segments.length"
+      class="sf-tl-legend"
+    >
+      <text
+        v-for="word in layout.legend.words"
+        :key="word.text"
+        class="sf-tl-legend-word"
+        :x="word.x"
+        :y="layout.legend.wordsBaseline"
+        :font-size="LEGEND_SIZE"
+        :fill="word.color"
+      >{{ word.text }}</text>
+      <rect
+        v-for="word in layout.legend.words"
+        :key="`bar-${word.text}`"
+        class="sf-tl-legend-bar"
+        :x="word.x"
+        :y="word.barY"
+        :width="word.width"
+        :height="word.barH"
+        :fill="word.color"
+      />
+      <text
+        class="sf-tl-legend-note"
+        :x="layout.legend.noteCx"
+        :y="layout.legend.noteBaseline"
+        text-anchor="middle"
+        :font-size="NOTE_SIZE"
+        :fill="SUB_GRAY"
+        letter-spacing="0.04em"
+      >{{ layout.legend.note }}</text>
+    </g>
+
     <!-- Shared title chrome: sheet-measured centered two-tone title
-         (SegmentTimeline Title row: cap 78 in the band y98–176, centered ≈x960)
-         plus the recording badge its sheet documents. -->
+         (white caps ≈54px, baseline y176, measured ink extent x563–1358 →
+         measured ink extent pinned via titleTextLength) plus the recording
+         badge its sheet documents. -->
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
-      :cap-height="78"
-      :cap-top="98"
+      :cap-height="capHeight"
+      :cap-top="capTop"
+      :title-text-length="titleTextLength"
       badge
     />
   </svg>
@@ -219,17 +271,18 @@ function px(n: number): string {
 }
 
 /*
- * Measured motion. The fill sweep is the destination-state width transition
- * (the .sf-track-fill locked decision): ~2.4s gradual ease so each fill
- * completes just before the next click pops the next node — sweep-then-pop,
- * never simultaneous. The hidden state's transition:none makes backward nav
- * snap — zero JS. Scoped selectors (0,2,0 + attribute) beat Slidev's built-in
+ * Measured motion (art_lYM2KXza state machine): each click pops its node
+ * (~100ms scale/fade), then its fill sweeps ~150ms ease-out with a hard hold;
+ * the tick + row-1 label cascade ~400ms after the pop; the row-2 dim label
+ * ~1300ms after the pop; the legend fades last, 1.5s after the final click
+ * over 1.6s. The hidden states' transition:none makes backward nav snap —
+ * zero JS. Scoped selectors (0,2,0 + attribute) beat Slidev's built-in
  * .slidev-vclick-target { transition: all .1s ease } — no source-order
  * reliance.
  */
 .sf-tl-seg {
   width: var(--seg-w);
-  transition: width 2400ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: width 150ms cubic-bezier(0.22, 0.61, 0.36, 1) 100ms;
 }
 
 .sf-tl-seg.slidev-vclick-hidden {
@@ -237,34 +290,52 @@ function px(n: number): string {
   transition: none;
 }
 
-/* Node pop: measured 100–150ms. */
+/* Node pop: measured ~100ms scale/fade. */
 .disc {
   transform-box: fill-box;
   transform-origin: center;
-  transition: transform 140ms cubic-bezier(0, 0, 0.2, 1), opacity 120ms ease-out;
+  transition: transform 100ms cubic-bezier(0, 0, 0.2, 1), opacity 100ms ease-out;
 }
 
-.glow {
-  transition: opacity 150ms ease-out;
+.sf-tl-digit {
+  transition: opacity 100ms ease-out;
 }
 
-/* Tick + label rows fade in just after their node pops. */
+/* Tick + row-1 label cascade ~400ms after the pop. */
 .sf-tl-tick,
-.sf-tl-label,
+.sf-tl-label {
+  transition: opacity 250ms ease-out 400ms;
+}
+
+/* Row-2 dim label ≈900ms after the cascade → 1300ms after the pop. */
 .sf-tl-sublabel {
-  transition: opacity 250ms ease-out;
-  transition-delay: 120ms;
+  transition: opacity 250ms ease-out 1300ms;
+}
+
+/* Legend fades last: 1.5s after the final click, over 1.6s. */
+.sf-tl-legend {
+  transition: opacity 1600ms ease-in-out 1500ms;
+}
+
+.sf-tl-node.slidev-vclick-hidden .disc,
+.sf-tl-node.slidev-vclick-hidden .sf-tl-digit {
+  transition: none;
 }
 
 .sf-tl-node.slidev-vclick-hidden .disc {
   transform: scale(0.6);
-  transition: none;
 }
 
-.sf-tl-node.slidev-vclick-hidden .glow,
+.sf-tl-node.slidev-vclick-hidden .sf-tl-digit,
 .sf-tl-node.slidev-vclick-hidden .sf-tl-tick,
 .sf-tl-node.slidev-vclick-hidden .sf-tl-label,
 .sf-tl-node.slidev-vclick-hidden .sf-tl-sublabel {
+  opacity: 0;
+  transition: none;
+}
+
+.sf-tl-legend.slidev-vclick-hidden {
+  opacity: 0;
   transition: none;
 }
 
@@ -272,10 +343,11 @@ function px(n: number): string {
   .sf-tl-seg,
   .sf-tl-node,
   .disc,
-  .glow,
+  .sf-tl-digit,
   .sf-tl-tick,
   .sf-tl-label,
-  .sf-tl-sublabel {
+  .sf-tl-sublabel,
+  .sf-tl-legend {
     transition: none;
   }
 }
