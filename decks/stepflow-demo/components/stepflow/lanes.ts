@@ -91,6 +91,21 @@ export const FOOTER_CHIP_H_FRAC = 45 / 1080
 export const FOOTER_ROW_Y_FRAC = 868 / 1080 // footer text row top (y868–888)
 export const FOOTER_ROW_X_FRAC = 392 / 1920 // footer text left edge (x392)
 export const LANE_LABEL_X_FRAC = 410 / 1920 // lane labels left-align here (measured x410, inside the rail)
+
+/**
+ * Dim ambience layer (final sweep, ref frame t=180.1s extracted from the
+ * source video at 2560×1440): the chart field is not void black — the ref
+ * reads a neutral dim plate (median rgb(15,14,17)) across the container box
+ * plus per-lane tone washes at luminance 25–45 (dark red behind red lanes,
+ * warm amber behind amber lanes; measured band heights ≈1.2–1.8× bar height).
+ * Wash heights are factors of the lane's own bar height; opacities live in
+ * the component (paint, not geometry).
+ */
+export const WASH_BAND_H_FACTOR = 1.6
+export const WASH_CORE_H_FACTOR = 0.7
+/** Wash rows start at the label rail and stop short of the frame's right edge. */
+export const WASH_RIGHT_INSET_FRAC = 38 / 1920
+
 export const LANE_LABEL_SIZE_PX = 28 // lane labels: 26–28px class at 1920 scale
 export const HEADER_ROW_SIZE_PX = 28 // header row: measured ≈28.9px/char pitch
 export const FOOTER_ROW_SIZE_PX = 26 // footer row: measured ≈26.6px/char pitch

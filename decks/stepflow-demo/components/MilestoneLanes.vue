@@ -25,6 +25,9 @@ import {
   FOOTER_ROW_X_FRAC,
   FOOTER_ROW_Y_FRAC,
   FOOTER_ROW_SIZE_PX,
+  WASH_BAND_H_FACTOR,
+  WASH_CORE_H_FACTOR,
+  WASH_RIGHT_INSET_FRAC,
   type Lane,
   type LaneBarLayout,
 } from './stepflow/lanes'
@@ -168,6 +171,29 @@ function fmt(n: number): string {
   return String(parseFloat(n.toFixed(4)))
 }
 
+// Dim ambience (final sweep, ref t=180.1s): the chart field sits on a neutral
+// dim plate instead of void black, and each lane carries a soft tone wash
+// behind its bars (dark red behind red lanes, warm amber behind amber lanes).
+// Static chrome — it persists across the whole sequence like the frame.
+const PLATE_FILL = '#0f0e11'
+const WASH_BAND_OPACITY = 0.115
+const WASH_CORE_OPACITY = 0.13
+
+const washX = computed(() => LANE_LABEL_X_FRAC * layout.value.viewBox.width)
+const washW = computed(
+  () => layout.value.box.x + layout.value.box.w - washX.value - WASH_RIGHT_INSET_FRAC * layout.value.viewBox.width,
+)
+
+function washY(lane: { y: number; bars: LaneBarLayout[] }, factor: number): number {
+  const center = lane.y + lane.bars[0].h / 2
+  const h = washH(lane, factor)
+  return center - h / 2
+}
+
+function washH(lane: { bars: LaneBarLayout[] }, factor: number): number {
+  return factor * lane.bars[0].h
+}
+
 function iconTransform(cx: number, cy: number): string {
   const s = ICON_SIZE / ICON_BOX
   return `translate(${fmt(cx - ICON_SIZE / 2)} ${fmt(cy - ICON_SIZE / 2)}) scale(${fmt(s)})`
@@ -191,6 +217,49 @@ function resolveIcon(key: string): string {
     role="img"
     :aria-label="`${lanes.length}-lane milestone chart`"
   >
+    <!-- Dim ambience layer (final sweep, ref t=180.1s): a neutral dim plate
+         across the chart field plus a soft tone wash behind each lane's bars
+         (dark red behind red lanes, warm amber behind amber lanes). Static
+         chrome — present from the first frame like the container frame, no
+         v-click, outside the accessibility tree (decorative). -->
+    <g class="sf-ml-ambience" aria-hidden="true">
+      <rect
+        class="sf-ml-plate"
+        :x="layout.box.x"
+        :y="layout.box.y"
+        :width="layout.box.w"
+        :height="layout.box.h"
+        :fill="PLATE_FILL"
+      />
+      <g filter="url(#sf-ml-wash-blur)">
+        <template v-for="lane in layout.lanes" :key="`wash-${lane.id}`">
+          <rect
+            class="sf-ml-wash"
+            :x="washX"
+            :y="washY(lane, WASH_BAND_H_FACTOR)"
+            :width="washW"
+            :height="washH(lane, WASH_BAND_H_FACTOR)"
+            :fill="barColor(lane.bars[0].tone)"
+            :fill-opacity="WASH_BAND_OPACITY"
+          />
+          <rect
+            class="sf-ml-wash-core"
+            :x="washX"
+            :y="washY(lane, WASH_CORE_H_FACTOR)"
+            :width="washW"
+            :height="washH(lane, WASH_CORE_H_FACTOR)"
+            :fill="barColor(lane.bars[0].tone)"
+            :fill-opacity="WASH_CORE_OPACITY"
+          />
+        </template>
+      </g>
+    </g>
+    <defs>
+      <filter id="sf-ml-wash-blur" x="-10%" y="-80%" width="120%" height="260%">
+        <feGaussianBlur stdDeviation="6" />
+      </filter>
+    </defs>
+
     <!-- Dim warm container frame around the chart field — static chrome; the
          ref's frame (x281–1652, y377–954, amber at ~15%) persists across the
          whole sequence. -->

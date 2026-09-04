@@ -334,6 +334,14 @@ lane labels left-aligned inside the tick rail (x410 at 1920). The palette
 defaults to the measured `statusAmber` preset verbatim: red bars are
 `tone: 'alt'`.
 
+Dim ambience (final sweep, ref frame t=180.1s extracted at 2560×1440): the
+chart field is not void black — the render carries a static neutral dim plate
+(`#0f0e11`) across the container box plus a soft tone wash behind each lane's
+bars (dark red behind red lanes, warm amber behind amber lanes; band 1.6× /
+core 0.7× bar height, ~6px gaussian falloff). Static decorative chrome like
+the container frame: no v-click, outside the accessibility tree, and
+unchanged by reduced-motion (it never animates).
+
 The free-position node-edge network built-in, on the shared contract
 (src-3 recording — re-measured against the settle frame t=4.0, fidelity
 report art_v4jVdTnp §2, which corrects the earlier circular-outline read:
