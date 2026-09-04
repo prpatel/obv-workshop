@@ -356,14 +356,14 @@ describe('TileGrid component', () => {
     const halos = wrapper.findAll('.sf-tg-halo')
 
     expect(halos).toHaveLength(6)
-    expect(halos[0].attributes('opacity')).toBe('0.35')
+    expect(halos[0].attributes('opacity')).toBe('0.6')
     expect(halos[0].attributes('filter')).toMatch(/^url\(#.*\)$/)
     // Same geometry as the core it glows for.
     expect(halos[0].attributes('d')).toBe(wrapper.findAll('.sf-tg-hex')[0].attributes('d'))
     // The filter def carries the measured blur in the shared id namespace.
     const filter = wrapper.find('filter')
     expect(filter.exists()).toBe(true)
-    expect(filter.find('feGaussianBlur').attributes('stdDeviation')).toBe('14')
+    expect(filter.find('feGaussianBlur').attributes('stdDeviation')).toBe('18')
   })
 
   it('draws the connector track behind the tiles (#353642, ~12px, through tile centers)', () => {

@@ -61,8 +61,8 @@ const tracks = computed(() => tileTrackLines(layout.value.tiles))
 //   (both ~16px glyphs).
 const HEX_W_FRAC = 0.825
 const HEX_H_FRAC = 0.93
-const HALO_OPACITY = 0.35
-const HALO_BLUR = 14
+const HALO_OPACITY = 0.6
+const HALO_BLUR = 18
 const SHEEN_LENGTH = 50 // px at the 1080 reference height
 const SHEEN_GAP = 16 // px between the sheen dash and the hex's left vertex
 const SHEEN_WIDTH = 7
