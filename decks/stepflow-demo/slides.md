@@ -110,14 +110,15 @@ canvasWidth: 1920
 <!--
   StairChain demo slide: the amber callout reveals on click 1, then one block
   per click — seven v-clicks total, owned by the component. The seed mirrors
-  the v1 reference recording (THE DATA ENGINEERING LIFECYCLE): the RETRY block
-  dips below TRANSFORM, reproduced through the measured per-step `lift`
-  overrides, and the in-block labels are the recording's 01–06 step numbers
-  (wave-1 report art_v4jVdTnp §1, frame t=7.9). The palette override carries
-  the measured two-tone split — blocks 1–3 blue #3599fb, blocks 4–6 cyan
-  #1fd0ea — mapped through per-step `tone` roles. AutoAdvance is renderless
-  deck-level wiring: the `a` key toggles a hands-free run and `?autoplay=N`
-  in the URL starts one on slide enter.
+  the reference recording (THE DATA ENGINEERING LIFECYCLE): the rhythm, circle
+  blocks, punched numbers, captions, and wedges are all measured constants in
+  stair.ts now, so the seed carries only content — the 01–06 step numbers and
+  captions (sheet art_4A7yguGJ) — plus the two-tone split (blocks 1–3 blue
+  #3599fb, blocks 4–6 cyan #1fd0ea) through per-step `tone` roles, and the
+  callout amber pinned to the frame's #f4ba23. AutoAdvance runs 3s for the
+  7-click sequence (≈430ms stagger, inside the measured 400–500ms band);
+  renderless deck-level wiring: the `a` key toggles a hands-free run and
+  `?autoplay=N` in the URL starts one on slide enter.
 -->
 
 <div class="sf-demo-stage">
@@ -125,19 +126,19 @@ canvasWidth: 1920
 <StairChain
   title="THE DATA"
   title-accent="SYSTEMS LIFECYCLE"
-  :palette="{ accent: '#3599fb', accentTertiary: '#1fd0ea' }"
-  :callout="{ text: '= 3×', xFrac: 0.026, yFrac: 0.528 }"
+  :callout="{ text: '3×', xFrac: 0.02656, yFrac: 0.526, textLengthFrac: 0.04427 }"
+  :palette="{ accent: '#3599fb', accentTertiary: '#1fd0ea', accentAlt: '#f4ba23' }"
   :steps="[
-    { id: 'ingest', title: '01', caption: 'SOURCE SYSTEMS', lift: 0 },
-    { id: 'transform', title: '02', caption: 'CLEAN + MODEL', lift: 0.0603 },
-    { id: 'retry', title: '03', caption: 'EXPECT FAILURE', lift: 0.0227 },
-    { id: 'quality', title: '04', tone: 'tertiary', caption: 'TESTS GATE DEPLOYS', lift: 0.1346 },
-    { id: 'serve', title: '05', tone: 'tertiary', caption: 'DASHBOARDS + APIS', lift: 0.2028 },
-    { id: 'govern', title: '06', tone: 'tertiary', caption: 'LINEAGE + ACCESS', lift: 0.271 },
+    { id: 'ingest', title: '01', caption: 'SOURCE SYSTEMS' },
+    { id: 'transform', title: '02', caption: 'CLEAN + MODEL' },
+    { id: 'retry', title: '03', caption: 'EXPECT FAILURE' },
+    { id: 'quality', title: '04', tone: 'tertiary', caption: 'TESTS GATE DEPLOYS' },
+    { id: 'serve', title: '05', tone: 'tertiary', caption: 'DASHBOARDS + APIS' },
+    { id: 'govern', title: '06', tone: 'tertiary', caption: 'LINEAGE + ACCESS' },
   ]"
 />
 
-<AutoAdvance :duration-sec="4" />
+<AutoAdvance :duration-sec="3" />
 
 </div>
 
