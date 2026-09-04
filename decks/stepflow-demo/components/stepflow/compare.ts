@@ -13,15 +13,20 @@
  * top-right chip 124×30 @983,202. The recording's palette is the statusAmber
  * preset verbatim — amber #f7ba20 accent, red #e5413f alternate.
  *
- * Fidelity rework (report art_iHm120ov §TwoBarCompare, ref frame t=168.7s read
- * at 1920×1080): the bars already match the source within 1px — bar geometry
- * here is unchanged. What the recording carries around them is text: a
- * centered white + chrome-green headline row (caps y110–161), the big
- * light-cyan #84eef8 data-text block (two ~29px-cap rows y411/485 plus a
- * ~21px row y559, all left-anchored on the bar anchor), ~32px dark on-bar
+ * Fidelity rework (report art_iHm120ov §TwoBarCompare, ref frame t=168.7s
+ * read at 1920×1080): the bars already match the source within 1px — bar
+ * geometry here is unchanged. What the recording carries around them is
+ * text: a centered white + chrome-green headline row (caps y110–161), the
+ * big light-cyan #84eef8 data-text block (two ~29px-cap rows y411/485 plus
+ * a ~21px row y559, all left-anchored on the bar anchor), ~32px dark on-bar
  * labels over ~28px gray under-bar notes, and the teal #1cd797 top-right
  * chip. Those layers ship as the optional `dataText` / `subhead` props
- * below.
+ * below. A second evidence pass on the same frame (ink census against the
+ * ref) added the block's caption/note rows and the two dim full-width
+ * divider rules: a ~22px dim caption row (baseline y767), a ~47px white
+ * note row (baseline y836), and 2px #1e1e20 rules at y722/y970 spanning
+ * x234–1685 — they frame the two bar bands and carry ~5.7k ink px in the
+ * ref census.
  */
 
 /** One comparison bar. Both bars anchor at the shared `xFrac`; length is data. */
@@ -50,6 +55,12 @@ export interface DataTextBlock {
   lines: [string, string]
   /** Optional smaller third row (~21px cap) in bar 1's chip band. */
   subline?: string
+  /** Small dim caption row (~22px, baseline y767) between the bars — the ref frame's y752–767 row. */
+  caption?: string
+  /** Big white note row (~47px, baseline y836) between the bars — the ref frame's y789–838 heading. */
+  note?: string
+  /** Two dim 2px divider rules framing the bar bands (y722/y970, x234–1685 on the ref frame). */
+  rules?: boolean
 }
 
 /**
@@ -127,6 +138,28 @@ export const DATA_TEXT_COLOR = '#84eef8'
 export const SUBHEAD_SIZE = 71
 export const SUBHEAD_Y_FRAC = 161 / 1080
 
+/**
+ * Between-the-bars glyph rows, measured on the ref frame t=168.7s at
+ * 1920×1080: a small dim caption row (y752–767, ~16px cap ≈ 22px font,
+ * baseline y767) over the big white note row (y789–838, ~35px cap ≈ 47px
+ * font, baseline y836) — both left-anchored on the shared bar anchor.
+ */
+export const NOTE_SIZE = 47
+export const NOTE_Y_FRAC = 836 / 1080
+export const CAPTION_SIZE = 22
+export const CAPTION_Y_FRAC = 767 / 1080
+/**
+ * Divider rules framing the two bar bands (ref frame t=168.7s: 2px rows at
+ * y722 and y970 spanning x234–1685, measured tone #1e1e20). Their ~5.7k ink
+ * px register in the report's census (luminance 30.7 > 24) and structure the
+ * composition the way the source does.
+ */
+export const RULE_X_FRAC = 234 / 1920
+export const RULE_W_FRAC = 1451 / 1920
+export const RULE_H = 2
+export const RULE_Y_FRACS: [number, number] = [722 / 1080, 970 / 1080]
+export const RULE_COLOR = '#1e1e20'
+
 /** Resolved px geometry for one bar and its derived chip/label anchors. */
 export interface BarLayout {
   id: string
@@ -177,6 +210,12 @@ export interface TwoBarCompareLayout {
   bars: BarLayout[]
   topChip: TopChipLayout
   dataText: DataTextLineLayout[]
+  /** Small dim caption row between the bars; null when absent. */
+  caption: DataTextLineLayout | null
+  /** Big white note row between the bars; null when absent. */
+  note: DataTextLineLayout | null
+  /** The two divider rules framing the bar bands (px rects). */
+  rules: Array<{ x: number; y: number; w: number; h: number }>
   subhead: SubheadLayout | null
   viewBox: Canvas
 }
@@ -287,5 +326,21 @@ export function twoBarCompareLayout(data: TwoBarCompareData, viewBox: Canvas = {
     ? { x: viewBox.width / 2, y: SUBHEAD_Y_FRAC * viewBox.height, text: data.subhead, accent: data.subheadAccent ?? '' }
     : null
 
-  return { bars, topChip, dataText, subhead, viewBox }
+  // Caption/note share the bar anchor and the data-text block's click.
+  const caption = data.dataText?.caption
+    ? { text: data.dataText.caption, x: xFrac * viewBox.width, y: CAPTION_Y_FRAC * viewBox.height, size: CAPTION_SIZE }
+    : null
+  const note = data.dataText?.note
+    ? { text: data.dataText.note, x: xFrac * viewBox.width, y: NOTE_Y_FRAC * viewBox.height, size: NOTE_SIZE }
+    : null
+  const rules = data.dataText?.rules
+    ? RULE_Y_FRACS.map((yFrac) => ({
+        x: RULE_X_FRAC * viewBox.width,
+        y: yFrac * viewBox.height,
+        w: RULE_W_FRAC * viewBox.width,
+        h: RULE_H,
+      }))
+    : []
+
+  return { bars, topChip, dataText, caption, note, rules, subhead, viewBox }
 }

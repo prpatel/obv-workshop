@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import {
   DATA_TEXT_COLOR,
+  RULE_COLOR,
   SUBHEAD_SIZE,
   twoBarCompareLayout,
   type CompareBar,
@@ -144,7 +145,7 @@ function fmt(n: number): string {
       labels arrive late, ColumnRow-style). Hidden entirely until that click.
     -->
     <g
-      v-if="layout.bars.some((b) => b.label || b.sub) || chip || layout.dataText.length"
+      v-if="layout.bars.some((b) => b.label || b.sub) || chip || layout.dataText.length || layout.caption || layout.note || layout.rules.length"
       v-click="layout.bars.length + 1"
       class="sf-tbc-annot"
     >
@@ -156,8 +157,40 @@ function fmt(n: number): string {
         :y="line.y"
         :font-size="line.size"
         :fill="DATA_TEXT_COLOR"
+        font-weight="700"
         letter-spacing="0.04em"
       >{{ line.text }}</text>
+      <!-- Divider rules + the between-the-bars caption/note rows: the second
+           evidence pass's measured layers (ref t=168.7s y722/752/789/970). -->
+      <rect
+        v-for="(rule, i) in layout.rules"
+        :key="`rule-${i}`"
+        class="sf-tbc-rule"
+        :x="rule.x"
+        :y="rule.y"
+        :width="rule.w"
+        :height="rule.h"
+        :fill="RULE_COLOR"
+      />
+      <text
+        v-if="layout.caption"
+        class="sf-tbc-caption"
+        :x="layout.caption.x"
+        :y="layout.caption.y"
+        :font-size="layout.caption.size"
+        :fill="p.subtext"
+        letter-spacing="0.06em"
+      >{{ layout.caption.text }}</text>
+      <text
+        v-if="layout.note"
+        class="sf-tbc-note"
+        :x="layout.note.x"
+        :y="layout.note.y"
+        :font-size="layout.note.size"
+        fill="#ffffff"
+        font-weight="700"
+        letter-spacing="0.06em"
+      >{{ layout.note.text }}</text>
       <template v-for="bar in layout.bars" :key="`annot-${bar.id}`">
         <text
           v-if="bar.label"
@@ -216,6 +249,7 @@ function fmt(n: number): string {
       text-anchor="middle"
       :font-size="SUBHEAD_SIZE"
       fill="#ffffff"
+      font-weight="700"
       letter-spacing="0.04em"
     >{{ layout.subhead.text }}<tspan v-if="layout.subhead.accent" :fill="CHROME_GREEN">&nbsp;{{ layout.subhead.accent }}</tspan></text>
 

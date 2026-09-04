@@ -5,6 +5,8 @@ import TwoBarCompare from '../TwoBarCompare.vue'
 import {
   BAR_H_FRAC,
   BAR_X_FRAC,
+  CAPTION_SIZE,
+  CAPTION_Y_FRAC,
   CHIP_GAP_X_FRAC,
   CHIP_GAP_Y_FRAC,
   CHIP_H_FRAC,
@@ -15,6 +17,13 @@ import {
   DATA_TEXT_Y_FRACS,
   LABEL_INSET_X_FRAC,
   MEASURED_Y_FRACS,
+  NOTE_SIZE,
+  NOTE_Y_FRAC,
+  RULE_COLOR,
+  RULE_H,
+  RULE_W_FRAC,
+  RULE_X_FRAC,
+  RULE_Y_FRACS,
   SUBHEAD_SIZE,
   SUBHEAD_Y_FRAC,
   SUB_GAP_Y_FRAC,
@@ -30,7 +39,7 @@ import {
 function mountTwoBar(props: {
   bars: CompareBar[]
   chip?: string
-  dataText?: { lines: [string, string]; subline?: string }
+  dataText?: { lines: [string, string]; subline?: string; caption?: string; note?: string; rules?: boolean }
   palette?: object
   title?: string
   titleAccent?: string
@@ -103,6 +112,22 @@ describe('measured constants — hand-computed to 1e-6', () => {
     expect(SUBHEAD_SIZE).toBe(71) // ~52px cap centered headline
     expect(SUBHEAD_Y_FRAC).toBeCloseTo(161 / 1080, 6) // baseline y161
   })
+
+  it('carries the census-pass-2 caption/note rows and divider rules at their measured values (ref t=168.7s)', () => {
+    // Between-the-bars glyph rows: caption y752–767 (~16px cap ≈ 22px font,
+    // baseline y767) over the big white note row y789–838 (≈ 47px font, y836).
+    expect(CAPTION_SIZE).toBe(22)
+    expect(CAPTION_Y_FRAC).toBeCloseTo(767 / 1080, 6)
+    expect(NOTE_SIZE).toBe(47)
+    expect(NOTE_Y_FRAC).toBeCloseTo(836 / 1080, 6)
+    // Divider rules: 2px #1e1e20 rows at y722/y970 spanning x234–1685.
+    expect(RULE_X_FRAC).toBeCloseTo(234 / 1920, 6)
+    expect(RULE_W_FRAC).toBeCloseTo(1451 / 1920, 6)
+    expect(RULE_H).toBe(2)
+    expect(RULE_Y_FRACS[0]).toBeCloseTo(722 / 1080, 6)
+    expect(RULE_Y_FRACS[1]).toBeCloseTo(970 / 1080, 6)
+    expect(RULE_COLOR).toBe('#1e1e20')
+  })
 })
 
 describe('twoBarCompareLayout — resolved geometry', () => {
@@ -174,6 +199,28 @@ describe('twoBarCompareLayout — resolved geometry', () => {
     const withoutSubline = twoBarCompareLayout({ bars, dataText: { lines: ['A', 'B'] } })
     expect(withoutSubline.dataText).toHaveLength(2)
     expect(twoBarCompareLayout({ bars }).dataText).toEqual([])
+  })
+
+  it('resolves the caption/note rows on the bar anchor at the measured baselines, and the rules as measured rects', () => {
+    const l = twoBarCompareLayout({
+      bars,
+      dataText: { lines: ['A', 'B'], caption: 'C', note: 'N', rules: true },
+    })
+
+    expect(l.caption).toMatchObject({ text: 'C', x: 0.1671875 * 1920, y: 767, size: 22 })
+    expect(l.note).toMatchObject({ text: 'N', x: 0.1671875 * 1920, y: 836, size: 47 })
+    expect(l.rules).toHaveLength(2)
+    l.rules.forEach((rule, i) => {
+      expect(rule.x).toBeCloseTo(234 / 1920 * 1920, 6)
+      expect(rule.y).toBeCloseTo([722, 970][i], 6)
+      expect(rule.w).toBeCloseTo(1451 / 1920 * 1920, 6)
+      expect(rule.h).toBe(2)
+    })
+    // Absent fields resolve null/empty — no phantom layers.
+    const bare = twoBarCompareLayout({ bars, dataText: { lines: ['A', 'B'] } })
+    expect(bare.caption).toBeNull()
+    expect(bare.note).toBeNull()
+    expect(bare.rules).toEqual([])
   })
 
   it('centers the subhead row at its measured baseline and drops it when absent', () => {
@@ -347,6 +394,58 @@ describe('TwoBarCompare component', () => {
     expect(subhead.attributes('data-vclick')).toBeUndefined()
     expect(subhead.text()).toContain('INFRA')
     expect(subhead.html()).toContain('#66fb00')
+  })
+
+  it('renders the census-pass-2 layers: divider rules, caption, note, and bold mono weights', () => {
+    const wrapper = mountTwoBar({
+      bars,
+      dataText: {
+        lines: ['1.9M VCPU INSTALLED', '0.12M VCPU HOURS ACROSS 12 CLUSTERS · Q3'],
+        caption: 'RACK-SPACE VS MGMT OVERHEAD',
+        note: 'SELF-MANAGED VS MANAGED CLOUD',
+        rules: true,
+      },
+      subhead: 'INFRA',
+      subheadAccent: ' COST · FY26 SPLIT',
+    })
+
+    // Divider rules: two 2px #1e1e20 rows at the measured y positions.
+    const rules = wrapper.findAll('.sf-tbc-rule')
+    expect(rules).toHaveLength(2)
+    rules.forEach((rule) => {
+      expect(rule.attributes('fill')).toBe('#1e1e20')
+      expect(Number(rule.attributes('height'))).toBe(2)
+    })
+    expect(Number(rules[0].attributes('y'))).toBe(722)
+    expect(Number(rules[1].attributes('y'))).toBe(970)
+
+    // Caption (dim, 22px) and note (white, 47px, bold) ride the annotation click.
+    const caption = wrapper.find('.sf-tbc-caption')
+    expect(caption.text()).toBe('RACK-SPACE VS MGMT OVERHEAD')
+    expect(Number(caption.attributes('font-size'))).toBe(22)
+    expect(caption.attributes('fill')).toBe('#a6a8ae')
+    const note = wrapper.find('.sf-tbc-note')
+    expect(note.text()).toBe('SELF-MANAGED VS MANAGED CLOUD')
+    expect(Number(note.attributes('font-size'))).toBe(47)
+    expect(note.attributes('fill')).toBe('#ffffff')
+    expect(note.attributes('font-weight')).toBe('700')
+
+    // The ref mono reads bolder than regular: data lines + subhead carry 700.
+    wrapper.findAll('.sf-tbc-dataline').forEach((line) => expect(line.attributes('font-weight')).toBe('700'))
+    expect(wrapper.find('.sf-tbc-subhead').attributes('font-weight')).toBe('700')
+  })
+
+  it('renders the annotation layer for a rules-only block (no labels or chip)', () => {
+    const wrapper = mountTwoBar({
+      bars: [
+        { id: 'a', wFrac: 0.3, tone: 'accent' },
+        { id: 'b', wFrac: 0.2, tone: 'alt' },
+      ],
+      dataText: { lines: ['A', 'B'], rules: true },
+    })
+
+    expect(wrapper.find('.sf-tbc-annot').exists()).toBe(true)
+    expect(wrapper.findAll('.sf-tbc-rule')).toHaveLength(2)
   })
 
   it('renders no annotation layer when the diagram has no labels or chip', () => {
