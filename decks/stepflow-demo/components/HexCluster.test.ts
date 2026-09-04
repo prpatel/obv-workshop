@@ -167,12 +167,12 @@ describe('HexCluster', () => {
       titleAccent: 'AT A GLANCE',
     })
     const header = accented.find('.sf-chrome-title')
-    // Shared chrome: the sheet's cap ≈72–86 midpoint 79 → font-size 79/0.752,
-    // baseline at the band bottom y124, centered on the cluster axis.
-    expect(Number(accented.find('.sf-chrome-title').attributes('font-size'))).toBeCloseTo(79 / 0.752, 4)
+    // Shared chrome: measured green glyph core y49–126 → cap 78 → font-size
+    // 78/0.752, baseline 127, centered on the cluster axis.
+    expect(Number(accented.find('.sf-chrome-title').attributes('font-size'))).toBeCloseTo(78 / 0.752, 4)
     expect(accented.find('.sf-chrome-title').attributes('text-anchor')).toBe('middle')
     expect(Number(accented.find('.sf-chrome-title').attributes('x'))).toBeCloseTo(960, 4)
-    expect(Number(accented.find('.sf-chrome-title').attributes('y'))).toBe(124)
+    expect(Number(accented.find('.sf-chrome-title').attributes('y'))).toBe(127)
     expect(header.text()).toContain('THE MODERN DATA STACK')
     expect(header.text()).toContain('AT A GLANCE')
     expect(accented.html()).toContain('#66fb00')

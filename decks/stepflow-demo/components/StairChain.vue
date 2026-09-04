@@ -168,13 +168,14 @@ function blockFill(step: StairStep, palette: StepFlowPalette): string {
     >{{ callout.text }}</text>
 
     <!-- Shared title chrome: sheet-measured centered two-tone title
-         (StairChain Title row: cap 97 in the band y48–145, centered ≈x917). -->
+         (StairChain Title row: band y48–144 is glow-inclusive; the glyph core
+         matches NodeEdge's — white y49–126, cap 77 ≈ 78, centered ≈x916). -->
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
-      :cap-height="97"
-      :cap-top="48"
-      :center-x="917"
+      :cap-height="78"
+      :cap-top="49"
+      :center-x="916"
     />
   </svg>
 </template>

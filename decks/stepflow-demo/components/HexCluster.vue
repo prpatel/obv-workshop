@@ -125,12 +125,13 @@ const LEGEND_AMBER = '#ebb92a'
          centered at ≈ 47.6%w. -->
     <!-- Shared title chrome: centered two-tone title on the cluster axis
          (HexCluster Title row: the sheet reads cap ≈72–86 in the band y45–145;
-         the midpoint 79 is used, centered on the measured ≈47.6%w axis). -->
+         the measured green glyph core is y49–126 → cap 78, matching the
+         wave-1 line, centered on the measured ≈47.6%w axis). -->
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
-      :cap-height="79"
-      :cap-top="45"
+      :cap-height="78"
+      :cap-top="49"
       :center-x="layout.axisX"
     />
 

@@ -123,8 +123,8 @@ canvasWidth: 1920
 <div class="sf-demo-stage">
 
 <StairChain
-  title="THE DATA ENGINEERING"
-  title-accent="LIFECYCLE"
+  title="THE DATA"
+  title-accent="SYSTEMS LIFECYCLE"
   :palette="{ accent: '#3599fb', accentTertiary: '#1fd0ea' }"
   :callout="{ text: '= 3×', xFrac: 0.026, yFrac: 0.528 }"
   :steps="[
