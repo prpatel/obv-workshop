@@ -1,7 +1,6 @@
 // @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
-import { ref } from 'vue'
 import TileGrid from '../TileGrid.vue'
 import {
   hexPath,
@@ -13,6 +12,7 @@ import {
   TRACK_FADE_MS,
   TRACK_ROW1_DELAY_MS,
   TRACK_ROW2_DELAY_MS,
+  tileBeatSchedule,
   tileStaggerSchedule,
   type Tile,
 } from './tiles'
@@ -330,11 +330,14 @@ describe('TileGrid component', () => {
     expect(wrapper.find('svg.tilegrid').attributes('aria-label')).toBe('6-tile grid diagram')
   })
 
-  it('consumes exactly six clicks in row-major order — one per tile', () => {
+  it('consumes exactly eight clicks — six tiles, then the two track beats', () => {
     const clicks: number[] = []
     mountTileGrid(props, clicks)
 
-    expect(clicks).toEqual([1, 2, 3, 4, 5, 6])
+    // Tiles 1–6, then the connector-track beats 7 and 8 (generation-7 wave).
+    // The directive stub fires in DOM order and the track renders behind the
+    // tiles, so sort before comparing — the click INDICES are what matter.
+    expect([...clicks].sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8])
   })
 
   it('applies the tone system: measured hex core plus palette roles and status/plain constants', () => {
@@ -480,8 +483,11 @@ describe('TileGrid component', () => {
       .join('\n')
 
     expect(css).toContain(`${TILE_FADE_MS}ms`) // tile fade + rise (~100ms soft fade)
-    expect(css).toContain(`${TRACK_ROW1_DELAY_MS}ms`) // track row 1: ~1.5s after tile 6
-    expect(css).toContain(`${TRACK_ROW2_DELAY_MS}ms`) // track row 2: ~983ms after row 1
+    expect(css).toContain(`${TRACK_FADE_MS}ms`) // track beats fade ~100ms
+    // The track delays are beat-schedule gaps (tileBeatSchedule), NOT CSS
+    // transition delays — intra-click lag would read as stragglers on
+    // manual stepping (generation-7 wave, art_cRMBx282).
+    expect(css).not.toContain('transition-delay')
     // Backward nav snaps: the hidden state disables transitions entirely.
     const hiddenRule = css.match(/\.sf-tg-tile\.slidev-vclick-hidden[^{]*\{[^}]*\}/)?.[0] ?? ''
     expect(hiddenRule).toContain('transition: none')
@@ -518,32 +524,29 @@ describe('measured motion — exact-trace sheet art_7bTnqSB3 §2.3', () => {
     expect(TRACK_ROW2_DELAY_MS).toBe(2483) // → row-2 segment at 9100ms
     expect(TRACK_ROW2_DELAY_MS - TRACK_ROW1_DELAY_MS).toBe(983)
     expect(TRACK_FADE_MS).toBe(100)
+
+    // The full 8-beat schedule: six tile pops + two discrete track beats —
+    // the identical sequence manual stepping and autoplay traverse.
+    expect(tileBeatSchedule(6)).toEqual([
+      550, 950, 2333, 3767, 4817, 6617, 8117, 9100,
+    ])
+    expect(tileBeatSchedule(3)).toEqual([550, 950, 2333, 3833, 4816]) // truncated grid
   })
 
-  it('fades the connector track in only after every tile is revealed', () => {
-    // Slidev provides the live click state per slide under the branded key
-    // (MilestoneLanes pattern); stub it with a plain ref of { current }.
-    const withClicks = (current: number) => ({
-      global: {
-        directives: { click: { mounted() {} } },
-        provide: { '$$slidev-clicks-context': ref({ current }) },
-      },
-    })
+  it('binds each connector-track row as its own v-click beat after the tiles', () => {
+    // The track rows are native v-clicks — beats 7 and 8 (generation-7 wave,
+    // art_cRMBx282): the recording's 1500/2483ms intra-click CSS delays became
+    // discrete beats, so manual stepping plays the identical measured rhythm
+    // as autoplay. The directive stub records each binding's click index.
+    const clicks: number[] = []
+    const wrapper = mountTileGrid(props, clicks)
 
-    const mid = mount(TileGrid, { props, ...withClicks(3) })
-    expect(mid.findAll('.sf-tg-track')).toHaveLength(2)
-    for (const line of mid.findAll('.sf-tg-track'))
-      expect(line.classes()).toContain('sf-tg-track-hidden')
-    expect(mid.findAll('.sf-tg-track')[1].classes()).toContain('sf-tg-track-late') // row 2 trails row 1
-
-    const full = mount(TileGrid, { props, ...withClicks(6) })
-    for (const line of full.findAll('.sf-tg-track'))
-      expect(line.classes()).not.toContain('sf-tg-track-hidden')
+    // Two track lines, indexed after every tile: tiles.length + i + 1.
+    expect(clicks.filter(n => n > gridTiles.length)).toEqual([7, 8])
 
     // No Slidev context (static renders, other test mounts) → settled: the
-    // track shows immediately.
-    const bare = mountTileGrid(props)
-    for (const line of bare.findAll('.sf-tg-track'))
-      expect(line.classes()).not.toContain('sf-tg-track-hidden')
+    // stubbed directive never applies hidden classes, so the track shows.
+    for (const line of wrapper.findAll('.sf-tg-track'))
+      expect(line.classes()).not.toContain('slidev-vclick-hidden')
   })
 })

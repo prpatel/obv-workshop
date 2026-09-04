@@ -260,10 +260,12 @@ export const TILE_STAGGER_GAPS_MS = [400, 1383, 1434, 1050, 1800] as const
 export const TILE_FADE_MS = 100
 
 /**
- * Connector-track beats, measured from the moment the last tile's click lands
- * (source: tile 6 starts 6617ms, row-1 track 8117ms, row-2 track 9100ms).
- * Row 1 fades in ~1.5s after tile 6; row 2 trails row 1 by ~983ms. Each fade
- * is ~100ms (frames 487–491 and 546–547).
+ * Connector-track beat offsets, measured from the moment the last tile's
+ * click lands (source: tile 6 starts 6617ms, row-1 track 8117ms, row-2 track
+ * 9100ms). Row 1 fades in ~1.5s after tile 6; row 2 trails row 1 by ~983ms.
+ * Each fade is ~100ms (frames 487–491 and 546–547). These schedule discrete
+ * track v-clicks (generation-7 wave, blueprint art_cRMBx282) — they are beat
+ * gaps, not CSS transition delays.
  */
 export const TRACK_ROW1_DELAY_MS = 1500
 export const TRACK_ROW2_DELAY_MS = 2483
@@ -287,4 +289,18 @@ export function tileStaggerSchedule(tiles: number, firstMs: number = TILE_STAGGE
     times.push(t)
   }
   return times
+}
+
+/**
+ * Full measured beat schedule (ms from run start): the tile stagger plus the
+ * two connector-track beats (row 1 at last-tile + 1500ms, row 2 + 2483ms).
+ * The track segments are their own v-clicks (beats 7 and 8 on the demo grid),
+ * so autoplay's step schedule and manual arrow-key stepping traverse the
+ * identical measured sequence — one press, one beat (generation-7 wave,
+ * blueprint art_cRMBx282). Pure; SSR-safe.
+ */
+export function tileBeatSchedule(tiles: number, firstMs: number = TILE_STAGGER_FIRST_MS, gaps: readonly number[] = TILE_STAGGER_GAPS_MS): number[] {
+  const tileBeats = tileStaggerSchedule(tiles, firstMs, gaps)
+  const last = tileBeats[tileBeats.length - 1]
+  return [...tileBeats, last + TRACK_ROW1_DELAY_MS, last + TRACK_ROW2_DELAY_MS]
 }

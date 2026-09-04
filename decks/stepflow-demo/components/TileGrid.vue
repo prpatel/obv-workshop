@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, inject, useId, type InjectionKey, type Ref } from 'vue'
-import type { ClicksContext } from '@slidev/client/constants'
+import { computed, useId } from 'vue'
 import {
   hexPath,
   tileGridLayout,
@@ -39,11 +38,6 @@ const props = defineProps<{
   titleAccent?: string
 }>()
 
-// Mirrors `injectionClicksContext` from @slidev/client/constants — the same
-// branded string, restated locally (MilestoneLanes.vue pattern): the runtime
-// import is a build hazard outside Slidev, and tests inject the plain string.
-const injectionClicksContext = '$$slidev-clicks-context' as unknown as InjectionKey<Ref<ClicksContext>>
-
 const p = computed(() => resolvePalette(props.palette))
 const layout = computed(() => tileGridLayout({
   tiles: props.tiles,
@@ -56,15 +50,6 @@ const layout = computed(() => tileGridLayout({
   y0Frac: props.y0Frac,
 }))
 const tracks = computed(() => tileTrackLines(layout.value.tiles))
-
-// Live click state (MilestoneLanes.vue pattern): the connector track is not a
-// v-click — the recording holds it until after tile 6 (art_7bTnqSB3 §2.3,
-// track fades 8117–9117ms), so it fades in only when every tile is on stage
-// and snaps back instantly on backward navigation. Outside Slidev (tests,
-// static renders) the context is absent and the track renders settled.
-const clicksCtx = inject(injectionClicksContext, undefined)
-const clicks = computed(() => clicksCtx?.value.current ?? Number.POSITIVE_INFINITY)
-const trackVisible = computed(() => clicks.value >= layout.value.tiles.length)
 
 // Measured hex-tile anatomy (wave-2 fidelity rework — report art_iHm120ov
 // §TileGrid, t=33.0s reads at the 1920×1080 reference scale):
@@ -176,16 +161,17 @@ function fmt(n: number): string {
 
     <!--
       Connector track behind the tiles (t=33.0s: #353642, ~12px, through tile
-      centers — the source renders it under both rows). NOT a v-click: the
-      recording fades it in only after tile 6 (art_7bTnqSB3 §2.3), so its
-      visibility derives from the live click state; row 2 trails row 1 by the
-      measured ~983ms (sf-tg-track-late).
+      centers — the source renders it under both rows). Each row is its own
+      v-click — beats 7 and 8 (generation-7 wave, blueprint art_cRMBx282):
+      what were intra-click CSS delays (1500/2483ms after tile 6) become
+      discrete beats, so manual stepping advances them one press at a time
+      and autoplay's step schedule fires them at the measured 8117/9100ms.
     -->
     <line
       v-for="(line, i) in tracks"
       :key="`track-${i}`"
+      v-click="tiles.length + i + 1"
       class="sf-tg-track"
-      :class="{ 'sf-tg-track-hidden': !trackVisible, 'sf-tg-track-late': i > 0 }"
       :x1="line.x1"
       :y1="line.y"
       :x2="line.x2"
@@ -335,23 +321,17 @@ function fmt(n: number): string {
 }
 
 /*
- * Connector track (art_7bTnqSB3 §2.3): dark until every tile is revealed —
- * the recording fades it in ~1.5s after tile 6 (track 8117ms vs tile 6 at
- * 6617ms), then ~100ms fades; row 2 trails row 1 by ~983ms (9100 vs 8117).
- * Measured constants live in tiles.ts (TRACK_*_DELAY_MS); the hidden state's
+ * Connector track (art_7bTnqSB3 §2.3): beats 7 and 8 — row 1 fades ~1.5s
+ * after tile 6 (track 8117ms vs tile 6 at 6617ms), row 2 ~983ms later
+ * (9100ms). The delays live in the beat schedule (tiles.ts
+ * TRACK_*_DELAY_MS → tileBeatSchedule), not in CSS; the hidden state's
  * transition:none snaps backward navigation instantly — the locked decision.
  */
 .sf-tg-track {
   transition: opacity 100ms ease-out;
-  transition-delay: 1500ms;
 }
 
-.sf-tg-track-late {
-  transition-delay: 2483ms;
-}
-
-.sf-tg-track-hidden {
-  opacity: 0;
+.sf-tg-track.slidev-vclick-hidden {
   transition: none;
 }
 </style>
