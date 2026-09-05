@@ -108,6 +108,11 @@ describe('StackPanels', () => {
     }
   })
 
+  it('omits the plate entirely when plate is false (user8 seg08 dark variant)', () => {
+    const wrapper = mountStackPanels({ ...FULL_PROPS, plate: false })
+    expect(wrapper.findAll('.sf-plate').length).toBe(0)
+  })
+
   it('cuts each panel at its outer corner (45° chamfers showing plate white)', () => {
     const wrapper = mountStackPanels(FULL_PROPS)
 

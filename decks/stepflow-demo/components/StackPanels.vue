@@ -26,11 +26,14 @@ const props = withDefaults(defineProps<{
   title?: string
   /** Header tail rendered in chrome green (sheet: 'unified environment'). */
   titleAccent?: string
-}>(), { palette: () => ({}) })
+  /** Render the light backing plate (art_mkVNxsft light trace). The dark
+       source-truth mosaic sits directly on the black canvas — pass false. */
+  plate?: boolean
+}>(), { palette: () => ({}), plate: true })
 
 const p = computed(() => resolvePalette(props.palette))
 const layout = computed(() => panelsLayout(props.panels))
-const plate = computed(() => plateLayout(layout.value.viewBox))
+const plateSpec = computed(() => plateLayout(layout.value.viewBox))
 const plan = computed(() => revealPlan(props.panels, !!props.caption))
 
 // Tone → token: `alt`/`tertiary`/`quaternary` fall back to `accent` when the
@@ -71,7 +74,7 @@ const header = computed(() => {
 // Coords round to 1/10000 px so the rendered path stays readable.
 const plateBorder = computed(() => {
   const q = (v: number) => Number(v.toFixed(4))
-  const { x, y, w, h } = plate.value
+  const { x, y, w, h } = plateSpec.value
   return `M ${q(x)} ${q(y)} V ${q(y + h)} H ${q(x + w)} V ${q(y)}`
 })
 
@@ -143,13 +146,13 @@ const captionSpec = computed(() => {
     <!-- White plate, two layers (art_mkVNxsft §1.3): the margin rides the
          first panel's click at ~33% white and brightens to full #f5f5f5 with
          the caption on the closing beat (the f351–360 window). -->
-    <g v-click="plateFirstClick" :data-sf-click="plateFirstClick" class="sf-plate sf-plate--dim">
-      <rect :x="plate.x" :y="plate.y" :width="plate.w" :height="plate.h" :fill="plate.fill" />
-      <path :d="plateBorder" fill="none" :stroke="plate.border" :stroke-width="plate.borderWidth" />
+    <g v-if="plate" v-click="plateFirstClick" :data-sf-click="plateFirstClick" class="sf-plate sf-plate--dim">
+      <rect :x="plateSpec.x" :y="plateSpec.y" :width="plateSpec.w" :height="plateSpec.h" :fill="plateSpec.fill" />
+      <path :d="plateBorder" fill="none" :stroke="plateSpec.border" :stroke-width="plateSpec.borderWidth" />
     </g>
-    <g v-click="plateFullClick" :data-sf-click="plateFullClick" class="sf-plate sf-plate--full">
-      <rect :x="plate.x" :y="plate.y" :width="plate.w" :height="plate.h" :fill="plate.fill" />
-      <path :d="plateBorder" fill="none" :stroke="plate.border" :stroke-width="plate.borderWidth" />
+    <g v-if="plate" v-click="plateFullClick" :data-sf-click="plateFullClick" class="sf-plate sf-plate--full">
+      <rect :x="plateSpec.x" :y="plateSpec.y" :width="plateSpec.w" :height="plateSpec.h" :fill="plateSpec.fill" />
+      <path :d="plateBorder" fill="none" :stroke="plateSpec.border" :stroke-width="plateSpec.borderWidth" />
     </g>
 
     <!-- One sibling group per panel (never nested v-clicks): a ~300ms
@@ -166,7 +169,7 @@ const captionSpec = computed(() => {
       <path
         v-if="panel.bandReveal !== 'sweep'"
         class="sf-band"
-        :d="panelPath(panel, panel.cutCorner ? plate.cut : 0, panel.cutCorner)"
+        :d="panelPath(panel, panel.cutCorner ? plateSpec.cut : 0, panel.cutCorner)"
         :fill="fill(panel.tone)"
       />
       <rect

@@ -673,18 +673,19 @@ canvasWidth: 1920
 ---
 
 <!--
-  StackPanels demo (v4 family, exact-trace art_mkVNxsft §1): the recording is
-  a continuous auto-run; native v-clicks re-pace it to five clicks — four
-  ~300ms full-size opacity fades (blue, cyan, amber, green — TL→TR→BL→BR),
-  then the plate brighten + caption landing on the closing beat (the sheet's
-  f351–360 window). The white plate (#f5f5f5, 1px #989898 border, no top
-  line) enters dim (~33% white) with click 1; every panel cuts one 45°
-  corner (~10px) showing plate white; dark icon+title groups center per
-  panel; the green panel is empty below its title. Geometry is the sheet's
-  measured mosaic in stage fractions — title boxes are the sheet's native
-  ink bboxes × the 2038→1920 (0.94171) / 1144→1080 (0.944055) conversion
-  factors, so the numbers stay traceable to the sheet. AutoAdvance paces
-  the run; `a` toggles a hands-free run, `?autoplay=N` starts one on enter.
+  StackPanels demo — dark source-truth variant (user8 seg08, 91–94s @2560×1440).
+  The source mosaic is FOUR ABUTTING PANELS directly on the black canvas — no
+  white plate, no gutters, square corners:
+    blue  #3799fb  x0.209–0.510  y0.326–0.556   (top-left, probed)
+    cyan  #1fd0ea  x0.510–0.790  y0.326–0.556   (top-right, probed)
+    amber #f9bb1f  x0.209–0.431  y0.558–0.785   (bottom-left, probed)
+    teal  #1ed798  x0.431–0.790  y0.557–0.786   (bottom-right, probed)
+  Reveal order measured from the 15fps event trace: blue @0.07s, cyan @0.2s,
+  teal @0.33s, amber @0.87s — re-paced to four native clicks, one ~300ms
+  full-size opacity fade each. In-panel icon+title groups ride their panel's
+  click. `:plate="false"` opts out of the light backing plate (art_mkVNxsft
+  light-trace variant keeps the default). AutoAdvance paces the run; `a`
+  toggles a hands-free run, `?autoplay=N` starts one on enter.
 -->
 
 <div class="sf-demo-stage">
@@ -692,13 +693,13 @@ canvasWidth: 1920
 <StackPanels
   title="One"
   titleAccent="unified environment"
-  caption="ONE ENVIRONMENT"
-  :palette="{ accent: '#3599fb', accentAlt: '#1fd0ea', accentTertiary: '#f9bc1d', accentQuaternary: '#1cd798' }"
+  :plate="false"
+  :palette="{ accent: '#3799fb', accentAlt: '#1fd0ea', accentTertiary: '#f9bb1f', accentQuaternary: '#1ed798' }"
   :panels="[
-    { id: 'blue', xFrac: 229.8 / 1920, yFrac: 364.4 / 1080, wFrac: 748.6 / 1920, hFrac: 301.2 / 1080, tone: 'accent', bandReveal: 'fade', cutCorner: 'tl', icon: 'dash-grid', iconBox: { xFrac: 398.3 / 1920, yFrac: 489.0 / 1080, wFrac: 74.4 / 1920, hFrac: 49.1 / 1080 }, title: 'INGESTION', titleBox: { xFrac: 550 * 0.94171 / 1920, yFrac: 526 * 0.944055 / 1080, wFrac: 304 * 0.94171 / 1920, hFrac: 37 * 0.944055 / 1080 } },
-    { id: 'cyan', xFrac: 981.3 / 1920, yFrac: 364.4 / 1080, wFrac: 615.0 / 1920, hFrac: 301.2 / 1080, tone: 'alt', bandReveal: 'fade', cutCorner: 'tr', icon: 'filter', iconBox: { xFrac: 1086.9 / 1920, yFrac: 482.4 / 1080, wFrac: 73.3 / 1920, hFrac: 72.7 / 1080 }, title: 'TRANSFORM', titleBox: { xFrac: 1279 * 0.94171 / 1920, yFrac: 526 * 0.944055 / 1080, wFrac: 308 * 0.94171 / 1920, hFrac: 37 * 0.944055 / 1080 } },
-    { id: 'amber', xFrac: 229.8 / 1920, yFrac: 670.3 / 1080, wFrac: 520.8 / 1920, hFrac: 301.1 / 1080, tone: 'tertiary', bandReveal: 'fade', cutCorner: 'bl', icon: 'database', iconBox: { xFrac: 323.0 / 1920, yFrac: 784.5 / 1080, wFrac: 64.0 / 1920, hFrac: 74.6 / 1080 }, title: 'STORAGE', titleBox: { xFrac: 464 * 0.94171 / 1920, yFrac: 852 * 0.944055 / 1080, wFrac: 234 * 0.94171 / 1920, hFrac: 38 * 0.944055 / 1080 } },
-    { id: 'green', xFrac: 753.4 / 1920, yFrac: 668.7 / 1080, wFrac: 842.9 / 1920, hFrac: 302.7 / 1080, tone: 'quaternary', bandReveal: 'fade', cutCorner: 'br', icon: 'navigation-2', iconBox: { xFrac: 958.7 / 1920, yFrac: 809.0 / 1080, wFrac: 70.5 / 1920, hFrac: 37.8 / 1080 }, title: 'MONITORING', titleBox: { xFrac: 1141 * 0.94171 / 1920, yFrac: 852 * 0.944055 / 1080, wFrac: 342 * 0.94171 / 1920, hFrac: 38 * 0.944055 / 1080 } },
+    { id: 'blue', xFrac: 0.209, yFrac: 0.326, wFrac: 0.301, hFrac: 0.230, tone: 'accent', bandReveal: 'fade', icon: 'dash-grid', iconBox: { xFrac: 0.290, yFrac: 0.375, wFrac: 0.039, hFrac: 0.045 }, title: 'INGESTION', titleBox: { xFrac: 0.255, yFrac: 0.470, wFrac: 0.160, hFrac: 0.034 } },
+    { id: 'cyan', xFrac: 0.510, yFrac: 0.326, wFrac: 0.280, hFrac: 0.230, tone: 'alt', bandReveal: 'fade', icon: 'filter', iconBox: { xFrac: 0.600, yFrac: 0.375, wFrac: 0.038, hFrac: 0.067 }, title: 'TRANSFORM', titleBox: { xFrac: 0.565, yFrac: 0.470, wFrac: 0.160, hFrac: 0.034 } },
+    { id: 'teal', xFrac: 0.431, yFrac: 0.557, wFrac: 0.359, hFrac: 0.229, tone: 'quaternary', bandReveal: 'fade', icon: 'navigation-2', iconBox: { xFrac: 0.565, yFrac: 0.600, wFrac: 0.037, hFrac: 0.035 }, title: 'MONITORING', titleBox: { xFrac: 0.530, yFrac: 0.690, wFrac: 0.180, hFrac: 0.035 } },
+    { id: 'amber', xFrac: 0.209, yFrac: 0.558, wFrac: 0.222, hFrac: 0.227, tone: 'tertiary', bandReveal: 'fade', icon: 'database', iconBox: { xFrac: 0.276, yFrac: 0.600, wFrac: 0.033, hFrac: 0.069 }, title: 'STORAGE', titleBox: { xFrac: 0.240, yFrac: 0.690, wFrac: 0.120, hFrac: 0.035 } },
   ]"
 />
 
