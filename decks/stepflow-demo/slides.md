@@ -389,10 +389,9 @@ canvasWidth: 1920
   default, so no palette prop is needed. AutoAdvance is renderless
   deck-level wiring: the `a` key toggles a hands-free run and ?autoplay=N in
   the URL starts one on slide enter. The clip window starts post-pop (bars
-  and annotations already present; sheet art_7bTnqSB3 §1.3), so AutoAdvance
-  compresses the 3-click build into the first 0.3s and lets the label fades
-  land at ≈3.1s/7.8s — the measured 2800–2983/7467–7667ms clip-relative
-  windows.
+  and annotations already present; sheet art_7bTnqSB3 §1.3), so the schedule
+  compresses the 3-click build into the first 0.3s and lands the label beats
+  at the measured 2800–2983/7467–7667ms clip-relative windows exactly.
 -->
 
 <div class="sf-demo-stage">
@@ -415,7 +414,7 @@ canvasWidth: 1920
   ]"
 />
 
-<AutoAdvance :duration-sec="0.3" :step-schedule-sec="[0.1, 0.2, 0.3]" />
+<AutoAdvance :duration-sec="7.7" :step-schedule-sec="[0.1, 0.2, 0.3, 2.8, 7.467]" />
 
 </div>
 
@@ -581,8 +580,12 @@ canvasWidth: 1920
   the video is the scoring target, so this slide typesets the
   video-verified strings. Initial proportions are [I]: the teal region
   starts at ~1/5 of its settled share and the mint segment near-closed; red
-  holds the rest. All three v-clicks are pure revealed-state transitions
-  — backward nav snaps instantly.
+  holds the rest. Six native v-click beats (generation-7 decomposition of
+  the intra-click delays, art_cRMBx282): band pop, settled layer + burst 1,
+  burst 2, final segments, mint settle, then the text/caption state — the
+  AutoAdvance schedule pins each to its measured clip-relative window and
+  a manual press lands the same beat. All reveals are pure
+  revealed-state transitions — backward nav snaps instantly.
 -->
 
 <div class="sf-demo-stage">
@@ -606,7 +609,7 @@ canvasWidth: 1920
   ]"
 />
 
-<AutoAdvance :duration-sec="4.567" :step-schedule-sec="[0.3, 0.65, 4.567]" />
+<AutoAdvance :duration-sec="4.95" :step-schedule-sec="[0.3, 0.65, 1.783, 3.617, 4.083, 4.567]" />
 
 </div>
 

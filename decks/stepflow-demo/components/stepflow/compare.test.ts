@@ -335,7 +335,7 @@ describe('twoBarCompareLayout — resolved geometry', () => {
 })
 
 describe('TwoBarCompare component', () => {
-  it('renders one group per bar plus the annotation layer, consuming exactly 3 clicks', () => {
+  it('renders one group per bar plus the annotation layer, consuming exactly 5 clicks', () => {
     const wrapper = mountTwoBar({ bars, chip: 'GENERATED' })
 
     expect(wrapper.find('svg.twobarcompare').exists()).toBe(true)
@@ -343,13 +343,19 @@ describe('TwoBarCompare component', () => {
     expect(barGroups).toHaveLength(2)
     expect(wrapper.find('.sf-tbc-annot').exists()).toBe(true)
 
-    // Click choreography: bar 1 → click 1, bar 2 → click 2, annotations → click 3.
+    // Beat choreography (generation-7 decomposition, art_cRMBx282): bar 1 →
+    // beat 1, bar 2 → beat 2, annotations → beat 3, then the on-bar labels
+    // are their own measured beats 4 and 5.
     expect(barGroups[0].attributes('data-vclick')).toBe('1')
     expect(barGroups[1].attributes('data-vclick')).toBe('2')
     expect(wrapper.find('.sf-tbc-annot').attributes('data-vclick')).toBe('3')
 
+    const labels = wrapper.findAll('.sf-tbc-label')
+    expect(labels[0].attributes('data-vclick')).toBe('4')
+    expect(labels[1].attributes('data-vclick')).toBe('5')
+
     const indices = wrapper.findAll('[data-vclick]').map((el) => Number(el.attributes('data-vclick')))
-    expect(Math.max(...indices)).toBe(3) // the slide's total click count
+    expect(Math.max(...indices)).toBe(5) // the slide's total beat count
   })
 
   it('exposes the measured canvas and an accessible name', () => {
@@ -429,6 +435,9 @@ describe('TwoBarCompare component', () => {
     labels.forEach((label) => expect(label.attributes('lengthAdjust')).toBe('spacing'))
     expect(labels[0].text()).toBe('EVERY CUSTOMER COMES BACK TWICE')
     expect(labels[1].text()).toBe('THIS BACKFILLS THE SAME DAY TWICE')
+    // Each label is its own measured beat (2800–2983 / 7467–7667ms windows).
+    expect(labels[0].attributes('data-vclick')).toBe('4')
+    expect(labels[1].attributes('data-vclick')).toBe('5')
   })
 
   it('still renders optional under-bar subs for the generic contract (the ref frame has none)', () => {
@@ -567,12 +576,16 @@ describe('TwoBarCompare component', () => {
 
     expect(css).toContain('150ms') // bar pop + static annotation fade (§9 scale)
     expect(css).toContain('183ms') // label 1 fade duration: window 2800–2983ms
-    expect(css).toContain('2800ms') // label 1 delay — settles first, arrives late
     expect(css).toContain('200ms') // label 2 fade duration: window 7467–7667ms
-    expect(css).toContain('7467ms') // label 2 delay
-    // The annotation group flips instantly; its children own the fades.
+    // Generation-7 decomposition: the 2800/7467ms intra-click delays became
+    // explicit label beats 4/5 — the delays are gone from the styles.
+    expect(css).not.toContain('transition-delay: 2800ms')
+    expect(css).not.toContain('transition-delay: 7467ms')
+    // The annotation group flips instantly; the labels own their fades, with
+    // element-level hidden states for instant backward nav past a label beat.
     expect(css).toContain('.sf-tbc-annot.slidev-vclick-hidden .sf-tbc-annot-core')
-    expect(css).toContain('.sf-tbc-annot.slidev-vclick-hidden .sf-tbc-label')
+    expect(css).toContain('.sf-tbc-label.slidev-vclick-hidden')
+    expect(css).not.toContain('.sf-tbc-annot.slidev-vclick-hidden .sf-tbc-label')
     expect(css).toContain('prefers-reduced-motion') // transitions disabled, instant state
   })
 

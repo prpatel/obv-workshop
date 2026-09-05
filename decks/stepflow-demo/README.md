@@ -40,7 +40,7 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (13) · VerticalSpine (5) · HeroTile (1) · SchematicRows (10) · TwoBarCompare (3) · ColumnRow (8) · TileGrid (8) · RatioStrip (3) · SegmentTimeline (3) · StackPanels (5) · MilestoneLanes (9) · HexCluster (3)
+├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (13) · VerticalSpine (5) · HeroTile (1) · SchematicRows (10) · TwoBarCompare (5) · ColumnRow (8) · TileGrid (8) · RatioStrip (6) · SegmentTimeline (3) · StackPanels (5) · MilestoneLanes (9) · HexCluster (3)
 ├─ components/
 │  ├─ StepFlow.vue                # the serpentine flow diagram (auto-imported by Slidev)
 │  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
@@ -48,10 +48,10 @@ decks/stepflow-demo/
 │  ├─ VerticalSpine.vue           # family built-in: center-axis rhythm (marker, label row, side cards)
 │  ├─ HeroTile.vue                # family built-in: single-click section-divider tile
 │  ├─ SchematicRows.vue           # family built-in: exact-trace window chrome + verbatim 7-row listing, per-char typewriter, callout ladder
-│  ├─ TwoBarCompare.vue           # family built-in: two left-anchored comparison bars (data text, chips, annotation click)
+│  ├─ TwoBarCompare.vue           # family built-in: two left-anchored comparison bars (data text, chips, annotation + label beats)
 │  ├─ ColumnRow.vue               # family built-in: tone-coded column row (heading chrome + rising columns + tinted labels)
 │  ├─ TileGrid.vue                # family built-in: hex-tile grid with glow, connector track, and label rows (row-major build)
-│  ├─ RatioStrip.vue              # family built-in: proportional band, two-phase pop + three-burst teal re-flow (wave 2)
+│  ├─ RatioStrip.vue              # family built-in: proportional band, six-beat pop + teal re-flow (wave 2)
 │  ├─ SegmentTimeline.vue         # family built-in: thin track, bright fills between glowing nodes (sweep-then-pop)
 │  ├─ StackPanels.vue             # family built-in: measured four-panel mosaic (burst pops + legacy sweep)
 │  ├─ MilestoneLanes.vue          # family built-in: four-lane Gantt/milestone chart (four measured reveal styles + milestone diamonds)
@@ -186,10 +186,10 @@ inline on the demo slides; data order is the click order for every family.
 | `VerticalSpine` | `spine.ts` — `SpineNode[]` + optional `footer`; an empty-title center node renders the diamond marker, `side` picks the card slots | 5 — marker, label row, 2 side cards, footer row | outlined two-tone cards — accent `#24cce5` left / `accentAlt` `#3891e3` right (demo seed), `orangeSpine` spine/label | 5          | —           |
 | `HeroTile`      | `spine.ts` — `HeroTileData` (tile + icon + optional label on the spine axis) | 1 — halo, tile, icon, label together | `orangeSpine` verbatim (`#f85721`), accent-derived halo | 6          | `user-round` |
 | `SchematicRows` | `rows.ts` — `SchematicRowsData` (rows + callouts; defaults to the sheet-authoritative 7-row seed) | 10 — chrome, callout 1, rows 1–3, rail, then rows 4–7 with the band + callouts 2–4 keyed to their rows | sheet-sampled tones — keywords `#4298f2`, near-white idents, dim comments `#888791`, teal band `#08272c`, cyan rail `#35c2ea` | 7          | —           |
-| `TwoBarCompare` | `compare.ts` — `CompareBar[]` + `TwoBarCompareData` (bars/xFrac/barHFrac/yFracs + optional `dataText` block — `lines`/`subline`/`caption`/`note`/`rules` — and centered `subhead`) | 3 — bar 1, bar 2, then one shared annotation click for the data-text block, caption/note rows, divider rules, labels, and chips | `statusAmber` (the component's family default; rework adds the measured teal `#1cd797` top-chip tone) | 8          | —           |
+| `TwoBarCompare` | `compare.ts` — `CompareBar[]` + `TwoBarCompareData` (bars/xFrac/barHFrac/yFracs + optional `dataText` block — `lines`/`subline`/`caption`/`note`/`rules` — and centered `subhead`) | 5 — bar 1, bar 2, one shared annotation beat for the data-text block, caption/note rows, divider rules and chips, then the on-bar labels as their own measured beats 4–5 (2800–2983/7467–7667ms windows) | `statusAmber` (the component's family default; rework adds the measured teal `#1cd797` top-chip tone) | 8          | —           |
 | `ColumnRow`     | `columns.ts` — `ColumnRowData` (columns + `yFrac`/`hFrac` + optional `heading`/`labelRows`/`labelPosition`/`numerals`/`lateLabels`/`note`) | 8 (exact trace): columns 1,2,3,4,6 — deferred below-labels 5,7 — heading numeral with col-5 (6) — note row last (8); legacy compositions stay at 5 + label rows | `cyanOnBlack` base + token mix (`stepBlue` ship endpoint, `orangeSpine`/`statusAmber` accents, `accentTertiary` teal) | 9          | —           |
 | `TileGrid`      | `tiles.ts` — `TileGridData` (tiles/cols + tile & pitch fracs; per-tile `tone`/`wFrac`/`hFrac`/`mini` overrides) | 8 — six tiles row-major, then the two connector-track beats (7: row 1, 8: row 2) | `cyanOnBlack` (measured hex core `#1ed0e8` + matrix/row tones via `accentAlt`/`accentTertiary` + status/plain constants) | 10         | `cpu` · `boxes` · `layers` (candidates; fallback covers a wrong guess) |
-| `RatioStrip`    | `strip.ts` — `RatioStripData` (segments + `yFrac`/`hFrac` + optional heading/caption) | 3 — band pop at initial proportions, three-burst teal re-flow, then chip + tone-colored caption row | measured gradients on the `accentAlt`/`accentTertiary` tokens — hue decisions in the notes below | 11         | —           |
+| `RatioStrip`    | `strip.ts` — `RatioStripData` (segments + `yFrac`/`hFrac` + optional heading/caption) | 6 — band pop at initial proportions, settled layer + burst 1, burst 2, final segments, mint settle, then chip + tone-colored caption row (generation-7 decomposition of the 1133/2967/3433ms intra-click delays into explicit beats) | measured gradients on the `accentAlt`/`accentTertiary` tokens — hue decisions in the notes below | 11         | —           |
 | `SegmentTimeline` | `timeline.ts` — `TimelineSegment[]` (`tone` is `'accent'`/`'tertiary'`/`'alt'`, optional proportional `wFrac`, optional `label`/`sublabel`) | 3 — one per segment: node pop + fill sweep together | measured blue/cyan/red trio over `chainBlue` (no preset added) | 12         | —           |
 | `StackPanels`   | `panels.ts` — `StackPanel[]` + optional `caption`       | one per panel + one label click     | four-accent seed (`accent`…`accentQuaternary` = the recorded blue/cyan/amber/green) | 13         | —           |
 | `MilestoneLanes` | `lanes.ts` — `MilestoneLanesData` (lanes + optional `diamonds`, per-lane `yFrac` override, measured y0/pitch/barH grid) | one reveal click + one settle click per bar, footer last | measured fills `#ED4342`/`#F9BB21` (no preset) | 14         | `map-pin`   |
@@ -546,17 +546,18 @@ spacing only), so a varied recorded rhythm is encoded as its mean cadence.
 | 4 | NodeEdge | 9 | 0.3–0.9 s/click, mean ≈0.55 s (wave-1 family band) | `5` | ≈0.56 s/click |
 | 5 | VerticalSpine | 5 | ~1.2–1.5 s between phases (marker 0.4 s → footer row 5.8 s) | `5` | 1 s/click |
 | 7 | SchematicRows | 10 | 0.3–0.5 s/row | `4` | 0.4 s/row |
-| 8 | TwoBarCompare | 3 | ≥1.5 s between bars | `5` | ≈1.67 s/click |
+| 8 | TwoBarCompare | 5 | bars ≈0.1 s apart, then label beats 4–5 at 2800/7467 ms (measured) | `7.7` | `stepScheduleSec` (5 measured beats) |
 | 10 | TileGrid | 8 | ≈1.45 s/tile, then track beats at 8117/9100 ms (measured) | `9.2` | `stepScheduleSec` (8 measured beats) |
 | 12 | SegmentTimeline | 3 | node pop ≈140ms, then ≈2.4s fill sweep per segment (measured 10–90% over 2.55s) | `7.5` | 2.5 s/click |
 | 13 | StackPanels | 5 | 0.27–0.45 s panel bursts, labels ≈+1.0 s | `1.8` | 0.36 s/click |
 | 15 | HexCluster | 3 | 0.4–0.5 s/click | `1.4` | ≈0.47 s/click |
 
 Slides 2 (StepFlow, the endorsed calibration slide), 6 (HeroTile, single
-click), 9 (ColumnRow), 11 (RatioStrip), and 14 (MilestoneLanes) keep the 7 s
-default — the reports give them no measured inter-click cadence; their notes
-are within-click choreography, which is component-level work, not click
-pacing.
+click), 9 (ColumnRow), and 14 (MilestoneLanes) keep the 7 s default — the
+reports give them no measured inter-click cadence. Slide 11 (RatioStrip) now
+uses `stepScheduleSec` (6 measured beats: band pop, settled layer + burst 1,
+burst 2, final segments, mint settle, text/caption — the generation-7
+decomposition of its intra-click delays).
 
 ### Recording workflow
 
