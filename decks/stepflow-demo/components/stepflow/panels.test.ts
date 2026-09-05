@@ -85,13 +85,13 @@ describe('STACKPANELS_SEED + sheet strings (art_mkVNxsft §1.2)', () => {
   })
 
   it('pins the header and caption to the measured ink extents', () => {
-    expect(STACKPANELS_HEADER.leadCapHeight).toBeCloseTo(50.9, 6)
-    expect(STACKPANELS_HEADER.accentCapHeight).toBeCloseTo(77.3, 6)
-    expect(STACKPANELS_HEADER.baseline).toBeCloseTo(126.0, 6)
-    expect(STACKPANELS_HEADER.leadBox.xFrac * 1920).toBeCloseTo(324.9, 4)
-    expect((STACKPANELS_HEADER.leadBox.xFrac + STACKPANELS_HEADER.leadBox.wFrac) * 1920).toBeCloseTo(518.9, 4)
-    expect(STACKPANELS_HEADER.accentBox.xFrac * 1920).toBeCloseTo(545.3, 4)
-    expect((STACKPANELS_HEADER.accentBox.xFrac + STACKPANELS_HEADER.accentBox.wFrac) * 1920).toBeCloseTo(1506.8, 4)
+    expect(STACKPANELS_HEADER.leadCapHeight).toBeCloseTo(42, 6)
+    expect(STACKPANELS_HEADER.accentCapHeight).toBeCloseTo(64, 6)
+    expect(STACKPANELS_HEADER.baseline).toBeCloseTo(162.0, 6)
+    expect(STACKPANELS_HEADER.leadBox.xFrac * 1920).toBeCloseTo(480, 4)
+    expect((STACKPANELS_HEADER.leadBox.xFrac + STACKPANELS_HEADER.leadBox.wFrac) * 1920).toBeCloseTo(640, 4)
+    expect(STACKPANELS_HEADER.accentBox.xFrac * 1920).toBeCloseTo(662, 4)
+    expect((STACKPANELS_HEADER.accentBox.xFrac + STACKPANELS_HEADER.accentBox.wFrac) * 1920).toBeCloseTo(1444, 4)
 
     const captionCenter = (STACKPANELS_CAPTION.box.xFrac + STACKPANELS_CAPTION.box.wFrac / 2) * 1920
     expect(captionCenter).toBeCloseTo(908.75, 4)

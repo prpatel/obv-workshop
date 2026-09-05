@@ -170,22 +170,21 @@ export function panelPath(
 
 /**
  * The sheet's measured header (art_mkVNxsft §1.2): 'One' white #f5f5f5 ink
- * x324.9–518.9, 'unified environment' green #66fc00 ink x545.3–1506.8, one
- * font size at cap height 69.9, shared baseline ≈y127 @1080.
+/**
+ * The seg08 settled-frame header (re-measured on the restart reference —
+ * the restart video's header is smaller and lower than the v1-era sheet:
+ * ink y98–162, x480–1444): 'One' white #f5f5f5 ink x480–640, 'unified
+ * environment' green #66fc00 ink x662–1444, per-run caps scaled from the
+ * settled read (42 / 64), shared baseline ≈y162 @1080.
  */
 export const STACKPANELS_HEADER = {
   lead: 'One',
   accent: 'unified environment',
-  leadBox: { xFrac: 324.9 / 1920, wFrac: 194.0 / 1920 },
-  accentBox: { xFrac: 545.3 / 1920, wFrac: 961.5 / 1920 },
-  /** Per-span glyph-core caps (direct stem histograms on the settled frame):
-   * 'One' cap 50.9 top 74.4; 'unified environment' ascender band 77.3 top 49.0
-   * — the two runs share a ≈126 baseline but NOT a size (the green phrase is
-   * display-size display type, the white lead small).
-   */
-  leadCapHeight: 50.9,
-  accentCapHeight: 77.3,
-  baseline: 126.0,
+  leadBox: { xFrac: 480 / 1920, wFrac: 160 / 1920 },
+  accentBox: { xFrac: 662 / 1920, wFrac: 782 / 1920 },
+  leadCapHeight: 42,
+  accentCapHeight: 64,
+  baseline: 162.0,
 } as const
 
 /**

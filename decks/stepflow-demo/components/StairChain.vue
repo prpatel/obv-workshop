@@ -247,17 +247,18 @@ function captionFill(step: StairStep): string {
       v-bind="pinAttrs(callout.text, type.calloutSize, callout.textLengthFrac ? callout.textLengthFrac * layout.viewBox.width : undefined)"
     >{{ callout.text }}</text>
 
-    <!-- Shared title chrome: sheet-measured centered two-tone title
-         (StairChain Title row: band y48–144 is glow-inclusive; the glyph core
-         matches NodeEdge's — white y56.5–125.3, cap 68.8, centered ≈x916,
-         ink extent pinned to the measured 1473px). -->
+    <!-- Shared title chrome: centered two-tone title re-measured against
+         the restart seg01 settled frame (ink y102–158, cap 56, centered
+         ≈x961, extent pinned to the measured 1193px; the restructure-era
+         band y56.5–125.3/cap 68.8/extent 1473 was transcribed from the
+         v1 recording and does not match this reference). -->
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
-      :cap-height="68.8"
-      :cap-top="56.5"
-      :center-x="916"
-      :title-text-length="1473"
+      :cap-height="56"
+      :cap-top="102"
+      :center-x="961"
+      :title-text-length="1193"
     />
   </svg>
 </template>

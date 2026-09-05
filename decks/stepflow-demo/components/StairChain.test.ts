@@ -295,18 +295,19 @@ describe('StairChain', () => {
     expect(traceHidden).toContain('transition: none')
   })
 
-  it('renders the shared centered two-tone title chrome (sheet Title row: glyph core 78, white y49–126, ≈x916)', () => {
+  it('renders the shared centered two-tone title chrome (settled seg01 re-measure: cap 56, y102–158, ≈x961)', () => {
     const withAccent = mountStairChain({ steps, title: 'THE DATA ENGINEERING', titleAccent: 'LIFECYCLE' })
     const title = withAccent.find('.sf-chrome-title')
     expect(title.exists()).toBe(true)
     expect(title.text()).toContain('THE DATA ENGINEERING')
     expect(title.text()).toContain('LIFECYCLE')
-    // Sheet-measured chrome: the sheet's y48–144 band is glow-inclusive; the
-    // glyph core matches NodeEdge's (white y56.5–125.3) → cap 68.8 → font-size
-    // 68.8/0.730, baseline y125.3, centered ≈x916.
-    expect(Number(title.attributes('font-size'))).toBeCloseTo(68.8 / 0.730, 4)
-    expect(Number(title.attributes('y'))).toBe(125.3)
-    expect(Number(title.attributes('x'))).toBe(916)
+    // Settled-frame re-measure (restart seg01 reference): ink y102–158,
+    // cap 56 → font-size 56/0.730, baseline y158, centered ≈x961 — the
+    // v1-era sheet band (y56.5–125.3, cap 68.8, ≈x916) does not match
+    // this reference.
+    expect(Number(title.attributes('font-size'))).toBeCloseTo(56 / 0.730, 4)
+    expect(Number(title.attributes('y'))).toBe(158)
+    expect(Number(title.attributes('x'))).toBe(961)
     expect(withAccent.html()).toContain('#66fb00')
 
     const withoutAccent = mountStairChain({ steps, title: 'PLAIN HEADER' })
