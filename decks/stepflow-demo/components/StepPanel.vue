@@ -134,6 +134,7 @@ function rowPin(row: StepRowRect, key: 'label' | 'title') {
         :font-size="fontSizeOf(l.chip.label)"
         v-bind="pinAttrs(chipLabel, fontSizeOf(l.chip.label), l.chip.label.w)"
         text-anchor="start"
+        font-weight="700"
         :fill="TITLE_WHITE"
       >{{ chipLabel }}</text>
     </g>
