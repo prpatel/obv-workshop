@@ -343,27 +343,30 @@ canvasWidth: 1920
 
 <!--
   SpecPanel demo — measured seg14 (user8 seg14, 153–160s @2560×1440).
-  One huge near-black plate (settled luma ≈14 — the V-3 near-black decision)
-  carries progressively fading text rows; window-chrome dots ride click 2; a
-  red edge accent and a teal accent cluster land on their own late beats.
+  One huge near-black plate (settled fill #0f0e11, luma ≈14 — the V-3
+  near-black decision) carries progressively fading text rows: window-chrome
+  status row + teal `AI ASSISTED` cluster + wide-tracked heading on click 2,
+  the white cursor-over-square icon + bright body line on click 3, the red
+  edge accent's dim line on click 4, the teal smile tile + strip on click 5,
+  the bright teal statement on click 6, and the dim closing line on click 7.
   The crop frames the full 16:9 slide (R-2, documented in specPanel.ts):
   crop fractions map identity-onto-stage, so the title band and plate
   margins read as full-frame fractions. Seed copy is the module's
-  SPEC_PANEL_SEED (resolution-limited read, integration-refined); the title
-  band pins its measured 634.56px ink extent (specPanel.ts layout.title).
+  SPEC_PANEL_SEED (OCR read of the settled frame at 2560); the title pins
+  its measured 634.9px ink extent (specPanel.ts layout.title).
 
   AutoAdvance pins the complete seven-beat schedule (STEP_SCHEDULE_SEC:
-  plate 0.47, status row 0.6, heading + body 2.0, red accent 3.13, teal
-  cluster 4.47, spec row 5.07, closing line 6.53; R-6 complete list); `a`
-  toggles a hands-free run, `?autoplay=N` starts one on enter.
+  plate dim 0.47, plate full + status row + heading sub-beat 0.6, body
+  group 2.0, red accent 3.13, teal accents 4.47, teal statement 5.07,
+  closing line 6.53; R-6 complete list); `a` toggles a hands-free run,
+  `?autoplay=N` starts one on enter.
 -->
-
 <div class="sf-demo-stage">
 
 <SpecPanel
-  title="SHIP"
-  title-accent="THE SPEC"
-  :palette="{ accentTertiary: '#1cd798' }"
+  title="Using it"
+  title-accent="properly"
+  :palette="{ accentTertiary: '#1ed798' }"
 />
 
 <AutoAdvance :duration-sec="6.53" :step-schedule-sec="[0.47, 0.6, 2.0, 3.13, 4.47, 5.07, 6.53]" />
