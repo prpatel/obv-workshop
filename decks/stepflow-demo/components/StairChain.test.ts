@@ -4,7 +4,7 @@ import { mount } from '@vue/test-utils'
 import type { DirectiveBinding } from 'vue'
 import StairChain from './StairChain.vue'
 import { chainBlue } from './stepflow/palettes'
-import type { StairCallout, StairStep } from './stepflow/stair'
+import { SEG01_PLACEMENT, type StairAnnotation, type StairCallout, type StairPlacement, type StairStep } from './stepflow/stair'
 
 /**
  * Slidev registers the v-click directive globally at runtime; the render tests
@@ -18,6 +18,8 @@ type StairChainProps = {
   palette?: Record<string, string>
   title?: string
   titleAccent?: string
+  placement?: StairPlacement
+  annotations?: StairAnnotation[]
 }
 
 function mountStairChain(props: StairChainProps) {
@@ -313,5 +315,102 @@ describe('StairChain', () => {
 
   it('surfaces the geometry RangeError for 0 steps instead of rendering blank', () => {
     expect(() => mountStairChain({ steps: [] })).toThrow(RangeError)
+  })
+
+  it('surfaces a placement RangeError instead of rendering a mis-layout', () => {
+    expect(() => mountStairChain({ steps, placement: { leftsFrac: [0.1] } })).toThrow(RangeError)
+  })
+})
+
+describe('StairChain — seg01 additive opts', () => {
+  it('explicit placement reaches the blocks: seg01 measured fractions, not the gen-7 walk', () => {
+    const wrapper = mountStairChain({ steps, placement: SEG01_PLACEMENT })
+    const blocks = wrapper.findAll('.sf-block')
+
+    expect(Number(blocks[0].attributes('x'))).toBeCloseTo(0.1391 * 1920, 6)
+    expect(Number(blocks[0].attributes('y'))).toBeCloseTo(0.625 * 1080, 6)
+    expect(Number(blocks[0].attributes('width'))).toBeCloseTo(0.1085 * 1080, 6)
+    // The measured dip survives: block 3 sits below block 2 (0.6062 vs 0.5757).
+    const tops = blocks.map((b) => Number(b.attributes('y')))
+    expect(tops[2]).toBeGreaterThan(tops[1])
+  })
+
+  it('a per-step click override remaps the reveal without touching geometry', () => {
+    // seg01's draft interleaved mapping: the build alternates blue/cyan
+    // (b1 c1 b2 c2 b3 c3 → clicks 2…7) while the array stays positional —
+    // geometry follows array order, only the click remaps.
+    const interleaved: StairStep[] = steps.map((step, i) => ({
+      ...step,
+      click: [2, 4, 6, 3, 5, 7][i],
+    }))
+    const { clicks } = mountRecordingClicks({ steps: interleaved, callout })
+
+    // The recording stub records in MOUNT order: blocks (array order, override
+    // applied per step), then the callout. Choreography order is the binding
+    // values, not the mount order — callout=1 still reveals first.
+    expect(clicks.slice(0, 6)).toEqual([2, 4, 6, 3, 5, 7])
+    expect(clicks[6]).toBe(1)
+    expect([...clicks].sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7])
+  })
+
+  it('steps without an override keep the positional walk alongside overridden siblings', () => {
+    const mixed: StairStep[] = steps.map((step, i) => (i === 2 ? { ...step, click: 9 } : step))
+    const { clicks } = mountRecordingClicks({ steps: mixed, callout })
+
+    // Mount order: blocks in array order with only index 2 overridden (2, 3,
+    // 9, 5, 6, 7), then the callout's positional 1.
+    expect(clicks).toEqual([2, 3, 9, 5, 6, 7, 1])
+  })
+
+  it('renders late annotation waves: teal marks at their measured boxes, white text at baselines', () => {
+    const annotations: StairAnnotation[] = [
+      { id: 'mark-1', xFrac: 0.8234, yFrac: 0.5097, wFrac: 0.0184, hFrac: 0.0042, click: 8 },
+      { id: 'text-1', xFrac: 0.555, yFrac: 0.58, text: 'DAG', click: 8 },
+    ]
+    const wrapper = mountStairChain({ steps, annotations })
+    const marks = wrapper.findAll('.sf-annotation-mark')
+    const texts = wrapper.findAll('.sf-annotation-text')
+
+    expect(marks).toHaveLength(1)
+    expect(texts).toHaveLength(1)
+    expect(Number(marks[0].attributes('x'))).toBeCloseTo(0.8234 * 1920, 6)
+    expect(Number(marks[0].attributes('y'))).toBeCloseTo(0.5097 * 1080, 6)
+    expect(Number(marks[0].attributes('width'))).toBeCloseTo(0.0184 * 1920, 6)
+    expect(Number(marks[0].attributes('height'))).toBeCloseTo(0.0042 * 1080, 6)
+    expect(marks[0].attributes('fill')).toBe('#2ac9d6')
+
+    expect(texts[0].text()).toBe('DAG')
+    expect(Number(texts[0].attributes('y'))).toBeCloseTo(0.58 * 1080, 6) // baseline
+    expect(texts[0].attributes('fill')).toBe('#f5f4f7')
+    // Unspecified text size falls back to the measured caption size.
+    expect(Number(texts[0].attributes('font-size'))).toBeCloseTo(0.023 * 1080, 6)
+  })
+
+  it('each annotation joins the click choreography at its own beat', () => {
+    const annotations: StairAnnotation[] = [
+      { id: 'w1', xFrac: 0.56, yFrac: 0.52, wFrac: 0.01, hFrac: 0.02, click: 8 },
+      { id: 'w2', xFrac: 0.7, yFrac: 0.59, wFrac: 0.01, hFrac: 0.02, click: 9 },
+      { id: 'w3', xFrac: 0.82, yFrac: 0.51, wFrac: 0.018, hFrac: 0.005, click: 10 },
+    ]
+    const { clicks } = mountRecordingClicks({ steps, callout, annotations })
+
+    // Mount order: blocks (2…7), then the annotation beats 8/9/10 in array
+    // order, then the callout. Sorted, the choreography owns 10 distinct beats.
+    expect(clicks).toHaveLength(10)
+    expect(clicks.slice(6, 9)).toEqual([8, 9, 10])
+    expect([...clicks].sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+  })
+
+  it('annotations join the reduced-motion freeze and snap on backward nav', () => {
+    mountStairChain({
+      steps,
+      annotations: [{ id: 'm', xFrac: 0.5, yFrac: 0.5, wFrac: 0.01, hFrac: 0.01, click: 8 }],
+    })
+
+    const css = shippedCss()
+    const hiddenRule = css.match(/\.sf-annotation\.slidev-vclick-hidden[^{]*\{[^}]*\}/)?.[0] ?? ''
+    expect(hiddenRule).toContain('transition: none')
+    const reduced = css.match(/@media \(prefers-reduced-motion: reduce\)[\s\S]*$/)?.[0] ?? ''
+    expect(reduced).toContain('.sf-annotation')
   })
 })
