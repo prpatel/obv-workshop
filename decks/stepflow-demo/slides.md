@@ -250,34 +250,32 @@ canvasWidth: 1920
 ---
 
 <!--
-  ConvergeFlow demo — measured seg11 (user8 seg11, 130–134s @2560×1440).
-  The funnel assembly (ring, cone, tick row, stem) is the clip's mid-state —
-  it renders from f0001 and never animates. The build: left cyan column,
-  right blue column with its six-box base row, the dim-orange bar bracket
-  drawing across, the white base labels, then the gray footer band. Tones
-  are the family's re-measured pair (V-4): bright funnel orange #f25726 vs
-  the dim bar orange #bf521c — settled-frame medians, locked in converge.ts.
-  Title chrome is the sheet's measured token runs (green 'ETL' lead first);
-  copy follows CONVERGE_SEED (the component defaults carry it), and the
-  in-box glyph rows stay sub-resolution props (left boxes empty). Crop→stage
-  mapping: content bbox → full stage, documented in the module docblock (R-2).
+  ConvergeFlow demo — measured seg11 (user8 seg11, 130–134s @2560×1440),
+  rebuilt backwards from the settled end state. The funnel assembly (ring,
+  cone, DATA ENGINEERS row, stem) is the clip's mid-state — it renders from
+  f0001 and never animates. The build: the left cyan table (outline, two
+  dividers, two cell-bar pairs), the cyan SQL run + gray left label, the
+  right blue plate with its two through-pins + blue PIPELINES run, the
+  dim-orange bar bracket drawing across, then the gray footer band. Tones
+  are the family's re-measured set: bright funnel orange #f25726, dim bar
+  orange #bf521c, label gray #a7a6ab — settled-frame medians, locked in
+  converge.ts. Title chrome is the sheet's measured token runs (green 'SQL'
+  lead first); copy follows CONVERGE_SEED (the component defaults carry it).
+  Crop→stage mapping: content bbox → full stage, documented in the module
+  docblock (R-2).
 
-  AutoAdvance pins the complete five-beat schedule (f15 onsets 1.07 / 1.53 /
-  2.2 / 2.6 / 3.07 — left column, right column, bar + labels, base + row
-  bits, footer band; R-6 complete list); `a` toggles a hands-free run,
-  `?autoplay=N` starts one on enter.
+  AutoAdvance pins the complete five-beat schedule (onsets.json 0.933 /
+  1.533 / 2.2 / 2.533 / 3.067 — left table, SQL + left label, right plate
+  (+ pins/PIPELINES staggers), bar draw + right label, footer band; R-6
+  complete list); `a` toggles a hands-free run, `?autoplay=N` starts one on
+  enter.
 -->
 
 <div class="sf-demo-stage">
 
-<ConvergeFlow
-  title-accent="ETL"
-  title="EVERYTHING CONVERGES"
-  left-box-text="CICD"
-  left-lower-text="RUN 412"
-/>
+<ConvergeFlow title-accent="SQL" title="and pipelines still matter" />
 
-<AutoAdvance :duration-sec="3.07" :step-schedule-sec="[1.07, 1.53, 2.2, 2.6, 3.07]" />
+<AutoAdvance :duration-sec="3.07" :step-schedule-sec="[0.933, 1.533, 2.2, 2.533, 3.067]" />
 
 </div>
 
