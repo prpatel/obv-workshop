@@ -1,8 +1,10 @@
 # StepFlow demo deck
 
-Slidev deck for the StepFlow animated-diagram demo (`decks/stepflow-demo`): a house-style
-title slide, a six-step demo slide that reveals one node per click, and the
-family built-in demo slides appended after it — all on the 1920×1080 black canvas.
+Slidev deck for the StepFlow animated-diagram demo (`decks/stepflow-demo`): the
+house-style title slide plus the reference-faithful restart slides — seg01
+(StairChain split-ascent) and seg08 (StackPanels dark mosaic) are mounted, and
+the remaining six family slides land with the integration PRs — all on the
+1920×1080 black canvas.
 
 ## Run (dev server + hot reload)
 
@@ -40,77 +42,74 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slides: title · StepFlow (6 v-clicks) · StairChain (7) · NodeEdge (13) · VerticalSpine (5) · HeroTile (1) · SchematicRows (10) · TwoBarCompare (5) · ColumnRow (8) · TileGrid (8) · RatioStrip (6) · SegmentTimeline (3) · StackPanels (5) · MilestoneLanes (9) · HexCluster (3)
+├─ slides.md                      # slides: title · StairChain seg01 (10 v-clicks) · StackPanels seg08 (4)
 ├─ components/
-│  ├─ StepFlow.vue                # the serpentine flow diagram (auto-imported by Slidev)
-│  ├─ StairChain.vue              # family built-in: animated staircase (amber callout + rising blocks)
-│  ├─ NodeEdge.vue                # bordered-square network diagram component (diagram-family spec)
-│  ├─ VerticalSpine.vue           # family built-in: center-axis rhythm (marker, label row, side cards)
-│  ├─ HeroTile.vue                # family built-in: single-click section-divider tile
-│  ├─ SchematicRows.vue           # family built-in: exact-trace window chrome + verbatim 7-row listing, per-char typewriter, callout ladder
-│  ├─ TwoBarCompare.vue           # family built-in: two left-anchored comparison bars (data text, chips, annotation + label beats)
-│  ├─ ColumnRow.vue               # family built-in: tone-coded column row (heading chrome + rising columns + tinted labels)
-│  ├─ TileGrid.vue                # family built-in: hex-tile grid with glow, connector track, and label rows (row-major build)
-│  ├─ RatioStrip.vue              # family built-in: proportional band, six-beat pop + teal re-flow (wave 2)
-│  ├─ SegmentTimeline.vue         # family built-in: thin track, bright fills between glowing nodes (sweep-then-pop)
-│  ├─ StackPanels.vue             # family built-in: measured four-panel mosaic (burst pops + legacy sweep)
-│  ├─ MilestoneLanes.vue          # family built-in: four-lane Gantt/milestone chart (four measured reveal styles + milestone diamonds)
-│  ├─ HexCluster.vue              # family built-in: hexagon cluster (outline pop + content fade)
-│  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance + per-slide durationSec beats
+│  ├─ StairChain.vue              # family: measured seg01 split-ascent staircase (explicit placement, interleaved clicks, annotation waves)
+│  ├─ StackPanels.vue             # family: measured seg08 four-panel dark mosaic (per-panel 300ms fades)
+│  ├─ PillarRow.vue               # family: measured seg05 three-card icon row
+│  ├─ ConvergeFlow.vue            # family: measured seg11 converge-branch flow
+│  ├─ CompareBadge.vue            # family: measured seg12 plate-and-badge comparison
+│  ├─ SpecPanel.vue               # family: measured seg14 progressive spec panel
+│  ├─ StepPanel.vue               # family: measured seg15 four-step panel
+│  ├─ TileSummary.vue             # family: measured seg16 three-tile summary
+│  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance + per-slide measured beats
 │  └─ stepflow/
-│     ├─ geometry.ts              # pure serpentine layout math (viewBox-relative)
-│     ├─ stair.ts                 # pure staircase layout math (uniform ramp + per-block lift overrides)
-│     ├─ nodeEdge.ts              # NodeEdge contract + pure layout math
-│     ├─ compare.ts               # TwoBarCompare contract + pure left-anchored pair layout
-│     ├─ timeline.ts              # pure proportional-timeline layout math (bar, segments, ticks, chip)
-│     ├─ paths.ts                 # shared polylinePath/polylineLength (StepFlow track, NodeEdge edges, rows schematic)
-│     ├─ rows.ts                  # SchematicRows contract: verbatim seed rows, measured window/callout geometry, click map + typewriter math
-│     ├─ spine.ts                 # pure spine + hero-tile layout math + family contracts
-│     ├─ columns.ts               # ColumnRow contract + pure column-row layout math
-│     ├─ strip.ts                 # pure ratio-strip layout math (initial + final width states)
-│     ├─ lanes.ts                 # MilestoneLanes contract + pure lane-grid layout math
-│     ├─ hex.ts                   # pure hex-cluster layout + HexNodeData contract
+│     ├─ stair.ts                 # pure staircase layout math (explicit SEG01_PLACEMENT + default gap/delta walk)
+│     ├─ panels.ts                # StackPanels contract + pure mosaic layout (dark re-truth)
+│     ├─ pillars.ts               # PillarRow contract + pure card-row layout math
+│     ├─ converge.ts              # ConvergeFlow contract + pure layout math
+│     ├─ compareBadge.ts          # CompareBadge contract + pure layout math
+│     ├─ specPanel.ts             # SpecPanel contract + pure layout math
+│     ├─ stepPanel.ts             # StepPanel contract + pure layout math
+│     ├─ tileSummary.ts           # TileSummary contract + pure layout math
+│     ├─ TitleChrome.vue          # shared two-tone title SVG fragment
+│     ├─ chrome.ts                # title-chrome constants + geometry helpers
 │     ├─ palettes.ts              # StepFlowPalette presets + resolvePalette merge
 │     ├─ icons.ts                 # named Lucide path registry + visible fallback
-│     ├─ steps.ts                 # StepFlowStep contract + the measured six-step seed data
 │     └─ useAutoAdvance.ts        # pure click-cadence runner (nav boundary injected)
 └─ styles/index.css               # deck-wide house style: black canvas, mono base font
 ```
 
-`components/` is auto-imported, so a slide can use `<StepFlow … />` with zero registration
-code. Step data travels with the slide as props — the component holds no global state.
+`components/` is auto-imported, so a slide can use `<StairChain … />` with zero registration
+code. Slide data travels with the slide as props — the component holds no global state.
 
-## Authoring a StepFlow slide
+## Authoring a diagram slide
 
 A diagram is data-in via props; reveal state is owned by Slidev's native `v-click`
-(one click per step — the demo slide has six). The inline steps array is the exact
+(one beat per click — the seg01 slide has ten). The inline props are the exact
 shape an MCP agent writes:
 
 ```md
-<div class="stepflow-stage">
+<div class="sf-demo-stage">
 
-<StepFlow
-  title="SHIP FASTER"
+<StairChain
+  title="THE DATA"
+  title-accent="SYSTEMS LIFECYCLE"
+  :palette="{ accent: '#3799fb', accentTertiary: '#1fd0ea', accentAlt: '#f9bb1f' }"
   :steps="[
-    { id: 'branch', title: 'BRANCH', subtext: 'feature branches from main', icon: 'git-branch' },
-    { id: 'infra', title: 'INFRA AS CODE', subtext: 'servers defined in git', icon: 'server' },
+    { id: 'ingest', title: '01', caption: 'SOURCE SYSTEMS', click: 2 },
+    { id: 'quality', title: '04', tone: 'tertiary', caption: 'TESTS GATE DEPLOYS', click: 3 },
   ]"
 />
+
+<AutoAdvance :duration-sec="3.07" :step-schedule-sec="[0.27, 0.53, 0.67, 0.80, 0.93, 1.07, 1.27, 2.07, 2.67, 3.07]" />
 
 </div>
 ```
 
-Component props:
+Component props (StairChain — the seg01 slide's family):
 
-| Prop       | Type                          | Purpose                                                        |
-| ---------- | ----------------------------- | -------------------------------------------------------------- |
-| `steps`    | `StepFlowStep[]` (required)   | One entry per node: `id`, `title`, `subtext`, `icon`           |
-| `palette`  | `Partial<StepFlowPalette>`    | Merged over the measured `cyanOnBlack` preset (colors + glow)   |
-| `geometry` | `SerpentineOptions`           | Optional viewBox-size / pitch / radius overrides                |
-| `title`    | `string`                      | Mono header line rendered top-left (e.g. `SHIP FASTER`)         |
+| Prop        | Type                            | Purpose                                                                        |
+| ----------- | ------------------------------- | ------------------------------------------------------------------------------ |
+| `steps`     | `StairStep[]` (required)        | One entry per block: `id`, punched-number `title`, `caption`, optional `tone`/`click` |
+| `callout`   | `StairCallout`                  | The amber floating annotation revealed on click 1                              |
+| `placement` | `StairPlacement`                | Explicit per-block fractions (`SEG01_PLACEMENT`'s measured values) — omit for the default walk |
+| `annotations` | `StairAnnotation[]`           | Late mark/text waves, each at its own 1-based click                             |
+| `palette`   | `Partial<StepFlowPalette>`      | Merged over the `chainBlue` preset (settled medians as slide-level props)       |
+| `title` / `titleAccent` | `string`           | Two-tone mono header through the shared `TitleChrome`                           |
 
 Icon keys resolve against the Lucide registry in `components/stepflow/icons.ts`
-(`git-branch`, `square-terminal`, `flask-conical`, `braces`, `rotate-cw`, `server`, …);
+(`git-branch`, `flask-conical`, `server`, `database`, `dash-grid`, …);
 an unknown key renders a visible fallback and warns in dev.
 
 ## Shared contract: palettes, icons, title chrome
@@ -518,15 +517,14 @@ vertical extent. Flipping the family to circles is a one-constant change in
 
 ## Hands-free playback (auto-advance)
 
-The demo slide can play its six-click reveal by itself — built for screen
-recordings. Orchestration lives at deck level (`components/AutoAdvance.vue`
+A slide can play its measured reveal by itself — built for screen recordings. Orchestration lives at deck level (`components/AutoAdvance.vue`
 bridging the pure `components/stepflow/useAutoAdvance.ts` runner to Slidev's
 navigation); the StepFlow component itself stays pure — no timers, no global
 state reads.
 
 | Surface | Behavior |
 | ------- | -------- |
-| `?autoplay=N` URL param | Auto-starts the run on slide enter, evenly spaced across N seconds (`/2?autoplay=7` → the six clicks over 7 s, ≈1.17 s apart, first click one interval in). Bare `?autoplay` or an invalid value falls back to the slide's own beat — its `durationSec` prop (the measured cadences below); 7 s where a slide sets none. |
+| `?autoplay=N` URL param | Auto-starts the run on slide enter, evenly spaced across N seconds (`/2?autoplay=4` → the slide's ten clicks evenly over 4 s, first click one interval in). Bare `?autoplay` or an invalid value falls back to the slide's own beat — its `durationSec`/`stepScheduleSec` props (the measured cadences below); 7 s where a slide sets none. |
 | `a` key | Toggles a run over the slide's own beat — the per-slide `durationSec` (7 s demo default where a slide sets none; no modifier held; `A` works too). |
 | Arrow keys / space / PageUp / PageDown | Cancel a running auto-advance — the native navigation still applies. |
 | Final click reached | The run stops cleanly; it never skips ahead to the next slide. |
@@ -534,30 +532,17 @@ state reads.
 
 ### Per-slide pacing beats
 
-A slide passes `durationSec` to `<AutoAdvance />` and the runner spreads the
-slide's clicks evenly across it — pacing is set per slide from the fidelity
-reports' measured inter-click cadences (art_v4jVdTnp, art_iHm120ov) instead of
-the 7 s demo default. The runner has no per-click interval support (uniform
-spacing only), so a varied recorded rhythm is encoded as its mean cadence.
+A slide passes `durationSec` (even spread) or `stepScheduleSec` (measured beats)
+to `<AutoAdvance />` — pacing is set per slide from the fidelity reports'
+measured onsets (art_v4jVdTnp, art_iHm120ov) instead of the 7 s default.
 
-| Slide | Family | Clicks | Measured cadence | `durationSec` | Spacing |
-| ----- | ------ | ------ | ---------------- | ------------- | ------- |
-| 3 | StairChain | 7 | 0.3–0.6 s/click (~300 ms block stagger early, 0.4–0.6 s late) | `4` | ≈0.57 s/click |
-| 4 | NodeEdge | 9 | 0.3–0.9 s/click, mean ≈0.55 s (wave-1 family band) | `5` | ≈0.56 s/click |
-| 5 | VerticalSpine | 5 | ~1.2–1.5 s between phases (marker 0.4 s → footer row 5.8 s) | `5` | 1 s/click |
-| 7 | SchematicRows | 10 | 0.3–0.5 s/row | `4` | 0.4 s/row |
-| 8 | TwoBarCompare | 5 | bars ≈0.1 s apart, then label beats 4–5 at 2800/7467 ms (measured) | `7.7` | `stepScheduleSec` (5 measured beats) |
-| 10 | TileGrid | 8 | ≈1.45 s/tile, then track beats at 8117/9100 ms (measured) | `9.2` | `stepScheduleSec` (8 measured beats) |
-| 12 | SegmentTimeline | 3 | node pop ≈140ms, then ≈2.4s fill sweep per segment (measured 10–90% over 2.55s) | `7.5` | 2.5 s/click |
-| 13 | StackPanels | 5 | 0.27–0.45 s panel bursts, labels ≈+1.0 s | `1.8` | 0.36 s/click |
-| 15 | HexCluster | 3 | 0.4–0.5 s/click | `1.4` | ≈0.47 s/click |
+| Slide | Family | Clicks | Measured cadence | Pacing |
+| ----- | ------ | ------ | ---------------- | ------- |
+| 2 | StairChain (seg01) | 10 | callout + interleaved blocks 0.27–1.27s, annotation waves 2.07–3.07s | `stepScheduleSec` (10 measured beats) |
+| 3 | StackPanels (seg08) | 4 | panel onsets 0.07 / 0.2 / 0.33 / 0.87s | `stepScheduleSec` (4 measured beats) |
 
-Slides 2 (StepFlow, the endorsed calibration slide), 6 (HeroTile, single
-click), 9 (ColumnRow), and 14 (MilestoneLanes) keep the 7 s default — the
-reports give them no measured inter-click cadence. Slide 11 (RatioStrip) now
-uses `stepScheduleSec` (6 measured beats: band pop, settled layer + burst 1,
-burst 2, final segments, mint settle, text/caption — the generation-7
-decomposition of its intra-click delays).
+The remaining six family slides (seg05/11/12/14/15/16) mount with the
+integration PRs and pin their own measured schedules there.
 
 ### Recording workflow
 
