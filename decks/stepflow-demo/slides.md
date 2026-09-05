@@ -287,39 +287,29 @@ canvasWidth: 1920
 
 <!--
   CompareBadge demo — measured seg12 (user8 seg12, 134–139s @2560×1440).
-  Two near-black plate columns (the V-3 correction) flank a center badge —
-  a dark red-brown halo ring around the settled #f85721 orange core —
-  joined by four dim leader lines. Choreography: the badge pops on click 1,
-  then the four plate rows fade in alternating left/right (clicks 2–5,
-  ROW_CLICK_BASE). Row copy is integration-supplied (the recording's plate
-  text is sub-resolution): legible-in-spirit strings over the measured
-  bright/dim bands, each row's icon riding its measured tone. Geometry is
-  the compareBadge.ts native-pixel constants (2560×1440 read frame-scaled
-  to the stage — the crop fits content-bbox → full stage, module docblock
-  R-2). CompareBadge renders its title band at natural mono width (no
-  measured ink extent on this sheet).
+  Two near-black bordered plate columns flank a center badge — the settled
+  #f85721 orange core on a dark red-brown radial glow — joined by three
+  dim leader lines (the settled frame has no lower-right stroke). The
+  component takes no props: settled truth renders the traced reference ink
+  (module SEG12_INK, the seg01 StairChain precedent) — title runs, the
+  top-right olive/pale mark, row text, icons, and the dark core glyph are
+  contours traced from the settled frame, so the recording face and glyph
+  shapes match exactly. Choreography: the badge pops on click 1 (rim trails
+  ~70ms), then the four plate rows fade in alternating left/right (clicks
+  2–5), each row's traced ink trailing its plate by ~70ms — one 15fps
+  reference frame (onsets: white/icon events at beat +0.067s).
 
-  AutoAdvance pins the complete five-beat schedule (f15 frame dumps: core
-  fade onset f0009 @0.6; waves first visible f0015/f0026/f0045/f0066 →
-  1.0 / 1.73 / 3.0 / 4.4; R-6 complete list); `a` toggles a hands-free run,
-  `?autoplay=N` starts one on enter.
+  AutoAdvance pins the complete five-beat schedule (onsets.json: core red
+  onset 0.600, orange full 0.667, rim trail 0.733; waves at 1.000 /
+  1.733 / 3.000 / 4.400); `a` toggles a hands-free run, `?autoplay=N`
+  starts one on enter.
 -->
 
 <div class="sf-demo-stage">
 
-<CompareBadge
-  title="TWO WAYS"
-  title-accent="TO SHIP"
-  badge-icon="square-terminal"
-  :rows="[
-    { id: 'leftTop', bright: 'VIBE CODING', dim: 'ad-hoc prompts', icon: 'user-round' },
-    { id: 'rightTop', bright: 'SPEC-DRIVEN', dim: 'spec, tasks, then build', icon: 'flask-conical' },
-    { id: 'leftBottom', bright: 'HAND-ROLLED', dim: 'every move rebuilt', icon: 'rotate-cw' },
-    { id: 'rightBottom', bright: 'MEASURED', dim: 'cites the frame', icon: 'table-2' },
-  ]"
-/>
+<CompareBadge />
 
-<AutoAdvance :duration-sec="4.4" :step-schedule-sec="[0.6, 1.0, 1.73, 3.0, 4.4]" />
+<AutoAdvance :duration-sec="4.4" :step-schedule-sec="[0.6, 1.0, 1.733, 3.0, 4.4]" />
 
 </div>
 
@@ -330,6 +320,7 @@ canvasWidth: 1920
   position: absolute;
   inset: 0;
 }
+
 </style>
 
 ---
