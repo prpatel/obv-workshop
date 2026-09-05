@@ -7,9 +7,9 @@ import type { PillarCard } from './stepflow/pillars'
 import { ICON_FALLBACK } from './stepflow/icons'
 
 const SEED: PillarCard[] = [
-  { id: 's1', label: 'FETCH', icon: 'cassette-tape' },
-  { id: 's2', label: 'QUERY', icon: 'table-2' },
-  { id: 's3', label: 'SHIP', icon: 'flag' },
+  { id: 's1', label: 'FETCH', sublabel: 'STATION 1', caption: 'FETCHING', captionMeta: 'STEP 1', icon: 'cassette-tape' },
+  { id: 's2', label: 'TRANSFORM', sublabel: 'STATION 2', caption: 'PROCESSING', captionMeta: 'STATION 2', icon: 'table-2' },
+  { id: 's3', label: 'DEPLOY', sublabel: 'STATION 3', caption: 'DELIVER', captionMeta: 'STATION 3', icon: 'flag' },
 ]
 
 /** Slidev registers the v-click directive globally at runtime; the render tests stub it as a no-op. */
@@ -54,64 +54,97 @@ describe('PillarRow component — structure', () => {
     const wrapper = mountRow({ cards: SEED })
     const glyphs = wrapper.findAll('.sf-glyph')
     expect(glyphs).toHaveLength(3)
-    // Verbatim Lucide children from the three new registry keys.
+    // Verbatim Lucide children from the three new registry keys — composed
+    // into the circle-enclosed pictogram anatomy (circle + scaled inner icon).
     expect(glyphs[0]!.html()).toContain('M8 12h8')
     expect(glyphs[1]!.html()).toContain('M9 3H5')
     expect(glyphs[2]!.html()).toContain('M4 22V4')
-    // The glyph group carries the Lucide 24-box → 98px-square scale.
-    expect(glyphs[0]!.attributes('transform')).toContain('scale(4.088)')
+    // Enclosing circle outline (24-box r 11 → ~48px radius at the station
+    // scale), centered in the measured ink square.
+    expect(glyphs[0]!.html()).toContain('cx="12" cy="12" r="11"')
+    // The glyph group carries the Lucide 24-box → measured-ink scale only.
+    expect(glyphs[0]!.attributes('transform')).toMatch(/scale\(4\.464\)/)
   })
 
   it('falls back to the visible ICON_FALLBACK for an unknown key (never undefined into v-html)', () => {
-    const bad: PillarCard[] = [{ id: 'x', label: 'MYSTERY', icon: 'not-a-real-icon' }]
+    const bad: PillarCard[] = [
+      { id: 'x', label: 'MYSTERY', sublabel: 'STATION X', caption: 'MYSTERY', captionMeta: 'STEP X', icon: 'not-a-real-icon' },
+    ]
     const wrapper = mountRow({ cards: bad })
     expect(wrapper.find('.sf-glyph').html()).toContain('M9.09 9a3 3 0 0 1')
     expect(wrapper.find('.sf-glyph').html()).toContain(ICON_FALLBACK.slice(0, 30))
   })
 
-  it('renders hue-matched labels and the two measured summary rows', () => {
-    const wrapper = mountRow({
-      cards: SEED,
-      summaryRows: ['row one content', 'row two content'],
-    })
+  it('renders hue-matched label rows, dim sublabels, and the per-station caption clusters', () => {
+    const wrapper = mountRow({ cards: SEED })
     const labels = wrapper.findAll('.sf-label')
     expect(labels).toHaveLength(3)
     expect(labels[0]!.text()).toBe('FETCH')
-    expect(labels[0]!.attributes('fill')).toBe('#eeeff0')
-    expect(labels[1]!.attributes('fill')).toBe('#51bdda')
-    expect(labels[2]!.attributes('fill')).toBe('#44d0a8')
-    // Labels pin their ink width (5 chars × 13.5936).
+    expect(labels[0]!.attributes('fill')).toBe('#a8a8a9')
+    expect(labels[1]!.attributes('fill')).toBe('#5b9aad')
+    expect(labels[2]!.attributes('fill')).toBe('#579f8b')
+    // Labels pin their ink width to the measured run extents.
     expect(labels[0]!.attributes('textLength')).toBeDefined()
 
+    // Label row B (the previously deferred secondary row).
+    const sublabels = wrapper.findAll('.sf-sublabel')
+    expect(sublabels).toHaveLength(3)
+    expect(sublabels[0]!.text()).toBe('STATION 1')
+    expect(sublabels[0]!.attributes('fill')).toBe('#676767')
+
+    // Caption clusters: badge-hued row 1 + gray row 2, per station.
     const rows = wrapper.findAll('.sf-row')
-    expect(rows).toHaveLength(2)
-    expect(rows[0]!.text()).toBe('row one content')
-    expect(rows[0]!.attributes('fill')).toBe('#d16157')
-    expect(rows[1]!.attributes('fill')).toBe('#686868')
+    expect(rows).toHaveLength(6)
+    expect(rows[0]!.text()).toBe('FETCHING')
+    expect(rows[0]!.attributes('fill')).toBe('#d07b42')
+    expect(rows[2]!.text()).toBe('DELIVER')
+    expect(rows[2]!.attributes('fill')).toBe('#b74588')
+    expect(rows[3]!.text()).toBe('STEP 1')
+    expect(rows[3]!.attributes('fill')).toBe('#6c6c6d')
     expect(rows[0]!.attributes('textLength')).toBeDefined()
   })
 
-  it('plates render near-black (V-3): #0b0b0b fill, never a light gray', () => {
+  it('plates render near-black at the settled dim-mask boxes, never a light gray', () => {
     const wrapper = mountRow({ cards: SEED })
     const plate = wrapper.find('.sf-plate')
-    expect(plate.attributes('fill')).toBe('#0b0b0b')
-    expect(plate.attributes('x')).toBe('249.6')
-    expect(plate.attributes('y')).toBe('486')
-    expect(plate.attributes('width')).toBe('307.2')
-    expect(plate.attributes('height')).toBe('216')
+    expect(plate.attributes('fill')).toBe('#0e0d0f')
+    expect(plate.attributes('x')).toBe('277.44')
+    expect(plate.attributes('y')).toBe('494.208')
+    expect(plate.attributes('width')).toBe('316.608')
+    expect(plate.attributes('height')).toBe('231.768')
   })
 
-  it('renders the shared two-tone title chrome', () => {
-    const wrapper = mountRow({ cards: SEED, title: 'THE PIPELINE', titleAccent: 'IN THREE PARTS' })
-    const title = wrapper.find('.sf-chrome-title')
-    expect(title.exists()).toBe(true)
-    expect(title.text()).toContain('THE PIPELINE')
-    expect(title.text()).toContain('IN THREE PARTS')
+  it('badges render thin circle outlines carrying a bright mini-icon', () => {
+    const wrapper = mountRow({ cards: SEED })
+    const badge = wrapper.find('.sf-badge')
+    // Open ring in the station's accent (no core disc, no tail).
+    expect(badge.find('.sf-badge-ring').attributes('r')).toBe('47.50164')
+    expect(badge.find('.sf-badge-ring').attributes('fill')).toBe('none')
+    expect(badge.find('.sf-badge-ring').attributes('stroke')).toBe('#f96200')
+    expect(badge.find('.sf-badge-ring').attributes('stroke-width')).toBe('3.5')
+    // Mini-icon markup from the layout module, tinted via currentColor.
+    const icon = badge.find('.sf-badge-icon')
+    expect(icon.attributes('color')).toBe('#f96200')
+    expect(icon.html()).toContain('<rect')
+  })
+
+  it('renders the shared two-tone title chrome from measured tokens', () => {
+    const wrapper = mountRow({
+      cards: SEED,
+      titleTokens: [
+        { text: 'MEASURED', x: 539.3, width: 297.6 },
+        { text: 'PIPELINE STAGES', x: 836.9, width: 546.1, accent: true },
+      ],
+    })
+    const titles = wrapper.findAll('.sf-chrome-title')
+    expect(titles).toHaveLength(2)
+    expect(titles[0]!.text()).toBe('MEASURED')
+    expect(titles[1]!.text()).toBe('PIPELINE STAGES')
   })
 })
 
 describe('PillarRow component — click choreography', () => {
-  it('maps the measured six beats: cards 1/3/5, badges 2/4/5, rows 6', () => {
+  it('maps the measured six beats: cards 1/3/5, badges 2/4/5, captions 6', () => {
     const wrapper = mountCapturing({ cards: SEED })
     const cards = wrapper.findAll('.sf-card')
     const badges = wrapper.findAll('.sf-badge')
@@ -126,7 +159,7 @@ describe('PillarRow component — click choreography', () => {
     expect(rows!.attributes('data-sfc-click')).toBe('6')
   })
 
-  it('keeps the sequence contiguous for fewer cards (two stations → beats 1–4, rows 6)', () => {
+  it('keeps the sequence contiguous for fewer cards (two stations → beats 1–4, captions 6)', () => {
     const wrapper = mountCapturing({ cards: SEED.slice(0, 2) })
     const cards = wrapper.findAll('.sf-card')
     const badges = wrapper.findAll('.sf-badge')

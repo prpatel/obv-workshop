@@ -134,40 +134,44 @@ canvasWidth: 1920
 ---
 
 <!--
-  PillarRow demo — measured seg05 (user8 seg05, 61–63s @2560×1440).
-  Three near-black station plates (the V-3 correction: luma 6–40 plates on
-  the black canvas, never light gray) on the measured 0.2613 pitch, each
-  with a glyph cluster, a companion accent badge (ring + solid core), and a
-  hue-matched label row; two summary text rows sit below the card band
-  (salmon, then gray). Geometry is the pillars.ts measured table verbatim
-  (report.json seg05_61s-63s structure classes; the crop→stage fit rule —
-  content bbox → full stage, relative layout preserved — is documented in
-  the module docblock, R-2). Station hues are the settled medians, applied
-  by the component from its per-index measured table. Label and summary
-  copy is integration-supplied (the recording's text is sub-resolution):
-  legible-in-spirit strings pinned spacing-only to the measured ink extents
-  (the specPanel precedent).
+  PillarRow demo — measured seg05 (user8 seg05, 61–63s @2560×1440), rebuilt
+  backwards from the settled reference frame (settled-truth census).
+  Three near-black station plates at the dim-mask boxes (per-station tints,
+  no stroke), each with a ~4px-stroke glyph, a PIN-shaped accent badge
+  (circle outline + solid inner disc + downward tail), TWO label rows (the
+  hue-matched bold row and the deferred dim secondary row), and per-station
+  caption clusters below the band — badge-hued row 1 and gray row 2 (the
+  recording's "summary rows" are sparse clusters, not continuous lines).
+  Geometry is the pillars.ts settled census verbatim. Station hues are the
+  settled cores, applied by the component from its per-index measured
+  table. Text copy is integration-supplied (the recording's text is
+  sub-resolution): legible-in-spirit strings pinned spacing-only to the
+  measured ink extents, char counts matched to the column census (the
+  specPanel precedent).
+
+  Title: two-tone run split at x0.4359 — white head 0.2809–0.4359 (~8
+  chars), green tail 0.4359–0.7203 (~15 chars) — rendered as measured
+  per-token runs (cap band y 0.0938–0.1493, cap ≈60px).
 
   AutoAdvance pins the complete six-beat measured schedule (f15 progressive
   frames — glyph+label 1 @0.067, badge 1 @0.267, glyph+label 2 @0.600,
-  badge 2 @0.733, glyph+label 3 @1.000 (its badge rides the card), summary
-  rows @1.467; R-6: one entry per click, no repeated tail interval); `a`
-  toggles a hands-free run, `?autoplay=N` starts one on enter.
+  badge 2 @0.733, glyph+label 3 @1.000 (its badge rides the card), caption
+  clusters @1.467 completing ≈1.933; R-6: one entry per click, no repeated
+  tail interval); `a` toggles a hands-free run, `?autoplay=N` starts one on
+  enter.
 -->
 
 <div class="sf-demo-stage">
 
 <PillarRow
-  title="MEASURED"
-  title-accent="PIPELINE"
-  :cards="[
-    { id: 'fetch', label: 'FETCH', icon: 'cassette-tape' },
-    { id: 'query', label: 'QUERY', icon: 'table-2' },
-    { id: 'ship', label: 'SHIP', icon: 'navigation-2' },
+  :title-tokens="[
+    { text: 'MEASURED', x: 539.3, width: 297.6 },
+    { text: 'PIPELINE STAGES', x: 836.9, width: 546.1, accent: true },
   ]"
-  :summary-rows="[
-    'THREE STATIONS, SIX MEASURED BEATS, EVERY BOX CITED TO ITS FRAME',
-    'geometry, palette, and onsets pinned to the settled frame pixels',
+  :cards="[
+    { id: 'fetch', label: 'FETCH', sublabel: 'STATION 1', caption: 'FETCHING', captionMeta: 'STEP 1', icon: 'cassette-tape', iconRotate: 90 },
+    { id: 'query', label: 'TRANSFORM', sublabel: 'STATION 2', caption: 'PROCESSING', captionMeta: 'STATION 2', icon: 'table-2' },
+    { id: 'ship', label: 'DEPLOY', sublabel: 'STATION 3', caption: 'DELIVER', captionMeta: 'STATION 3', icon: 'flag' },
   ]"
 />
 
