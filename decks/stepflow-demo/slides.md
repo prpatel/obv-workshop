@@ -351,6 +351,7 @@ canvasWidth: 1920
 <SpecPanel
   title="SHIP"
   title-accent="THE SPEC"
+  :palette="{ accentTertiary: '#1cd798' }"
 />
 
 <AutoAdvance :duration-sec="6.53" :step-schedule-sec="[0.47, 0.6, 2.0, 3.13, 4.47, 5.07, 6.53]" />
