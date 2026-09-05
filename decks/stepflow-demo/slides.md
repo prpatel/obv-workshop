@@ -192,20 +192,26 @@ canvasWidth: 1920
 ---
 
 <!--
-  StackPanels demo — dark source-truth variant (user8 seg08, 91–94s @2560×1440).
-  The source mosaic is FOUR ABUTTING PANELS directly on the black canvas — no
-  white plate, no gutters, square corners:
-    blue  #3799fb  x0.209–0.510  y0.326–0.556   (top-left, probed)
-    cyan  #1fd0ea  x0.510–0.790  y0.326–0.556   (top-right, probed)
-    amber #f9bb1f  x0.209–0.431  y0.558–0.785   (bottom-left, probed)
-    teal  #1ed798  x0.431–0.790  y0.557–0.786   (bottom-right, probed)
-  Reveal order measured from the 15fps event trace: blue @0.07s, cyan @0.2s,
-  teal @0.33s, amber @0.87s — re-paced to four native clicks, one ~300ms
-  full-size opacity fade each. In-panel icon+title groups ride their panel's
-  click. `:plate="false"` opts out of the light backing plate (art_mkVNxsft
-  light-trace variant keeps the default). AutoAdvance pins the complete
-  four-beat measured schedule (0.07 / 0.2 / 0.33 / 0.87 — one onset per panel;
-  no caption beat); `a` toggles a hands-free run, `?autoplay=N` starts one on
+  StackPanels demo — seg08 settled-truth rebuild (91–94s @2560×1440, packet
+  fl_bRELEFpX; numbers mirror STACKPANELS_SEED in stepflow/panels.ts, px over
+  the 1920×1080 stage). The source settles as FOUR ABUTTING PANELS directly
+  on the black canvas — no white plate, no gutters, 45° outer chamfers:
+    blue  #3799fb  x0.209–0.527  y0.328–0.557   (top-left)
+    cyan  #1fd0ea  x0.528–0.790  y0.328–0.557   (top-right)
+    amber #f9bb1f  x0.209–0.424  y0.558–0.786   (bottom-left)
+    green #1ed798  x0.431–0.790  y0.557–0.786   (bottom-right)
+  A thin white perimeter frame (~6px) hugs the mosaic with open corners,
+  drawn clockwise top→right→bottom→left; near-black icon+title groups sit
+  centered per panel; a gray #616161 caption closes the frame.
+  Reveal order = the measured onsets: blue @0.067s, cyan @0.267s, amber
+  @0.867s, green @1.2s — four native clicks, one ~300ms full-size opacity
+  fade each. The late annotation pass (frame + labels + caption, drawn at
+  2.13–2.9s in the clip) rides the FINAL panel click with measured
+  transition delays (labels 933ms, frame 933–1200ms, caption 1400ms).
+  `:plate="false"` opts out of the light backing plate (art_mkVNxsft
+  light-trace variant keeps the default). AutoAdvance pins the four-beat
+  measured schedule and dwells to 2.8s so the annotation completes before
+  the advance; `a` toggles a hands-free run, `?autoplay=N` starts one on
   enter.
 -->
 
@@ -215,16 +221,20 @@ canvasWidth: 1920
   title="One"
   titleAccent="unified environment"
   :plate="false"
+  annotate-on-last-panel
+  caption="ONE ENVIRONMENT"
+  caption-color="#636363"
+  badge
   :palette="{ accent: '#3799fb', accentAlt: '#1fd0ea', accentTertiary: '#f9bb1f', accentQuaternary: '#1ed798' }"
   :panels="[
-    { id: 'blue', xFrac: 0.209, yFrac: 0.326, wFrac: 0.301, hFrac: 0.230, tone: 'accent', bandReveal: 'fade', icon: 'dash-grid', iconBox: { xFrac: 0.290, yFrac: 0.375, wFrac: 0.039, hFrac: 0.045 }, title: 'INGESTION', titleBox: { xFrac: 0.255, yFrac: 0.470, wFrac: 0.160, hFrac: 0.034 } },
-    { id: 'cyan', xFrac: 0.510, yFrac: 0.326, wFrac: 0.280, hFrac: 0.230, tone: 'alt', bandReveal: 'fade', icon: 'filter', iconBox: { xFrac: 0.600, yFrac: 0.375, wFrac: 0.038, hFrac: 0.067 }, title: 'TRANSFORM', titleBox: { xFrac: 0.565, yFrac: 0.470, wFrac: 0.160, hFrac: 0.034 } },
-    { id: 'teal', xFrac: 0.431, yFrac: 0.557, wFrac: 0.359, hFrac: 0.229, tone: 'quaternary', bandReveal: 'fade', icon: 'navigation-2', iconBox: { xFrac: 0.565, yFrac: 0.600, wFrac: 0.037, hFrac: 0.035 }, title: 'MONITORING', titleBox: { xFrac: 0.530, yFrac: 0.690, wFrac: 0.180, hFrac: 0.035 } },
-    { id: 'amber', xFrac: 0.209, yFrac: 0.558, wFrac: 0.222, hFrac: 0.227, tone: 'tertiary', bandReveal: 'fade', icon: 'database', iconBox: { xFrac: 0.276, yFrac: 0.600, wFrac: 0.033, hFrac: 0.069 }, title: 'STORAGE', titleBox: { xFrac: 0.240, yFrac: 0.690, wFrac: 0.120, hFrac: 0.035 } },
+    { id: 'blue', xFrac: 402 / 1920, yFrac: 354 / 1080, wFrac: 610.5 / 1920, hFrac: 247.5 / 1080, tone: 'accent', bandReveal: 'fade', icon: 'dash-grid', iconBox: { xFrac: 533.04 / 1920, yFrac: 445.4 / 1080, wFrac: 73.92 / 1920, hFrac: 61.2 / 1080 }, title: 'INGESTION', titleBox: { xFrac: 637.5 / 1920, yFrac: 462 / 1080, wFrac: 234.7 / 1920, hFrac: 30 / 1080 } },
+    { id: 'cyan', xFrac: 1013.25 / 1920, yFrac: 354 / 1080, wFrac: 504.75 / 1920, hFrac: 247.5 / 1080, tone: 'alt', bandReveal: 'fade', icon: 'filter', iconBox: { xFrac: 1098 / 1920, yFrac: 446.04 / 1080, wFrac: 66 / 1920, hFrac: 67.92 / 1080 }, title: 'TRANSFORM', titleBox: { xFrac: 1197 / 1920, yFrac: 462 / 1080, wFrac: 237 / 1920, hFrac: 30 / 1080 } },
+    { id: 'amber', xFrac: 402 / 1920, yFrac: 603 / 1080, wFrac: 426 / 1920, hFrac: 246 / 1080, tone: 'tertiary', bandReveal: 'fade', icon: 'database', iconBox: { xFrac: 473.08 / 1920, yFrac: 693.16 / 1080, wFrac: 63.84 / 1920, hFrac: 67.68 / 1080 }, title: 'STORAGE', titleBox: { xFrac: 571.5 / 1920, yFrac: 712.5 / 1080, wFrac: 181.5 / 1920, hFrac: 30 / 1080 } },
+    { id: 'green', xFrac: 828 / 1920, yFrac: 601.5 / 1080, wFrac: 690 / 1920, hFrac: 247.5 / 1080, tone: 'quaternary', bandReveal: 'fade', icon: 'navigation-2', iconBox: { xFrac: 981.58 / 1920, yFrac: 713.62 / 1080, wFrac: 87.84 / 1920, hFrac: 35.76 / 1080 }, title: 'MONITORING', titleBox: { xFrac: 1091 / 1920, yFrac: 712.5 / 1080, wFrac: 263.5 / 1920, hFrac: 30 / 1080 } },
   ]"
 />
 
-<AutoAdvance :duration-sec="0.87" :step-schedule-sec="[0.07, 0.2, 0.33, 0.87]" />
+<AutoAdvance :duration-sec="2.8" :step-schedule-sec="[0.067, 0.267, 0.867, 1.2]" />
 
 </div>
 

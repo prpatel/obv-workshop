@@ -5,15 +5,17 @@ import {
   plateLayout,
   PLATE,
   revealPlan,
+  STACKPANELS_BADGE,
   STACKPANELS_CAPTION,
+  STACKPANELS_FRAME,
   STACKPANELS_HEADER,
   STACKPANELS_SEED,
 } from './panels'
 
-// Hand-derived rect for the path tests (geometry independent of the sheet).
+// Hand-derived rect for the path tests (geometry independent of the reference).
 const rect = { x: 100, y: 200, w: 300, h: 150 }
 
-describe('plateLayout — the settled-state white plate (art_mkVNxsft §1.2)', () => {
+describe('plateLayout — the legacy light-trace white plate (art_mkVNxsft §1.2)', () => {
   it('resolves the sheet-measured plate rect, cut, fill, and border', () => {
     const plate = plateLayout()
 
@@ -71,8 +73,8 @@ describe('panelPath — 45° corner cuts', () => {
   })
 })
 
-describe('STACKPANELS_SEED + sheet strings (art_mkVNxsft §1.2)', () => {
-  it('carries the corrected header, caption, and panel-title strings', () => {
+describe('STACKPANELS_SEED + settled-frame strings (packet fl_bRELEFpX)', () => {
+  it('carries the settled header, caption, and panel-title strings', () => {
     expect(STACKPANELS_HEADER.lead).toBe('One')
     expect(STACKPANELS_HEADER.accent).toBe('unified environment')
     expect(STACKPANELS_CAPTION.text).toBe('ONE ENVIRONMENT')
@@ -85,39 +87,51 @@ describe('STACKPANELS_SEED + sheet strings (art_mkVNxsft §1.2)', () => {
   })
 
   it('pins the header and caption to the measured ink extents', () => {
-    expect(STACKPANELS_HEADER.leadCapHeight).toBeCloseTo(42, 6)
-    expect(STACKPANELS_HEADER.accentCapHeight).toBeCloseTo(64, 6)
-    expect(STACKPANELS_HEADER.baseline).toBeCloseTo(162.0, 6)
+    expect(STACKPANELS_HEADER.leadCapHeight).toBeCloseTo(54, 6)
+    expect(STACKPANELS_HEADER.accentCapHeight).toBeCloseTo(63, 6)
+    expect(STACKPANELS_HEADER.baseline).toBeCloseTo(161.5, 6)
+    // MAD-tuned pin boxes (lead 480–640, accent 655–1453; measured reference
+    // ink: lead x481–638, accent x660–1443).
     expect(STACKPANELS_HEADER.leadBox.xFrac * 1920).toBeCloseTo(480, 4)
     expect((STACKPANELS_HEADER.leadBox.xFrac + STACKPANELS_HEADER.leadBox.wFrac) * 1920).toBeCloseTo(640, 4)
-    expect(STACKPANELS_HEADER.accentBox.xFrac * 1920).toBeCloseTo(662, 4)
-    expect((STACKPANELS_HEADER.accentBox.xFrac + STACKPANELS_HEADER.accentBox.wFrac) * 1920).toBeCloseTo(1444, 4)
+    expect(STACKPANELS_HEADER.accentBox.xFrac * 1920).toBeCloseTo(655, 4)
+    expect((STACKPANELS_HEADER.accentBox.xFrac + STACKPANELS_HEADER.accentBox.wFrac) * 1920).toBeCloseTo(1453, 4)
 
     const captionCenter = (STACKPANELS_CAPTION.box.xFrac + STACKPANELS_CAPTION.box.wFrac / 2) * 1920
-    expect(captionCenter).toBeCloseTo(908.75, 4)
-    expect((STACKPANELS_CAPTION.box.yFrac + STACKPANELS_CAPTION.box.hFrac) * 1080).toBeCloseTo(1065.9, 4)
+    expect(captionCenter).toBeCloseTo(956.65, 4)
+    expect((STACKPANELS_CAPTION.box.yFrac + STACKPANELS_CAPTION.box.hFrac) * 1080).toBeCloseTo(928, 4)
   })
 
-  it('renders the mosaic at the sheet-measured bboxes with outer corner cuts', () => {
+  it('ships the top-right source mark at its measured raster box', () => {
+    expect(STACKPANELS_BADGE.box.xFrac * 1920).toBeCloseTo(1849, 4)
+    expect(STACKPANELS_BADGE.box.yFrac * 1080).toBeCloseTo(17, 4)
+    expect(STACKPANELS_BADGE.box.wFrac * 1920).toBeCloseTo(53, 4)
+    expect(STACKPANELS_BADGE.box.hFrac * 1080).toBeCloseTo(46, 4)
+    expect(STACKPANELS_BADGE.dataUri.startsWith('data:image/png;base64,')).toBe(true)
+  })
+
+  it('renders the mosaic at the measured bboxes in onset order with outer corner cuts', () => {
     const l = panelsLayout(STACKPANELS_SEED)
     expect(l.viewBox).toEqual({ width: 1920, height: 1080 })
 
     const [blue, cyan, amber, green] = l.panels
-    // Sheet bboxes: blue x229.8 y364.4 748.6×301.2, cyan x981.3 615.0 wide,
-    // amber y670.3 520.8 wide, green x753.4 y668.7 842.9×302.7.
-    expect(blue.x).toBeCloseTo(229.8, 4)
-    expect(blue.y).toBeCloseTo(364.4, 4)
-    expect(blue.w).toBeCloseTo(748.6, 4)
-    expect(blue.h).toBeCloseTo(301.2, 4)
-    expect(cyan.x).toBeCloseTo(981.3, 4)
-    expect(cyan.w).toBeCloseTo(615.0, 4)
-    expect(amber.y).toBeCloseTo(670.3, 4)
-    expect(amber.w).toBeCloseTo(520.8, 4)
-    expect(green.x).toBeCloseTo(753.4, 4)
-    expect(green.y).toBeCloseTo(668.7, 4)
-    expect(green.w).toBeCloseTo(842.9, 4)
-    expect(green.h).toBeCloseTo(302.7, 4)
+    // Measured settled bboxes (2560×1440 ×0.75): blue x402 y354 610.5×247.5,
+    // cyan x1013.25 504.75 wide, amber y603 426×246, green x828 y601.5 690 wide.
+    expect(blue.x).toBeCloseTo(402, 6)
+    expect(blue.y).toBeCloseTo(354, 6)
+    expect(blue.w).toBeCloseTo(610.5, 6)
+    expect(blue.h).toBeCloseTo(247.5, 6)
+    expect(cyan.x).toBeCloseTo(1013.25, 6)
+    expect(cyan.w).toBeCloseTo(504.75, 6)
+    expect(amber.y).toBeCloseTo(603, 6)
+    expect(amber.w).toBeCloseTo(426, 6)
+    expect(green.x).toBeCloseTo(828, 6)
+    expect(green.y).toBeCloseTo(601.5, 6)
+    expect(green.w).toBeCloseTo(690, 6)
+    expect(green.h).toBeCloseTo(247.5, 6)
 
+    // Onset order: blue 0.067s → cyan 0.267s → amber 0.867s → green 1.2s.
+    expect(STACKPANELS_SEED.map((panel) => panel.id)).toEqual(['blue', 'cyan', 'amber', 'green'])
     expect(STACKPANELS_SEED.map((panel) => panel.cutCorner)).toEqual(['tl', 'tr', 'bl', 'br'])
     expect(STACKPANELS_SEED.map((panel) => panel.tone)).toEqual([
       'accent',
@@ -127,7 +141,7 @@ describe('STACKPANELS_SEED + sheet strings (art_mkVNxsft §1.2)', () => {
     ])
   })
 
-  it('carries the four distinct sheet glyphs at measured ink boxes', () => {
+  it('carries the four distinct glyphs at measured ink boxes', () => {
     expect(STACKPANELS_SEED.map((panel) => panel.icon)).toEqual([
       'dash-grid',
       'filter',
@@ -136,30 +150,85 @@ describe('STACKPANELS_SEED + sheet strings (art_mkVNxsft §1.2)', () => {
     ])
 
     const blue = STACKPANELS_SEED[0]
-    expect(blue.iconBox!.xFrac * 1920).toBeCloseTo(398.3, 4)
-    expect(blue.iconBox!.yFrac * 1080).toBeCloseTo(489.0, 4)
-    expect(blue.iconBox!.wFrac * 1920).toBeCloseTo(74.4, 4)
-    expect(blue.iconBox!.hFrac * 1080).toBeCloseTo(49.1, 4)
+    expect(blue.iconBox!.xFrac * 1920).toBeCloseTo(533.04, 6)
+    expect(blue.iconBox!.yFrac * 1080).toBeCloseTo(445.4, 6)
+    expect(blue.iconBox!.wFrac * 1920).toBeCloseTo(73.92, 6)
+    expect(blue.iconBox!.hFrac * 1080).toBeCloseTo(61.2, 6)
 
-    // Title boxes are the sheet's native ink bboxes × the 2038→1920 / 1144→1080
-    // factors: INGESTION x550–854 native → 517.94–804.22 @1080-stage.
-    expect(blue.titleBox!.xFrac * 1920).toBeCloseTo(550 * 0.94171, 2)
-    expect(blue.titleBox!.wFrac * 1920).toBeCloseTo(304 * 0.94171, 2)
-    expect(blue.titleBox!.yFrac * 1080).toBeCloseTo(526 * 0.944055, 2)
-  })
-
-  it('keeps the green panel empty below its title — the wave-1 rows are gone', () => {
-    const green = STACKPANELS_SEED[3]
-    expect(green.title).toBe('MONITORING')
-    expect(Object.hasOwn(green, 'rows')).toBe(false)
-    for (const panel of STACKPANELS_SEED) {
-      expect(Object.hasOwn(panel, 'rows')).toBe(false)
-    }
+    // INGESTION ink run x637.5–872.2, cap band y462–492 @1080.
+    expect(blue.titleBox!.xFrac * 1920).toBeCloseTo(637.5, 6)
+    expect(blue.titleBox!.wFrac * 1920).toBeCloseTo(234.7, 6)
+    expect(blue.titleBox!.yFrac * 1080).toBeCloseTo(462, 6)
+    expect(blue.titleBox!.hFrac * 1080).toBeCloseTo(30, 6)
   })
 
   it('defaults bandReveal to the recording fade and ships the seed with it explicit', () => {
     for (const panel of STACKPANELS_SEED) {
       expect(panel.bandReveal).toBe('fade')
+    }
+  })
+})
+
+describe('STACKPANELS_FRAME — the white perimeter frame + chamfer patches', () => {
+  it('hugs the mosaic with four ~6px open-cornered bars at measured extents', () => {
+    const { width, height } = { width: 1920, height: 1080 }
+    const byId = new Map(STACKPANELS_FRAME.segments.map((seg) => [seg.id, seg]))
+
+    const top = byId.get('top')!
+    expect(top.xFrac * width).toBeCloseTo(406.5, 6)
+    expect(top.yFrac * height).toBeCloseTo(348, 6)
+    expect(top.wFrac * width).toBeCloseTo(1107, 6)
+    expect(top.hFrac * height).toBeCloseTo(6, 6)
+
+    const left = byId.get('left')!
+    expect(left.xFrac * width).toBeCloseTo(396, 6)
+    expect(left.wFrac * width).toBeCloseTo(6, 6)
+
+    const right = byId.get('right')!
+    expect(right.xFrac * width).toBeCloseTo(1518, 6)
+    expect(right.wFrac * width).toBeCloseTo(6, 6)
+
+    const bottom = byId.get('bottom')!
+    expect(bottom.yFrac * height).toBeCloseTo(849, 6)
+    expect(bottom.hFrac * height).toBeCloseTo(7.5, 6)
+
+    expect(STACKPANELS_FRAME.color).toBe('#f5f4f7')
+  })
+
+  it('delays the segments as the recording draws the perimeter clockwise', () => {
+    const delays = STACKPANELS_FRAME.segments.map((seg) => [seg.id, seg.delayMs])
+    expect(delays).toEqual([
+      ['top', 933],
+      ['right', 1000],
+      ['bottom', 1067],
+      ['left', 1200],
+    ])
+    // Patches ride the segment that reaches their corner.
+    const patches = new Map(STACKPANELS_FRAME.patches.map((patch) => [patch.id, patch.delayMs]))
+    expect(patches.get('tl')).toBe(933)
+    expect(patches.get('tr')).toBe(1000)
+    expect(patches.get('br')).toBe(1067)
+    expect(patches.get('bl')).toBe(1200)
+    expect(STACKPANELS_FRAME.labelDelayMs).toBe(933)
+    expect(STACKPANELS_FRAME.captionDelayMs).toBe(1400)
+  })
+
+  it('squares the patches at the panel outer corners with the shared chamfer leg', () => {
+    const l = panelsLayout(STACKPANELS_SEED)
+    const cut = STACKPANELS_FRAME.cutFrac * 1080
+    expect(cut).toBeCloseTo(17, 6)
+
+    const patchByCorner = new Map(STACKPANELS_FRAME.patches.map((patch) => [patch.id, patch]))
+    for (const [i, panel] of l.panels.entries()) {
+      const patch = patchByCorner.get(panel.cutCorner!)!
+      const px = patch.xFrac * 1920
+      const py = patch.yFrac * 1080
+      // The patch sits exactly at the panel's outer corner (cut-sized square).
+      const cornerX = panel.cutCorner === 'tl' || panel.cutCorner === 'bl' ? panel.x : panel.x + panel.w - cut
+      const cornerY = panel.cutCorner === 'tl' || panel.cutCorner === 'tr' ? panel.y : panel.y + panel.h - cut
+      expect(px).toBeCloseTo(cornerX, 6)
+      expect(py).toBeCloseTo(cornerY, 6)
+      expect(patch.id).toBe(STACKPANELS_SEED[i].cutCorner)
     }
   })
 })
@@ -171,10 +240,10 @@ describe('panelsLayout — absolute rects (pure math)', () => {
 
     expect(l.viewBox).toEqual({ width: 960, height: 540 })
     // Halving the stage halves every coordinate.
-    expect(blue.x).toBeCloseTo(114.9, 4)
-    expect(blue.y).toBeCloseTo(182.2, 4)
-    expect(blue.w).toBeCloseTo(374.3, 4)
-    expect(blue.h).toBeCloseTo(150.6, 4)
+    expect(blue.x).toBeCloseTo(201, 6)
+    expect(blue.y).toBeCloseTo(177, 6)
+    expect(blue.w).toBeCloseTo(305.25, 6)
+    expect(blue.h).toBeCloseTo(123.75, 6)
   })
 
   it('keeps content fields on the resolved rects', () => {
@@ -200,7 +269,7 @@ describe('panelsLayout — absolute rects (pure math)', () => {
 })
 
 describe('revealPlan — re-paced click schedule', () => {
-  it('paces the demo seed to five clicks: four fades + the closing beat', () => {
+  it('paces the legacy variant to five clicks: four fades + the closing beat', () => {
     const plan = revealPlan(STACKPANELS_SEED, true)
     expect(plan.panelClicks).toEqual([1, 2, 3, 4])
     expect(plan.labelClick).toBe(5)
@@ -212,6 +281,13 @@ describe('revealPlan — re-paced click schedule', () => {
     expect(plan.panelClicks).toEqual([1, 2, 3, 4])
     expect(plan.labelClick).toBe(0)
     expect(plan.totalClicks).toBe(4)
+  })
+
+  it('exposes the late-annotation click as the final panel click (annotate mode)', () => {
+    // The seg08 annotate mode binds frame/labels/caption to this click — the
+    // recording draws them ~0.93–1.4s after the last panel onset.
+    const plan = revealPlan(STACKPANELS_SEED, true)
+    expect(plan.panelClicks[plan.panelClicks.length - 1]).toBe(4)
   })
 })
 
