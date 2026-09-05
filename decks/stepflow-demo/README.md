@@ -1,10 +1,10 @@
 # StepFlow demo deck
 
 Slidev deck for the StepFlow animated-diagram demo (`decks/stepflow-demo`): the
-house-style title slide plus the reference-faithful restart slides — seg01
-(StairChain split-ascent) and seg08 (StackPanels dark mosaic) are mounted, and
-the remaining six family slides land with the integration PRs — all on the
-1920×1080 black canvas.
+house-style title slide plus all eight reference-faithful family slides —
+seg01 StairChain, seg05 PillarRow, seg08 StackPanels, seg11 ConvergeFlow,
+seg12 CompareBadge, seg14 SpecPanel, seg15 StepPanel, seg16 TileSummary —
+on the 1920×1080 black canvas. Nine slides total.
 
 ## Run (dev server + hot reload)
 
@@ -42,7 +42,7 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 
 ```text
 decks/stepflow-demo/
-├─ slides.md                      # slides: title · StairChain seg01 (10 v-clicks) · StackPanels seg08 (4)
+├─ slides.md                      # slides: title + 8 family slides (seg01 · seg05 · seg08 · seg11 · seg12 · seg14 · seg15 · seg16)
 ├─ components/
 │  ├─ StairChain.vue              # family: measured seg01 split-ascent staircase (explicit placement, interleaved clicks, annotation waves)
 │  ├─ StackPanels.vue             # family: measured seg08 four-panel dark mosaic (per-panel 300ms fades)
@@ -109,15 +109,15 @@ Component props (StairChain — the seg01 slide's family):
 | `title` / `titleAccent` | `string`           | Two-tone mono header through the shared `TitleChrome`                           |
 
 Icon keys resolve against the Lucide registry in `components/stepflow/icons.ts`
-(`git-branch`, `flask-conical`, `server`, `database`, `dash-grid`, …);
+(see [Icon registry keys](#icon-registry-keys-componentsstepflowiconsts));
 an unknown key renders a visible fallback and warns in dev.
 
 ## Shared contract: palettes, icons, title chrome
 
-Foundation conventions for the diagram-family components (StairChain, NodeEdge,
-StackPanels, HexCluster, SchematicRows, VerticalSpine, HeroTile, SegmentTimeline). StepFlow ships
-today; each family component adopts these in its own PR — with zero visual
-change to existing slides.
+Foundation conventions for the eight restart family components (StairChain,
+PillarRow, StackPanels, ConvergeFlow, CompareBadge, SpecPanel, StepPanel,
+TileSummary). Every mounted family adopts them; the shared pieces predate
+the restart slides and are unchanged by them.
 
 ### Palette presets (`components/stepflow/palettes.ts`)
 
@@ -136,9 +136,9 @@ the deck style, not a palette field.
 
 | Field            | Type     | Fallback             | Consumed by                              |
 | ---------------- | -------- | -------------------- | ---------------------------------------- |
-| `accentAlt`      | `string` | — (stays undefined)  | status tones; NodeEdge amber `alt` nodes |
-| `accentTertiary` | `string` | `accent`             | teal-green (`#1cd798` family): StackPanels green panel, HexCluster green icon and text |
-| `accentQuaternary` | `string` | `accent`           | fourth accent slot — the v4 StackPanels recording's four-tone mosaic (green) |
+| `accentAlt`      | `string` | — (stays undefined)  | amber tones — StairChain's annotation wave, StepPanel's amber group |
+| `accentTertiary` | `string` | `accent`             | teal-green (`#1cd798` family): StairChain's cyan block split, ConvergeFlow's cyan left column, StepPanel's teal cluster |
+| `accentQuaternary` | `string` | `accent`           | fourth accent slot — StackPanels' four-tone mosaic (green) |
 
 `accentTertiary` merges with the same override-wins rule as every top-level
 field. When omitted it resolves absent, and consumers read
@@ -147,9 +147,14 @@ into the fallback.
 
 ### Icon registry keys (`components/stepflow/icons.ts`)
 
-`git-branch` · `square-terminal` · `flask-conical` · `braces` · `rotate-cw` ·
-`server` · `database` · `cloud` · `user-round` · `bot` — unknown keys render the
-visible fallback and warn in dev, so a wrong identification degrades safely.
+`git-branch` · `square-terminal` · `flask-conical` · `rotate-cw` · `map-pin` ·
+`user-round` · `navigation-2` · `dash-grid` · `cassette-tape` · `table-2` —
+unknown keys render the visible fallback and warn in dev, so a wrong
+identification degrades safely. The mounted families use: PillarRow
+(`cassette-tape`, `table-2`, `navigation-2`) and CompareBadge (`user-round`,
+`flask-conical`, `rotate-cw`, `table-2`); the other families' in-composition
+text and glyphs are measured seeds or sub-resolution integration-supplied
+props.
 
 ### Title chrome convention: `titleAccent`
 
@@ -171,349 +176,159 @@ sheets document the recording pill pass `badge` and get the green TopRightBadge
 
 ### Family components
 
-Each family built-in is a component + pure geometry module + one demo slide,
-appended in merge order. The component owns its v-click choreography — a slide
-consumes the listed click count, nothing more. The data contracts live in the
-geometry modules (contract + layout are coupled by design) and seed data stays
-inline on the demo slides; data order is the click order for every family.
+Each family is a component + pure geometry module + one demo slide. The
+component owns its v-click choreography — a slide consumes the listed click
+count, nothing more. Data contracts live in the geometry modules (contract +
+layout are coupled by design) and seed data stays inline on the demo slides;
+data order is the click order for every family. Click counts below are the
+`?clicks=N` capture contracts (see
+[Capture contracts](#capture-contracts-clicksn-deep-links)).
 
-| Component       | Data contract (`components/stepflow/`)                 | Clicks                              | Palette preset                                | Demo slide | Icons added |
-| --------------- | ------------------------------------------------------- | ----------------------------------- | --------------------------------------------- | ---------- | ----------- |
-| `StepFlow`      | `steps.ts` — `StepFlowStep[]`                           | 6 — one per step                    | `cyanOnBlack`                                 | 2          | —           |
-| `StairChain`    | `stair.ts` — `StairStep[]` + optional `StairCallout`    | 1 + one per block                   | `chainBlue`                                   | 3          | —           |
-| `NodeEdge`      | `nodeEdge.ts` — `NodeEdgeData` (nodes/edges/status)     | per node, then per edge, then per status | `cyanOnBlack` + measured seed (`#33a5cd`/`#e6b434`/`#5a1e1e`) | 4          | — |
-| `VerticalSpine` | `spine.ts` — `SpineNode[]` + optional `footer`; an empty-title center node renders the diamond marker, `side` picks the card slots | 5 — marker, label row, 2 side cards, footer row | outlined two-tone cards — accent `#24cce5` left / `accentAlt` `#3891e3` right (demo seed), `orangeSpine` spine/label | 5          | —           |
-| `HeroTile`      | `spine.ts` — `HeroTileData` (tile + icon + optional label on the spine axis) | 1 — halo, tile, icon, label together | `orangeSpine` verbatim (`#f85721`), accent-derived halo | 6          | `user-round` |
-| `SchematicRows` | `rows.ts` — `SchematicRowsData` (rows + callouts; defaults to the sheet-authoritative 7-row seed) | 10 — chrome, callout 1, rows 1–3, rail, then rows 4–7 with the band + callouts 2–4 keyed to their rows | sheet-sampled tones — keywords `#4298f2`, near-white idents, dim comments `#888791`, teal band `#08272c`, cyan rail `#35c2ea` | 7          | —           |
-| `TwoBarCompare` | `compare.ts` — `CompareBar[]` + `TwoBarCompareData` (bars/xFrac/barHFrac/yFracs + optional `dataText` block — `lines`/`subline`/`caption`/`note`/`rules` — and centered `subhead`) | 5 — bar 1, bar 2, one shared annotation beat for the data-text block, caption/note rows, divider rules and chips, then the on-bar labels as their own measured beats 4–5 (2800–2983/7467–7667ms windows) | `statusAmber` (the component's family default; rework adds the measured teal `#1cd797` top-chip tone) | 8          | —           |
-| `ColumnRow`     | `columns.ts` — `ColumnRowData` (columns + `yFrac`/`hFrac` + optional `heading`/`labelRows`/`labelPosition`/`numerals`/`lateLabels`/`note`) | 8 (exact trace): columns 1,2,3,4,6 — deferred below-labels 5,7 — heading numeral with col-5 (6) — note row last (8); legacy compositions stay at 5 + label rows | `cyanOnBlack` base + token mix (`stepBlue` ship endpoint, `orangeSpine`/`statusAmber` accents, `accentTertiary` teal) | 9          | —           |
-| `TileGrid`      | `tiles.ts` — `TileGridData` (tiles/cols + tile & pitch fracs; per-tile `tone`/`wFrac`/`hFrac`/`mini` overrides) | 8 — six tiles row-major, then the two connector-track beats (7: row 1, 8: row 2) | `cyanOnBlack` (measured hex core `#1ed0e8` + matrix/row tones via `accentAlt`/`accentTertiary` + status/plain constants) | 10         | `cpu` · `boxes` · `layers` (candidates; fallback covers a wrong guess) |
-| `RatioStrip`    | `strip.ts` — `RatioStripData` (segments + `yFrac`/`hFrac` + optional heading/caption) | 6 — band pop at initial proportions, settled layer + burst 1, burst 2, final segments, mint settle, then chip + tone-colored caption row (generation-7 decomposition of the 1133/2967/3433ms intra-click delays into explicit beats) | measured gradients on the `accentAlt`/`accentTertiary` tokens — hue decisions in the notes below | 11         | —           |
-| `SegmentTimeline` | `timeline.ts` — `TimelineSegment[]` (`tone` is `'accent'`/`'tertiary'`/`'alt'`, optional proportional `wFrac`, optional `label`/`sublabel`) | 3 — one per segment: node pop + fill sweep together | measured blue/cyan/red trio over `chainBlue` (no preset added) | 12         | —           |
-| `StackPanels`   | `panels.ts` — `StackPanel[]` + optional `caption`       | one per panel + one label click     | four-accent seed (`accent`…`accentQuaternary` = the recorded blue/cyan/amber/green) | 13         | —           |
-| `MilestoneLanes` | `lanes.ts` — `MilestoneLanesData` (lanes + optional `diamonds`, per-lane `yFrac` override, measured y0/pitch/barH grid) | one reveal click + one settle click per bar, footer last | measured fills `#ED4342`/`#F9BB21` (no preset) | 14         | `map-pin`   |
-| `HexCluster`    | `hex.ts` — `HexNodeData[]` + `arrangement`              | one per cell                        | `chainBlue` + `accentTertiary`                | 15         | `bot`       |
+| Component      | Source segment | Clicks | Choreography summary                                                   | Slide |
+| -------------- | -------------- | ------ | ---------------------------------------------------------------------- | ----- |
+| `StairChain`   | seg01          | 10     | callout → six interleaved block/caption beats → two annotation waves → closing mark | 2 |
+| `PillarRow`    | seg05          | 6      | per card: glyph+label, then badge (card 3's badge rides its card) → summary rows | 3 |
+| `StackPanels`  | seg08          | 4      | one pop per panel + one shared stepped-label click                     | 4 |
+| `ConvergeFlow` | seg11          | 5      | left column → right column → bar + labels → base + row bits → footer   | 5 |
+| `CompareBadge` | seg12          | 5      | badge pop → four alternating plate rows                                | 6 |
+| `SpecPanel`    | seg14          | 7      | plate → status row → heading+body → red accent → teal cluster → spec row → closing line | 7 |
+| `StepPanel`    | seg15          | 7      | plate draw → three rows → left annotation → amber group → title burst  | 8 |
+| `TileSummary`  | seg16          | 4      | three tiles → bracket (right vertical, bar, left vertical) with the summary line at bar +0.266 s | 9 |
 
-StairChain authoring notes: each step carries `title` (uppercase white, rendered
-inside the block), `caption` (one accent line below), and an optional `lift` —
-the block's total rise above the base block as a fraction of canvas height;
-omitted lifts follow the uniform 6.8%h-per-step ramp. The demo seed reproduces
-the v1 recording's RETRY dip through measured `lift` overrides, and the optional
-`callout` renders the amber floating annotation that reveals first.
+Every family mounts with the two-tone measured title (`title` white,
+`titleAccent` chrome green, through `TitleChrome`) and pins its complete
+measured beat list on the slide (`R-6`: one entry per click — every beat
+listed, nothing repeated by convention).
 
-VerticalSpine authoring notes: `side: 'center'` nodes stack down the spine axis
-in data order — an empty-title node renders the solid orange diamond marker, a
-titled one renders the label row (flanked by small accent diamonds); `side:
-'left' | 'right'` nodes fill the two measured card slots as outlined plates —
-near-black `#0b0a11` fill with a 4–5px (source-scale) card-colored stroke, a
-big bold card-tone `title` inside (the glyph mass is the measured 42–45% ink
-of the card bbox; an optional `titleScale` node field tunes per-card glyph
-ink for titles with more glyphs) and a 44px (1080-canvas) card-colored
-`caption` underneath. The two-tone demo cards come from the palette: `accent` on the
-left, `accentAlt` on the right. The optional `footer` prop reveals one last
-gray row — a 75.2%-wide dim `#202020` rule centered on the spine axis plus
-two `#a0a0a0` 24px lines centered under the card columns.
+#### StairChain — split-ascent staircase (seg01, slide 2)
 
-HeroTile authoring notes: single click — `icon` (Lucide key) plus an optional
-`label` beneath the tile; an accent-derived radial halo (`glowR`, 8.13%w) sits
-under/around the tile and reveals with it. The optional `subtitle` prop adds a
-secondary white header line (~40px at 1080) below the recording-scale primary
-header. The palette defaults to the measured `orangeSpine` preset verbatim, so
-the tile color needs no override.
+Ten clicks: the amber floating callout reveals first, blocks/captions land
+interleaved (`click` offsets on the steps), then two annotation waves and the
+closing mark. Geometry is explicit placement (`stair.ts`'s `SEG01_PLACEMENT`).
 
-ColumnRow authoring notes (reworked to the ref t=229.0 composition — wave 2):
-columns are equal-width at the measured 10.3%w × 23.3%h, tops at 51.4%h,
-x-pitch 13.75%w, first column at 17.3%w — the row just carries fewer columns
-for the four-column comparison variant (src 230–237s, `underline: true` on
-each; its white underlines render in the family's amber status token). Tones
-read the existing tokens plus the measured step blue: `accent` (house cyan via
-the palette prop), `alt` (`accentAlt` override, else the `orangeSpine`
-accent), `tertiary` (`accentTertiary`, else accent), `status` (the
-`statusAmber` accent), `blue` (the `stepBlue` constant measured off the
-ref's ship endpoint). Thin dark plate outlines rim every column edge and a
-base rail runs under the field — near-black chrome, no click of its own. The
-optional `heading` renders the measured chrome above the middle column (amber
-bar-chip, white icon badge, wide white caption; static like the title), and
-the optional `labelRows` carry text rows below the columns — one string per
-column, revealed together on the final click; plain rows keep the legacy white
-dot/label sizing, while `{ texts, tone: 'column' }` rows render at the
-measured tinted-label size with every cell filled in its column's tone.
+| Prop          | Type                       | Purpose                                                    |
+| ------------- | -------------------------- | ---------------------------------------------------------- |
+| `steps`       | `StairStep[]` (required)   | One entry per block: `id`, punched-number `title`, `caption`, optional `tone`/`click` |
+| `callout`     | `StairCallout`             | The amber floating annotation revealed on click 1          |
+| `placement`   | `StairPlacement`           | Explicit per-block fractions — omit for the default walk   |
+| `annotations` | `StairAnnotation[]`        | Late mark/text waves, each at its own 1-based click        |
+| `palette`     | `Partial<StepFlowPalette>` | Merged over `chainBlue` (the slide pins the settled medians) |
+| `title` / `titleAccent` | `string`         | Two-tone mono header through the shared `TitleChrome`      |
 
-ColumnRow authoring notes (exact-trace composition, sheet art_7yZkdmCE):
-`labelPosition: 'below'` moves each label under its plate as tone-colored text
-on the measured y868 baseline; `numerals` centers dark two-digit numerals
-(`01`…) inside the plates riding their rise; `lateLabels` (ascending, unique
-indices) gives those columns' below-labels a private beat right after their
-column's; `note` renders a centered amber row under the field on the strictly
-final beat; `heading: { numeral, caption }` swaps the badge disc for a white
-display numeral gated to the last column's beat (chip bars land with it); the
-caption carries the measured 0.135em tracking. `titleTextLength` pins the
-title's measured ink extent (slide 9: 1097px). Columns 1–3's label cadence is
-unrecoverable from the source — they ride their column beats, flagged
-unverifiable.
-RatioStrip authoring notes (wave 2, research art_2kSBGNmJ §3.3 — source video
-95–101s; fidelity rework per report art_iHm120ov §RatioStrip, settled frame
-t=99.1s at 1920×1080): one proportional band, 71.5%w × 21.9%h at y 51.4%h,
-that tells a share-of-total story in three native clicks — a two-phase build.
-Click 1 pops the band at its initial widths (~120ms width ease); click 2
-re-flows the teal region to its settled share in three bursts ~470ms apart
-(measured 99.10 / 99.57 / 99.83s — stacked burst rects with stepped
-transition-delays over the final copy); click 3 fades in the mint chip and
-the tone-colored caption row. Segment widths are proportions — each state
-normalizes over its own sum, so the band always reads as shares of 100%.
-`wFrac` is the click-1 width, optional `wFracFinal` the re-flow destination
-(burst 3; omit it and the segment holds its width); all clicks are
-state-driven transitions on revealed-state classes — backward nav snaps,
-reduced-motion freezes. The final state tiles the band exactly, so the
-settled copy stacks over the initial one (the StepFlow dim-base +
-stacked-copy pattern) with no residue. Static chrome (present before the
-band pops): a dark panel plate (y≈331–440, x≈234–1685) and the white
-`heading` row above the band. Caption labels adopt their segment's tone
-family; the optional `caption` renders chrome-dim.
+#### PillarRow — three-card icon row (seg05, slide 3)
 
-Hue decisions (report art_iHm120ov §RatioStrip — measured, replacing the
-wave-2 hypotheses): the red segment is a red→salmon gradient (`accentAlt` →
-measured `#f98c8c`) — the earlier "salmon/amber segment" was a misread of
-that gradient's tail; no amber exists in the source. The teal region is the
-bright left-to-right gradient `#76eec5` → the `accentTertiary` token (the
-demo passes `#1cd798`); the darker-teal sub-band was a misread tone and is
-gone. The mint chip `#a0fcd9` and the panel plate `#18181b` stay documented
-local constants. Initial proportions are [I]: the measured 22k→108k px teal
-re-flow seeds the teal at ~1/5 of its settled share with red holding the
-rest; the burst waypoints (band shares 0.35 / 0.55) are re-paced [I].
+Six clicks: glyph+label then badge per card (cards 1–2; card 3's badge rides
+its card), then the two summary rows. Geometry is the `pillars.ts` measured
+table verbatim (pitch 0.2613, plate/badge/label bands from report.json
+seg05_61s-63s); station hues are the component's per-index settled medians.
+Crop→stage fit rule: content bbox → full stage, relative layout preserved
+(`pillars.ts` docblock).
 
-Data contract (exported from `components/stepflow/strip.ts`):
+| Prop           | Type                       | Purpose                                                   |
+| -------------- | -------------------------- | --------------------------------------------------------- |
+| `cards`        | `PillarCard[]` (required)  | One entry per station: `id`, `label`, `icon` (registry key) |
+| `summaryRows`  | `string[]`                 | Two text rows under the card band (salmon, then gray)     |
+| `title` / `titleAccent` | `string`          | Two-tone mono header, pinned to the measured ink extent   |
+| `palette`      | `Partial<StepFlowPalette>` | Optional override; the family medians are the default     |
 
-```ts
-interface StripSegment {
-  id: string                       // stable key — Vue keys + test selectors
-  tone: 'accent' | 'alt' | 'tertiary' | 'plain'
-  wFrac: number                    // initial width, fraction of the band (click 1)
-  wFracFinal?: number              // settled width after the click-2 re-flow (burst 3)
-  label?: string                   // caption-row label under the segment's final left edge
-}
-interface RatioStripData {
-  segments: StripSegment[]
-  yFrac: number                    // band top edge, canvas-height fraction (measured 370/720)
-  hFrac: number                    // band height, canvas-height fraction (measured 158/720)
-  caption?: string                 // single dim caption line — author labels XOR caption
-}
-```
+#### StackPanels — dark four-panel mosaic (seg08, slide 4)
 
-TileGrid authoring notes: tiles lay out row-major from `x0Frac`/`y0Frac` with
-uniform `pitchXFrac`/`pitchYFrac` steps and `tileWFrac`/`tileHFrac` defaults —
-geometry is a pure SSR-safe module with fraction and canvas-bound validation
-(`hexPath` draws the pointed left-right hexagon inside each box; `tileTrackLines`
-resolves the per-row connector track). Wave-2 measured anatomy (report
-art_iHm120ov §TileGrid): saturated `#1ed0e8` hex cores (~0.825 × 0.93 of the
-box) under a blurred glow halo, a ~12px `#353642` track through tile centers,
-a `#a0ecfb` sheen dash at the first tile's lit vertex, ~40px near-black icons
-(stroke ≈3px at 1920), and below-tile double label rows — cyan `mini` over the
-white label, both ~16px. One click per tile in data order. The measured matrix
-(research src 57–60s: tone-coded 3×3 incl. amber/red/plain) and flat-row
-(107–110s: eight tiles in two tone groups of four) are seed-data arrangements,
-not extra components; unknown icon keys render the visible fallback icon and
-warn in dev.
+Four clicks: one ~60 ms pop per panel (reveal order: blue, cyan, amber,
+green), then the shared stepped-label click at 0.87 s. Panels abut directly
+on the black canvas — no plate, no gutters (`panels.ts` dark re-truth).
+Crop→stage mapping is identity (the mosaic fills the stage).
 
-SegmentTimeline authoring notes: `segments` are proportional shares of the fillable
-track — authored `wFrac` values (fractions of the source canvas width) are normalized
-over the span left of the white lead (minus the measured gaps), and omitted shares
-default to equal widths. `tone: 'accent'` / `'tertiary'` / `'alt'` render the measured
-blue / cyan / red trio (`tertiary`/`alt` fall back to `accent` when a custom palette
-omits them; this wave adds no palette preset). Nodes derive from the fills they cap
-(30px past each fill's right end), so the 2px node-colored ticks and the two-row white
-`label`/`sublabel` blocks can never drift. The fill sweep is a revealed-state width
-transition (~2.4s, the `.sf-track-fill` pattern): each fill completes just before the
-next click pops the next node — sweep-then-pop, instant snap on backward nav.
+| Prop      | Type                      | Purpose                                                     |
+| --------- | ------------------------- | ----------------------------------------------------------- |
+| `panels`  | `StackPanel[]` (required) | List in reveal order: `id`, `title`, `rows`; seeded via `accent`…`accentQuaternary` |
+| `caption` | `string`                  | Optional white caption centered under the composition       |
+| `title` / `titleAccent` | `string`    | Two-tone mono header                                        |
 
-StackPanels authoring notes: list panels in reveal order — the wave-1
-re-measured mosaic is blue `#3599fb` top-left, cyan `#1fd0ea` top-right,
-amber `#f7ba20` bottom-left, green `#1cd798` bottom-right, seeded via
-`accent`/`accentAlt`/`accentTertiary`/`accentQuaternary` (the fourth slot was
-added when the former one-shade band split; a missing slot falls back to
-`accent`). Panels pop in ~60ms bursts (`'pop'`, the recording's mechanism;
-`'sweep'` stays available at ~80ms). Panel `title` renders white (~40px at
-1080) at the panel's top-left; `rows` render dark, left-aligned under it;
-the optional `caption` renders white (~26px), centered under the
-composition. Accepted deviation: the recording is a continuous auto-run,
-re-paced to one click per panel plus one shared stepped-label click.
+#### ConvergeFlow — converge-branch flow (seg11, slide 5)
 
-MilestoneLanes authoring notes: bar offsets and sizes are data — `(xFrac,
-wFrac)` are canvas-width fractions, each lane takes an explicit `yFrac`
-(non-uniform tops: y525/597/694/766 at 1080 in the demo), and the lane grid
-rides the measured `y0Frac` / `lanePitchFrac` / `barHFrac` fallback (a
-per-bar `hFrac` overrides the default height). Optional `diamonds` render
-45°-rotated hollow squares with per-element radial glows on the marker
-column (38px outer, 21px inner, 3.5px stroke); optional per-bar `text` with
-`textLength` renders near-black captions inside long bars. Choreography
-(exact-trace sheet art_kYBddwt9 §5): lane data is listed in reveal order and
-bar k reveals on click 2k−1 in its own style — `sweep` (250ms rail sweep,
-then a 500ms re-proportion to the seed on click 2k), `pop` (holds final
-geometry, fades in), `grow` (733ms ease-out growth), `center` (120ms
-center-out expansion) — and the closing beat 2n+1 lands the footer row.
-Backward navigation snaps instantly (zero-animation). Lanes carry measured
-fills (`tone: 'alt'` = #ED4342, `tone: 'accent'` = #F9BB21; no palette
-preset). Measured text chrome: a header label row above lane 1 (34px,
-amber glyph + dim gray mono `subtext`), a footer row with a teal `map-pin`
-chip glyph (26px), and 35px lane labels tracked 0.4em left-aligned at x404
-at 1920.
+Five clicks: left cyan column, right blue column (with its six-box base row),
+the dim-orange bar bracket drawing across, the white base labels, then the
+gray footer band. The funnel assembly (ring, cone, tick row, stem) is the
+clip's mid-state — it renders from f0001 and never animates. Tones are the
+re-measured pair: bright funnel orange `#f25726` vs dim bar orange `#bf521c`
+(`converge.ts` family preset). Copy defaults to `CONVERGE_SEED`; in-box glyph
+rows stay sub-resolution props (left boxes empty). Crop→stage: content bbox →
+full stage (`converge.ts` docblock).
 
-Dim ambience (true settled frame, clip 6600ms): the chart field is not
-void black — the render carries a static neutral dim plate (`#0f0e11`) across
-the full field. Bars and diamonds carry the glow instead of lane-wide
-washes: each milestone diamond has its own radial glow (a radialGradient
-sprite), and no per-lane tone washes or container frame remain in the
-settled state. Static decorative chrome like the plate: no v-click, outside
-the accessibility tree, and unchanged by reduced-motion (it never animates).
+| Prop             | Type                       | Purpose                                              |
+| ---------------- | -------------------------- | ---------------------------------------------------- |
+| `title` / `titleAccent` | `string`            | Two-tone token header (green lead first, per the sheet) |
+| `labels`         | `{ left?, right? }`        | White base labels under the two columns              |
+| `funnelLabel`    | `string`                   | The funnel's tick-row numerals                       |
+| `leftBoxText` / `rightBoxText` | `string`     | In-box text (right box carries the seed's `DWH`)     |
+| `palette`        | `Partial<StepFlowPalette>` | Optional override over the measured family preset    |
 
-The free-position node-edge network built-in, on the shared contract
-(src-3 recording — re-measured against the settle frame t=4.0, fidelity
-report art_v4jVdTnp §2, which corrects the earlier circular-outline read:
-those were the bounding boxes). Node positions are **data**, never computed:
-`(xFrac, yFrac)` are canvas fractions of the 1920×1080 stage. The node
-primitive is a ~100px SQUARE — a `#0b0a11` plate, a 6px tone-colored border,
-and a 3-line ~20px tone-colored label inside — plus the solid bright-red
-status square (`tone: 'status'`, ~102×149px, bright red reserved for status
-only). Edges are dim-red polylines over the same fractions (the palette
-`track`, ~6px) that pop in — measured at the recording's native fps, an edge
-reaches full ink 1–2 frames after onset (~55–80ms): a pop, not a dashoffset
-draw, and no dim base edge exists before reveal. The optional status layer
-(solid blocks, outlined boxes, arrow glyphs) hangs off a node and reveals
-additively — the recording's amber→red swap is modeled **appearance-only**
-(locked deviation): nothing is ever removed. Static chrome: a red ambient
-wash behind the network zone, the two-line terminal readout bottom-left, and
-the 7.2%h mono header.
+#### CompareBadge — plate-and-badge comparison (seg12, slide 6)
 
-Choreography: one click per node (data order, ~70ms pop), then one per edge
-(~80ms pop), then one per status element — all native `v-click`s, instant
-backward nav, reduced-motion freezes reveals.
+Five clicks: the center badge pops (dark red-brown halo ring around the
+settled `#f85721` core), then the four plate rows fade in alternating
+left/right (`ROW_CLICK_BASE`). Geometry is the `compareBadge.ts`
+native-pixel constants (2560×1440 read, frame-scaled to the stage —
+content-bbox → full-stage fit, module docblock). Row copy is
+integration-supplied (sub-resolution in the recording): legible-in-spirit
+strings over the measured bright/dim bands.
 
-```md
-<NodeEdge
-  title="DATA"
-  title-accent="PLATFORM"
-  :palette="{ accent: '#33a5cd', accentAlt: '#e6b434', track: '#5a1e1e' }"
-  :terminal="['LAST DEPLOY 14M AGO', 'VER 2.4.1']"
-  :nodes="[
-    { id: 'ingest', xFrac: 0.515, yFrac: 0.524, tone: 'accent', label: ['INGEST', 'EVENTS', '12K/S'] },
-    { id: 'lag', xFrac: 0.159, yFrac: 0.605, tone: 'status', label: ['SLOW', '5M'] },
-  ]"
-  :edges="[
-    { from: 'ingest', to: 'lag', points: [[0.515, 0.524], [0.159, 0.605]] },
-  ]"
-/>
-```
+| Prop         | Type                       | Purpose                                                |
+| ------------ | -------------------------- | ------------------------------------------------------ |
+| `rows`       | `CompareRow[]` (required)  | Four entries (leftTop, rightTop, leftBottom, rightBottom): `bright`, `dim`, `icon` |
+| `badgeIcon`  | `string`                   | Registry key for the badge core glyph                  |
+| `title` / `titleAccent` | `string`        | Two-tone mono header (natural width — no ink pin)      |
+| `palette`    | `Partial<StepFlowPalette>` | Optional override                                      |
 
-Component props:
+#### SpecPanel — progressive spec panel (seg14, slide 7)
 
-| Prop          | Type                          | Purpose                                                        |
-| ------------- | ----------------------------- | -------------------------------------------------------------- |
-| `nodes`       | `FlowNode[]` (required)       | Free-position nodes; positions are data (canvas fractions)     |
-| `edges`       | `FlowEdge[]` (required)       | Polylines between node ids; fractions of the canvas            |
-| `status`      | `FlowStatus[]`                | Optional status layer, one click per element                   |
-| `palette`     | `Partial<StepFlowPalette>`    | Merged over the measured `cyanOnBlack` preset (the demo seeds the recording's `#33a5cd`/`#e6b434`/`#5a1e1e`) |
-| `title`       | `string`                      | Mono header line rendered top-left at 7.2%h (e.g. `DATA`)      |
-| `titleAccent` | `string`                      | Header tail rendered in chrome green (two-tone chrome)         |
-| `terminal`    | `string[]`                    | White mono readout lines, bottom-left (one row each)           |
+Seven clicks: plate, status row, heading+body, red edge accent, teal accent
+cluster, spec row, closing line — progressively fading text rows over one
+huge near-black plate (settled luma ≈14). The crop frames the full 16:9
+slide (identity mapping — crop fractions read as full-frame fractions;
+`specPanel.ts` docblock). Seed copy is `SPEC_PANEL_SEED`
+(resolution-limited read, integration-refined); the title band pins its
+measured 634.56px ink extent.
 
-Data contract (exported from `components/stepflow/nodeEdge.ts`; the exact shape
-an MCP agent writes):
+| Prop      | Type                       | Purpose                                              |
+| --------- | -------------------------- | ---------------------------------------------------- |
+| `title` / `titleAccent` | `string` | Two-tone mono header, pinned to the measured ink extent |
+| `seed`    | `Partial<SpecPanelSeed>`   | Merged over `SPEC_PANEL_SEED` (rows, accents, chrome copy) |
+| `palette` | `Partial<StepFlowPalette>` | Optional override                                    |
 
-```ts
-interface FlowNode {
-  id: string                        // stable key — edge endpoints + status attachment
-  xFrac: number                     // square-center x, canvas fraction [0, 1]
-  yFrac: number                     // square-center y, canvas fraction [0, 1]
-  tone: 'accent' | 'alt' | 'plain' | 'status'
-  // accent/alt/plain = bordered plate; 'status' = solid bright-red status square
-  label?: string | string[]         // label lines rendered inside the square (tone-colored)
-}
-interface FlowEdge {
-  from: string                      // FlowNode.id
-  to: string                        // FlowNode.id
-  points: [number, number][]        // polyline vertices, canvas fractions — pops in dim red
-}
-interface FlowStatus {
-  attach: string                    // FlowNode.id this element hangs off
-  text: string                      // short label inside block/outline, under the arrow
-  tone: 'alt' | 'accent'            // palette role of the element's fill/stroke
-  kind: 'block' | 'outline' | 'arrow'
-}
-```
+#### StepPanel — four-step panel (seg15, slide 8)
 
-Layout rules an author can rely on: nodes render as ~96px squares (5.0%w,
-rx 10, 6px border; the status square is ~102×149px); block/outline status
-elements hang left of their node, arrows hang below; edges must reference
-known node ids and stay inside the canvas — violations throw `RangeError`
-(at build/authoring time), never render blank. `polylinePath` lives in
-`paths.ts`, shared with the SchematicRows schematic (the extraction
-triggered when SchematicRows became the third consumer); the dashoffset-era
-`polylineLength` no longer has a NodeEdge consumer (edges pop, they don't
-draw) and remains exported from `paths.ts` for SchematicRows.
+Seven clicks: plate outline draw, three measured rows, the bottom-left orange
+annotation, the amber group, and the chrome-green title burst. The header
+chip is pre-clip state — it renders from f0001 without consuming a click.
+Title runs read accent-first (green lead, white tail), each pinned to its
+measured ink box (token mode). Seed content is `STEP_PANEL_SEED`
+(OCR-approximate read); crop→stage mapping is documented in `stepPanel.ts`.
 
-## Family component: SchematicRows (`components/SchematicRows.vue`)
+| Prop         | Type                       | Purpose                                         |
+| ------------ | -------------------------- | ----------------------------------------------- |
+| `title` / `titleAccent` | `string` | Two-tone token header (accent-first on this sheet) |
+| `chipLabel`  | `string`                   | The pre-clip header chip copy                   |
+| `data`       | `StepPanelData`            | Rows/annotations copy; defaults to `STEP_PANEL_SEED` |
+| `palette`    | `Partial<StepFlowPalette>` | Optional override                               |
 
-The terminal-style token listing with an embedded thin-line schematic (v6
-recording — research art_0AzKGXnD §F5, re-measured against the settled frame).
-Rows render as **HTML** — token `<span>`s inside v-click'd row divs, mono,
-`white-space: pre` — because SVG text makes per-token coloring awkward; the
-schematic is SVG polylines drawn with the shared dim-base + dashoffset pattern
-(`components/stepflow/paths.ts`).
+#### TileSummary — three-tile summary (seg16, slide 9)
 
-Token tones: `accent` and `alt` map to palette fields; `plain` (chrome white
-`#f5f4f7`) and `chrome` (terminal green `#66fb00`) are constants of the tone
-convention, never palette fields. An omitted `accentAlt` falls back to `accent`.
+Four clicks: three cyan tiles (EXTRACT → TRANSFORM → LOAD) over near-black
+backing plates, then the closing bracket — right vertical, full-width bar,
+left vertical 200 ms behind — with the dim-white summary line riding the bar
+onset +0.266 s (`summaryDelaySec`). The clip opens on title-only
+(f0001–f0003): the slide's pre-click empty state is the video's start state.
+Crop→stage mapping is identity (`tileSummary.ts` docblock). Tile sublabels
+and in-tile glyphs are integration-supplied (sub-resolution;
+`ICON_FALLBACK` precedent).
 
-Choreography: one click per row (data order); a schematic line carries no click
-of its own — it draws within its **attached row's** click (`attach: '<rowId>'`;
-unattached lines distribute in order over the last rows). Rows fade-and-rise
-~150ms; strokes draw ~300ms — all native `v-click`s, instant backward nav,
-reduced-motion freezes reveals.
-
-Locked deviation: the recording's continuous auto-run (a typewriter effect) is
-re-paced to one click per row — no typewriter is built. Layout constants: row
-pitch 5.8%h, first row 31.5%h, code margin 6.5%w, indent step 4.1%w, mono size
-2.5%h — all re-measured from the settled v6 frame.
-
-#### HexCluster — hexagon cluster (v5)
-
-One cell per node; each click pops one cell's outline in (~60ms ease-out
-opacity/scale arrival — the v5 recording's one-frame pop, not a stroke draw)
-and fades in its inner title, caption rows, and icon on the same click — the
-two-phase pattern. The recording's settled state is a single TANGENT row
-(the V re-flows after its build-up); the demo slide ships that composition
-via `arrangement: 'row'` + the measured geometry overrides below.
-
-| Prop | Type | Purpose |
-| ---- | ---- | ------- |
-| `nodes` | `HexNodeData[]` (required) | One entry per cell: `id`, `title`, `caption`, `icon`, `tone?` |
-| `palette` | `Partial<StepFlowPalette>` | Merged over the measured `cyanOnBlack` preset — pass `{ accent: '#349aea', accentTertiary: '#20c88c' }` for the measured chainBlue/teal combination |
-| `geometry` | `HexOptions` | Optional fraction overrides: `hexRFrac`, `pitchXFrac`, `dropFrac`, `topFrac`, `centerXFrac`, `strokeFrac` |
-| `arrangement` | `'v' \| 'row'` | Honeycomb V (the build-up shape) or a single row — the recording's settled state |
-| `geometry` note | — | The settled row ships `{ centerXFrac: 0.475, pitchXFrac: 0.2275, topFrac: 0.603 }` (measured: centers 24.8/47.5/70.3%w, cy 0.603·h, span 13.4–81.7%w) |
-| `title` | `string` | Mono header line (white, oversized recording type ≈ 0.112·h, centered on the cluster axis) |
-| `titleAccent` | `string` | Header tail in chrome green (the convention above) |
-| `legend` | `string` | Short amber (`#ebb92a`, measured) legend line above the center column's top vertex |
-
-Captions may carry `\n` breaks — each becomes one ~34px tone-colored text row
-(the v5 cells hold multi-row text; no gray inside the outlines). Header chrome
-also ships a white bottom rule: 67.8%w × ≈6px at y 0.8944·h, centered on the
-cluster axis (measured x 13.7–81.5%w, y 1023–1029 at native 1144 height).
-
-`tone: 'tertiary'` renders that cell's icon AND text rows in
-`accentTertiary ?? accent` (the teal-green icon and text in the recording);
-other cells' icon and text stay in the accent — the v5 cells carry
-tone-colored text, no gray inside the outlines.
-Geometry lives in `components/stepflow/hex.ts` (pure, SSR-safe, analytic
-perimeter = 6·R); the demo slide is slide 15 with inline seed data.
-
-Accepted deviation (measured this session): the v5 recording's three outlines
-are geometrically **circles** (radial spread ≤ 2.5%, where a regular hexagon
-varies ~15.5% between facet midpoints and vertices). The locked family design
-— name, roster row, and contract — specifies hexagons, so the measured
-across-diameter (≈ 0.406·canvas height) maps onto a pointy-top hexagon's
-vertical extent. Flipping the family to circles is a one-constant change in
-`hex.ts` if the design is amended.
+| Prop      | Type                       | Purpose                                             |
+| --------- | -------------------------- | --------------------------------------------------- |
+| `seed`    | `TileSummarySeed[]` (required) | One entry per tile: `id`, `label`, `xFrac`, `wFrac` (measured), optional `sublabel` |
+| `summary` | `string`                   | The dim-white summary line under the bracket bar    |
+| `title` / `titleAccent` | `string` | Two-tone mono header, pinned to the measured ink extents |
+| `palette` | `Partial<StepFlowPalette>` | Optional override (the family cyan is the default)  |
 
 ## Hands-free playback (auto-advance)
 
@@ -532,23 +347,41 @@ state reads.
 
 ### Per-slide pacing beats
 
-A slide passes `durationSec` (even spread) or `stepScheduleSec` (measured beats)
-to `<AutoAdvance />` — pacing is set per slide from the fidelity reports'
-measured onsets (art_v4jVdTnp, art_iHm120ov) instead of the 7 s default.
+A slide passes `durationSec` (even spread) or `stepScheduleSec` (measured
+beats) to `<AutoAdvance />` — pacing is set per slide from each segment's
+f15 progressive-frame onsets instead of the 7 s default. Every list is
+complete: one entry per click, in order (R-6).
 
-| Slide | Family | Clicks | Measured cadence | Pacing |
-| ----- | ------ | ------ | ---------------- | ------- |
-| 2 | StairChain (seg01) | 10 | callout + interleaved blocks 0.27–1.27s, annotation waves 2.07–3.07s | `stepScheduleSec` (10 measured beats) |
-| 3 | StackPanels (seg08) | 4 | panel onsets 0.07 / 0.2 / 0.33 / 0.87s | `stepScheduleSec` (4 measured beats) |
+| Slide | Family | Clicks | Measured beats (s) |
+| ----- | ------ | ------ | ------------------ |
+| 2 | StairChain (seg01) | 10 | 0.27 · 0.53 · 0.67 · 0.80 · 0.93 · 1.07 · 1.27 · 2.07 · 2.67 · 3.07 |
+| 3 | PillarRow (seg05) | 6 | 0.067 · 0.267 · 0.600 · 0.733 · 1.000 · 1.467 |
+| 4 | StackPanels (seg08) | 4 | 0.07 · 0.20 · 0.33 · 0.87 |
+| 5 | ConvergeFlow (seg11) | 5 | 1.07 · 1.53 · 2.20 · 2.60 · 3.07 |
+| 6 | CompareBadge (seg12) | 5 | 0.60 · 1.00 · 1.73 · 3.00 · 4.40 |
+| 7 | SpecPanel (seg14) | 7 | 0.47 · 0.60 · 2.00 · 3.13 · 4.47 · 5.07 · 6.53 |
+| 8 | StepPanel (seg15) | 7 | 1.20 · 1.667 · 2.40 · 3.133 · 3.667 · 4.60 · 5.867 |
+| 9 | TileSummary (seg16) | 4 | 0.33 · 0.60 · 1.20 · 1.467 (summary line rides the bar +0.266 s) |
 
-The remaining six family slides (seg05/11/12/14/15/16) mount with the
-integration PRs and pin their own measured schedules there.
+### Capture contracts (`?clicks=N` deep links)
+
+Each family settles at its final click; `?clicks=N` renders exactly that
+state for screenshots and SSIM/MAD diffs. N per family, in slide order:
+seg01 → 10, seg05 → 6, seg08 → 4, seg11 → 5, seg12 → 5, seg14 → 7,
+seg15 → 7, seg16 → 4. Mid-beat captures (`?clicks=k`, 1 ≤ k < N) document
+each family's choreography; the `a` key plays the pinned schedule
+end-to-end and stops at the final click (backward navigation snaps
+instantly; reduced-motion collapses the run). Capture at 1920×1080 —
+Slidev letterboxes at other sizes, compressing screen fractions ~0.80
+horizontally — wait for `document.fonts.ready` before probing the title
+band (headless Chrome can re-layout fonts after navigation), and deep-link
+with `?clicks=N` rather than key presses.
 
 ### Recording workflow
 
 1. `npm run dev -- --port 4321`
-2. Open `http://localhost:4321/2?autoplay=7` — the run starts the moment the
-   slide mounts (first click ≈1.17 s in, last click at 7 s).
+2. Open `http://localhost:4321/3?autoplay=1.5` — the run starts the moment the
+   slide mounts (first click ≈0.167 s in, last click at 1.5 s).
 3. Hit record. No UI chrome is added to the slide, so the capture stays clean.
 
 Notes:
@@ -586,17 +419,16 @@ Tool inventory (verified on Slidev 52.19.1):
 
 ### JSON slide data an agent would generate
 
-A diagram description turns into an inline `:steps` array on a slide. Given the text
-*"a four-step release flow: plan the scope, build behind a flag, canary to 5%, then
-flip it wide"*, an agent generates:
+A diagram description turns into inline component props on a slide. Given the
+text *"a three-station measured pipeline: fetch, query, ship"*, an agent
+generates:
 
 ```json
 {
-  "steps": [
-    { "id": "plan",   "title": "PLAN",   "subtext": "scope the work",        "icon": "git-branch" },
-    { "id": "build",  "title": "BUILD",  "subtext": "behind a flag",         "icon": "square-terminal" },
-    { "id": "canary", "title": "CANARY", "subtext": "5% of traffic first",   "icon": "flask-conical" },
-    { "id": "wide",   "title": "ROLL OUT","subtext": "flip it wide",         "icon": "rotate-cw" }
+  "cards": [
+    { "id": "fetch", "label": "FETCH", "icon": "cassette-tape" },
+    { "id": "query", "label": "QUERY", "icon": "table-2" },
+    { "id": "ship",  "label": "SHIP",  "icon": "navigation-2" }
   ]
 }
 ```
@@ -609,7 +441,7 @@ to edit an existing diagram):
   "name": "slidev-insert-slide",
   "arguments": {
     "after": 2,
-    "content": "<div class=\"stepflow-stage\">\n\n<StepFlow title=\"RELEASE FLOW\" :steps=\"[\n  { id: 'plan', title: 'PLAN', subtext: 'scope the work', icon: 'git-branch' },\n  { id: 'build', title: 'BUILD', subtext: 'behind a flag', icon: 'square-terminal' },\n  { id: 'canary', title: 'CANARY', subtext: '5% of traffic first', icon: 'flask-conical' },\n  { id: 'wide', title: 'ROLL OUT', subtext: 'flip it wide', icon: 'rotate-cw' }\n]\" />\n\n</div>",
+    "content": "<div class=\"sf-demo-stage\">\n\n<PillarRow title=\"MEASURED\" title-accent=\"PIPELINE\" :cards=\"[\n  { id: 'fetch', label: 'FETCH', icon: 'cassette-tape' },\n  { id: 'query', label: 'QUERY', icon: 'table-2' },\n  { id: 'ship', label: 'SHIP', icon: 'navigation-2' }\n]\" />\n\n<AutoAdvance :duration-sec=\"1.467\" :step-schedule-sec=\"[0.067, 0.267, 0.6, 0.733, 1.0, 1.467]\" />\n\n</div>",
     "frontmatter": { "layout": "center" }
   }
 }
@@ -621,15 +453,15 @@ path, and every write hot-reloads in the open browser.
 
 ### Notes for agent authors
 
-- Describe the **flow in plain text**: number of steps, each step's short uppercase
-  title, a one-line dim subtext, and an icon intent. The agent maps icon intent to a
-  Lucide key from the registry (`git-branch`, `flask-conical`, `server`, …).
-- Keep titles short and uppercase (they render in mono under each disc) and subtexts
-  to one line — the measured typography sizes them for 1920×1080.
-- Wrap the component in a full-canvas stage (`<div class="stepflow-stage">` with
-  `position: absolute; inset: 0`) so the SVG fills the slide.
-- Do not add `v-click` wrappers yourself — the component owns one click per step
-  internally; a 6-step diagram consumes six clicks on the slide.
+- Describe the **diagram in plain text**: which family fits, each element's short
+  uppercase label, and an icon intent. The agent maps icon intent to a Lucide key
+  from the registry (see [Icon registry keys](#icon-registry-keys-componentsstepflowiconsts)).
+- Keep labels short and uppercase — the measured typography sizes them for
+  1920×1080, and long strings pin spacing-only against measured ink extents.
+- Wrap the component in a full-canvas stage (`<div class="sf-demo-stage">` with
+  `position: absolute; inset: 0`) so the composition fills the slide.
+- Do not add `v-click` wrappers yourself — the component owns its clicks internally
+  (the family table lists each count); match `<AutoAdvance>`'s schedule length to it.
 - Reveal styling is CSS-driven and reduced-motion aware; nothing to wire up per slide.
 - One caution discovered during development: do not write a literal `<style>` tag
   inside CSS comments or prose on a slide — Slidev's slide-level style extraction
@@ -658,123 +490,47 @@ It resolves the dev server's loopback family (Vite binds `localhost` to either
 (SIGTERM, then SIGKILL). CI stays lint + test + build; run the smoke test locally
 when touching the deck, the MCP surface, or upgrade Slidev.
 
-## StairChain two-tone fidelity note (wave-1 rework)
+## Restart family notes (settled-frame re-truth)
 
-Supplements the StairChain authoring notes above: a step now also carries an
-optional `tone` role — `'accent'` (the blue block fill, default) or
-`'tertiary'` (the cyan fill, `accentTertiary ?? accent`). The v1 recording is
-two-tone — blocks 1–3 blue `#3599fb`, blocks 4–6 cyan `#1fd0ea` (frame t=7.9,
-wave-1 fidelity report) — so the demo slide passes
-`:palette="{ accent: '#3599fb', accentTertiary: '#1fd0ea' }"` and seeds the
-split through per-step tones, leaving the component's `chainBlue` default
-untouched for the other chainBlue consumers. The recording's in-block labels
-are the step numbers `01`–`06` (28–40px white mono, centered), so the demo
-seeds those as the `title`s; the ambient layer — slate `#363946` shadow masses
-beside blue blocks, dark-teal ambience feathers around cyan ones — is drawn
-beside/behind each block and reveals with it. The block rise is a measured
-80ms ease-out pop; the ~300ms block stagger stays owned by the slide's
-AutoAdvance beat.
+Notes supplementing the family sections above, from the restart program's
+settled-frame re-measurements (2560×1440 sources, f15 progressive-frame
+onset dumps, report.json structure classes).
 
-## NodeEdge hard-cut end state (exact-trace rework)
+### Two-tone title mechanics (all families)
 
-Supplements the NodeEdge notes above: per the exact-trace sheet (art_4A7yguGJ
-§2), the src recording's network is a MID-state — it hard-cuts out at
-f265/t≈4417ms and the clip settles on a terminal/log composition (traffic
-lights, `$ meshctl status --verbose`, a teal block cursor + `nodes : 6
-healthy · 2` stat row, a very dim late center element, right third and bottom
-empty). The demo slide therefore sequences 13 clicks: nodes pop on clicks
-1–6, edges on 7–12 (the two replay hookups share beat 12), and click 13 IS
-the hard cut. Every network-scene element — nodes, edges, and the red ambient
-wash — binds a native Slidev click range `[reveal, 13)` (`v-click` array
-values, Slidev ≥0.48): hidden at/after the cut, restored on backward nav, so
-the v-click contract is preserved. `nodeEdgeClickPlan(nodeCount, edgeCount,
-statusCount)` (in `stepflow/nodeEdge.ts`) derives the full beat map purely;
-the component binds ranges from it. The terminal/log panel is the new
-`terminal-log` prop (`{ command, stat }`) rendered as STATIC chrome at every
-click count — it is both the recording's initial and settled state — and the
-dim center element is the only element revealed BY the cut (`v-click="13"`).
-Measured end-state geometry (lights, command line, stat row, cursor, center
-element) lives in `TERMINAL_LOG_MEASURED` / `terminalLogLayout`. The old
-bottom-left white `terminal` readout prop is removed (slide 4 was its only
-consumer). Capture contract unchanged: `?clicks=13` is the settled end state.
+Two condensation mechanisms coexist in `TitleChrome` and solve the same
+problem — the deck's bundled JetBrains Mono advance is wider than the
+recordings' condensed display faces — at different scopes:
+`titleTextLength` pins a single-run two-tone title to its measured ink
+extent (spacing-only; glyphs are never squeezed), and token mode renders
+one textLength-condensed text per measured ink run for multi-run headers
+(the seg15 slide's accent-first runs). Pass a pin only where the family
+sheet documents an ink extent; within ~2% of the natural advance the pin
+is skipped and the title renders at natural width.
 
-## NodeEdge settled ambience + title condensation (exact-trace rework, cont.)
+### StairChain (seg01) — settled medians
 
-Two further measured treatments from the same rework: (1) the settled
-reference is not pure black — dark-field profiles read a `#08070a` floor from
-y≈330 down, a soft full-width `#141318` band behind the terminal row (y≈352–
-414, uniform interior, ≈60px feathered edges), and a dimmer `#0f0e11` glow
-plateau over the left half (y≈470–680). These ship as
-`TERMINAL_LOG_AMBIENCE` / `ambienceLayout` and render inside the
-terminal/log panel (Gaussian-feathered rects; static chrome, never
-click-bound). The sheet's "right third and bottom empty" is empty of CONTENT;
-the ambience is the recording's glow, measured where it actually is.
-(2) The deck's mono face runs wider than the recording's condensed face, so
-the slide pins the reference-measured ink extent via `TitleChrome`'s
-`titleTextLength` — a spacing-only SVG `textLength` pin (additive prop,
-undefined = natural mono width; glyphs are never squeezed). Slide 4 passes
-`:title-text-length="1453"`; the captured title ink lands at x190–1643 vs the
-reference's x190.3–1643.0.
+The seg01 slide passes the settled-median palette as slide-level props
+(`#3799fb` blue, `#1fd0ea` cyan, `#f9bb1f` amber) and seeds the two-tone
+split through per-step `tone`s, leaving the component's `chainBlue` default
+untouched. In-block labels are the punched step numbers; the ambient layer —
+slate shadow masses beside blue blocks, dark-teal ambience feathers around
+cyan ones — reveals with its block at the block's own click.
 
-## TileGrid measured-motion note (exact-trace rework)
+### StackPanels (seg08) — dark source-truth mosaic
 
-Supplements the TileGrid authoring notes: the demo slide now plays the
-sheet-measured cadence from the exact-trace reconstruction (art_7bTnqSB3
-§2.3) instead of a uniform beat. Tile 1 fades in 550ms after the slide
-entrance, then the remaining tiles land after gaps of 400 / 1383 / 1434 /
-1050 / 1800ms — a GROWING row-major stagger (clicks fire at 550, 950, 2333,
-3767, 4817, 6617ms), which uniform `durationSec` spacing cannot express.
-The slide passes the measured beats to `<AutoAdvance :step-schedule-sec>`
-(pure helper `tileStaggerSchedule` in `components/stepflow/tiles.ts` keeps
-the numbers testable); `?autoplay` still triggers the run and a `runMs`
-argument is ignored when the schedule covers every click. Each tile fades
-~100ms (sheet-measured soft fade; the old 150/120ms reads were re-measured).
-The #353642 connector track plays as two discrete v-click beats after tile 6
-(generation-7 wave, art_cRMBx282): the source's 1500/2483ms intra-click CSS
-delays became beats 7 and 8 (row 1 at 8117ms, row 2 at 9100ms), so manual
-arrow-key stepping plays the identical measured rhythm as `?autoplay` — one
-press, one beat, no intra-click lag. Pure helper `tileBeatSchedule` in
-`components/stepflow/tiles.ts` extends `tileStaggerSchedule` with the two
-track beats; the slide's `stepScheduleSec` carries all eight. Backward
-navigation still snaps the track away instantly (hidden-state
-`transition: none`). The two-tone header uses the shared chrome at the sheet-measured
-glyph core (78px in the band y99–176, condensed to the measured 674px ink
-extent via `titleTextLength`, the additive TitleChrome condensation prop
-PR #42 introduced):: the trace sheet's "cap 52" read the
-glow-inclusive band, the same correction PR #37 applied to StairChain and
-HexCluster, and the mono face needs the explicit extent to match the
-recordings' condensed title width.
+The seg08 slide mounts the dark re-truth: four abutting panels directly on
+the black canvas — blue `#3799fb` top-left, cyan `#1fd0ea` top-right, amber
+`#f7ba20` bottom-left, green `#1cd798` bottom-right, seeded via
+`accent`/`accentAlt`/`accentTertiary`/`accentQuaternary`. Panels pop in
+~60 ms bursts; the shared stepped-label click lands at 0.87 s — four clicks
+total (`?clicks=4`), the correction that superseded the earlier six-click
+read.
 
+### Fidelity bar
 
-## VerticalSpine + HeroTile measured note (exact-trace rework)
-
-Supplements the slide 5/6 authoring notes with the measured rebuild from the
-exact-trace sheet (art_mkVNxsft §3/§4). VerticalSpine: the center axis is the
-vertical rhythm itself — the traced ring/bar/splayed-legs glyph (`V7_MARKER_GLYPH`
-in `icons.ts`, shared with the HeroTile cutout) on slot 1, `DATA ENGINEERS` in
-the spine-accent orange folded into the glyph's click (`withPrevious`), then
-the outlined asymmetric cards (cyan 130×103.9 with two bars + two drop studs,
-blue 135.5×55.5 with four piercing verticals), gray footer lines, and the
-closing axis chrome: `#bd521e` stub, `#b35526` axis rule (4.7px core,
-x464.3–1361.7), and the `#403f48` bottom rule (x192.1–1633.9, 5.7 thick)
-fading last. There is no drawn center spine line and no flanking diamonds.
-
-HeroTile: the `#f85721` tile is 227px square centered at (914, 700.5) with a
-≈55px corner radius, the traced glyph renders as a black cutout at its
-measured ≈95×107.5 box, and the halo is a radial gradient that plateaus at
-0.30 opacity to 0.703R before dying at r ≈ 161.5px.
-
-Both headers use TitleChrome's token mode: the slide passes one entry per
-measured ink run (`x`/`width`/`capHeight`/`capTop`), each rendered as its own
-textLength-condensed text — VerticalSpine's green `SQL` first at cap 84 on
-its own baseline with the white tail fitted from its 52.9px x-height band,
-and HeroTile's `APIs, cloud systems, AI` as four runs with the green `AI`
-tail at the shared cap-70.8 baseline. Token mode absorbs the deck mono's
-wider advance per run (the same condensation problem `titleTextLength`
-solves for single-run headers), so the two mechanisms coexist: `titleTextLength`
-for centered two-tone titles, tokens for measured multi-run headers.
-
-Fidelity vs the settled reference frames at 1920×1080: VerticalSpine
-SSIM 0.8843 → 0.9093 (MAD 10.38 → 7.63), HeroTile SSIM 0.9400 → 0.9602
-(MAD 6.10 → 4.19).
-
+Per-family acceptance is SSIM/MAD against the segment's settled reference
+frame (2560×1440, LANCZOS-downscaled to the 1920×1080 capture): the gen-7
+family bar is SSIM 0.9093 / MAD 7.63. A family below the bar ships with a
+named cause (resolution-limited source text, sub-resolution glyph rows)
+and its measured numbers recorded in the PR evidence.
