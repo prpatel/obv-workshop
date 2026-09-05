@@ -74,8 +74,10 @@ canvasWidth: 1920
   seg01 slide — StairChain split-ascent (user8 seg01, 14–18s @2560×1440).
   Two-tone run: blocks 1–3 blue (accent), blocks 4–6 cyan (tertiary), with the
   recording's interleaved build order — blue blocks land on clicks 2/4/6, cyan
-  on 3/5/7 — expressed via per-step `click` overrides so the steps array stays
-  positional (left → right). Geometry is the explicit SEG01_PLACEMENT
+  on 3/5/7 — expressed via per-step `click` overrides. The steps array stays
+  POSITIONAL (stair.ts contract: geometry walks left → right; only `click`
+  remaps), so tones and punched numbers ride array position while the reveal
+  sequence interleave. Geometry is the explicit SEG01_PLACEMENT
   (measured connected-component lefts/tops from report.json, imported verbatim;
   the default uniform walk is bypassed):
 
@@ -113,10 +115,10 @@ canvasWidth: 1920
   ]"
   :steps="[
     { id: 'ingest', title: '01', caption: 'SOURCE SYSTEMS', click: 2 },
-    { id: 'quality', title: '04', tone: 'tertiary', caption: 'TESTS GATE DEPLOYS', click: 3 },
     { id: 'transform', title: '02', caption: 'CLEAN + MODEL', click: 4 },
-    { id: 'serve', title: '05', tone: 'tertiary', caption: 'DASHBOARDS + APIS', click: 5 },
     { id: 'retry', title: '03', caption: 'EXPECT FAILURE', click: 6 },
+    { id: 'quality', title: '04', tone: 'tertiary', caption: 'TESTS GATE DEPLOYS', click: 3 },
+    { id: 'serve', title: '05', tone: 'tertiary', caption: 'DASHBOARDS + APIS', click: 5 },
     { id: 'govern', title: '06', tone: 'tertiary', caption: 'LINEAGE + ACCESS', click: 7 },
   ]"
 />
