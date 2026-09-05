@@ -4,8 +4,10 @@ import {
   glowTraceSegments,
   stairDips,
   stairLayout,
+  type StairAnnotation,
   type StairCallout,
   type StairGlowTrace,
+  type StairPlacement,
   type StairStep,
 } from './stepflow/stair'
 import { chainBlue, resolvePalette, type StepFlowPalette, type StepFlowPaletteOverride } from './stepflow/palettes'
@@ -23,6 +25,17 @@ const props = withDefaults(defineProps<{
   title?: string
   /** Optional title tail rendered in chrome green (title chrome convention). */
   titleAccent?: string
+  /**
+   * Explicit measured block placement (canvas fractions) passed through to
+   * stairLayout. When omitted, the module's default gap/delta walk applies —
+   * the gen-7 measured rhythm, unchanged.
+   */
+  placement?: StairPlacement
+  /**
+   * Late annotation elements (seg01's post-build waves: tiny teal marks and
+   * small white text, y≈0.51–0.65). Each carries its own 1-based click.
+   */
+  annotations?: StairAnnotation[]
 }>(), { palette: () => ({}) })
 
 // chainBlue is StairChain's family preset (art_3VsrSvLm): cool blue blocks with
@@ -33,7 +46,7 @@ const p = computed(() => resolvePalette({ ...chainBlue, ...props.palette }))
 // Rhythm, punch geometry, and wedge bands all come from the measured layout
 // module (exact-trace sheet art_4A7yguGJ) — the seed carries content, not
 // geometry.
-const layout = computed(() => stairLayout(props.steps.length))
+const layout = computed(() => stairLayout(props.steps.length, props.placement))
 const dipByIndex = computed(() => new Map(stairDips(layout.value.blocks).map((d) => [d.index, d.dipPx])))
 
 // Quiet glow trace (user-directed divergence, art_cRMBx282): segment i traces
@@ -47,7 +60,8 @@ const traces = computed(() => {
 
 // Click choreography: callout = click 1, block k = click k + 1. Without a
 // callout the blocks shift down to clicks 1…n so the sequence stays contiguous.
-const blockClick = (i: number): number => i + 1 + (props.callout ? 1 : 0)
+// A per-step `click` override (seg01's interleaved build order) wins.
+const blockClick = (i: number): number => props.steps[i]?.click ?? i + 1 + (props.callout ? 1 : 0)
 
 // Typography as fractions of the viewBox height, from the settled-frame
 // traces: captions are a 19–20px cap band (→ font 24.84) running a condensed
@@ -80,6 +94,12 @@ const PUNCH_CYAN = '#011e23'
 const CAPTION_BLUE = '#356eae'
 const CAPTION_CYAN = '#37c2d4'
 const WEDGE_SLATE = '#353743'
+// Late annotation inks, measured off the seg01 settled frame (user8-analysis
+// report.json medians): the marks are a dimmer cyan than the blocks (teal-class
+// medians ≈ #2ac9d6) and the text runs the shared white. Family constants,
+// not palette roles.
+const ANNOTATION_TEAL = '#2ac9d6'
+const ANNOTATION_WHITE = '#f5f4f7'
 
 /** Fill for one block: the tone role maps through the resolved palette. */
 function blockFill(step: StairStep, palette: StepFlowPalette): string {
@@ -181,6 +201,36 @@ function captionFill(step: StairStep): string {
         v-bind="pinAttrs(step.caption, type.captionSize, step.caption.length * type.captionAdvance)"
         :fill="captionFill(step)"
       >{{ step.caption }}</text>
+    </g>
+
+    <!-- Late annotation waves (seg01): tiny teal marks and small white text
+         riding the post-build beats — no block sub-element covers them. Each
+         element carries its own 1-based click; text mode wins over mark mode
+         when both are provided. -->
+    <g
+      v-for="annotation in annotations"
+      :key="annotation.id"
+      v-click="annotation.click"
+      class="sf-annotation"
+    >
+      <rect
+        v-if="annotation.text === undefined && annotation.wFrac !== undefined && annotation.hFrac !== undefined"
+        class="sf-annotation-mark"
+        :x="annotation.xFrac * layout.viewBox.width"
+        :y="annotation.yFrac * layout.viewBox.height"
+        :width="annotation.wFrac * layout.viewBox.width"
+        :height="annotation.hFrac * layout.viewBox.height"
+        rx="2"
+        :fill="ANNOTATION_TEAL"
+      />
+      <text
+        v-else-if="annotation.text !== undefined"
+        class="sf-annotation-text"
+        :x="annotation.xFrac * layout.viewBox.width"
+        :y="annotation.yFrac * layout.viewBox.height"
+        :font-size="annotation.sizeFrac ? annotation.sizeFrac * layout.viewBox.height : type.captionSize"
+        :fill="ANNOTATION_WHITE"
+      >{{ annotation.text }}</text>
     </g>
 
     <!-- Amber callout, first click of the sequence (measured before block
@@ -300,10 +350,19 @@ function captionFill(step: StairStep): string {
   transition: none;
 }
 
+.sf-annotation {
+  transition: opacity 250ms ease-out;
+}
+
+.sf-annotation.slidev-vclick-hidden {
+  transition: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sf-step,
   .sf-callout,
-  .sf-glow-trace {
+  .sf-glow-trace,
+  .sf-annotation {
     transition: none;
     animation: none;
   }

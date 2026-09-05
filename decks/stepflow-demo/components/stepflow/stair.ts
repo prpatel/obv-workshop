@@ -42,6 +42,14 @@ export interface StairStep {
    * `'accent'`.
    */
   tone?: 'accent' | 'tertiary'
+  /**
+   * Optional 1-based Slidev click override for this step's reveal. When
+   * omitted, the component's positional walk applies (callout = click 1,
+   * block k = click k + 1). Expresses the recording's non-positional build
+   * orders — e.g. seg01's interleaved blue/cyan mapping — without reordering
+   * the steps array: geometry stays positional, only the click remaps.
+   */
+  click?: number
 }
 
 /** The amber callout that reveals before block 1. */
@@ -56,6 +64,30 @@ export interface StairCallout {
    * advance), so the seed pins it.
    */
   textLengthFrac?: number
+}
+
+/** One late annotation element (seg01's post-build waves): a tiny teal mark or a small white text run. */
+export interface StairAnnotation {
+  /** Stable key — test selectors. */
+  id: string
+  /** Left edge as a fraction of canvas width. */
+  xFrac: number
+  /**
+   * Vertical anchor as a fraction of canvas height: the mark box's TOP edge
+   * (rect convention) in mark mode, or the text BASELINE in text mode (the
+   * callout's convention).
+   */
+  yFrac: number
+  /** Mark mode: box width as a fraction of canvas width. Omit for text mode. */
+  wFrac?: number
+  /** Mark mode: box height as a fraction of canvas height. Omit for text mode. */
+  hFrac?: number
+  /** Text mode: the run's content, rendered small and white at (xFrac, yFrac). */
+  text?: string
+  /** Text mode: font size as a fraction of canvas height. Defaults to the caption size. */
+  sizeFrac?: number
+  /** 1-based click that reveals this element (the recording's late waves, t2.07+). */
+  click: number
 }
 
 /** Layout knobs. Every field is optional; omitted fields fall back to the measured defaults. */
@@ -74,7 +106,24 @@ export interface StairOptions {
   leftFrac?: number
   /** First block's top edge as a fraction of height (measured 758/1080). */
   topFrac?: number
+  /**
+   * Explicit per-block left edges as fractions of width. When provided, the
+   * leftFrac + gapsXFrac walk is bypassed for the x axis — block i sits at
+   * leftsFrac[i] * width. seg01's re-measured rhythm (report.json connected
+   * components) is not a gap walk; see SEG01_PLACEMENT. Must cover `count`
+   * entries; every entry must be a fraction in [0, 1].
+   */
+  leftsFrac?: number[]
+  /**
+   * Explicit per-block top edges as fractions of height. When provided, the
+   * topFrac + topDeltasYFrac walk is bypassed for the y axis. Must cover
+   * `count` entries; every entry must be a fraction in [0, 1].
+   */
+  topsFrac?: number[]
 }
+
+/** The placement subset of {@link StairOptions} the component accepts as one prop. */
+export type StairPlacement = Pick<StairOptions, 'blockFrac' | 'leftsFrac' | 'topsFrac'>
 
 export interface StairBlock {
   /** Left edge (viewBox units). */
@@ -131,6 +180,38 @@ const MEASURED = {
   ],
 } as const
 
+/**
+ * seg01's re-measured block placement (split-ascent; 2560×1440 source —
+ * user8-analysis report.json, settled-frame connected components, the
+ * analyzer's hue-explicit blue-class list; the cyan-class list agrees within
+ * 0.2% anti-aliasing tolerance). Six circles of ≈0.061w (⌀ ≈ 156 native px →
+ * blockFrac 156.2/1440 ≈ 0.1085); lefts 0.1391 / 0.2797 / 0.4172 (blue run)
+ * and 0.5516 / 0.6855 / 0.7992 (cyan run); tops descend 0.625 → 0.4056 with
+ * block 3's dip (top 0.6062 vs block 2's 0.5757 — +32.94px on the 1080
+ * canvas). Explicit fractions, not a gap walk: the re-measured pitch is not
+ * expressible as the gen-7 left→right rhythm.
+ */
+export const SEG01_PLACEMENT: StairPlacement = {
+  blockFrac: 0.1085,
+  leftsFrac: [0.1391, 0.2797, 0.4172, 0.5516, 0.6855, 0.7992],
+  topsFrac: [0.625, 0.5757, 0.6062, 0.5153, 0.4611, 0.4056],
+}
+
+/**
+ * Fractions must cover `count` entries and sit in [0, 1] — bad placement data
+ * is a RangeError at the call site, never a silent off-canvas layout.
+ */
+function validateFractions(name: string, fracs: number[], count: number): void {
+  if (fracs.length < count) {
+    throw new RangeError(`${name} must cover ${count} blocks, received ${fracs.length}`)
+  }
+  fracs.forEach((f, i) => {
+    if (!Number.isFinite(f) || f < 0 || f > 1) {
+      throw new RangeError(`${name}[${i}] must be a fraction in [0, 1], received ${f}`)
+    }
+  })
+}
+
 export function stairLayout(count: number, opts?: StairOptions): StairLayout {
   if (!Number.isInteger(count) || count < 1) {
     throw new RangeError(`count must be a positive integer, received ${count}`)
@@ -145,14 +226,26 @@ export function stairLayout(count: number, opts?: StairOptions): StairLayout {
   const gapsXFrac = opts?.gapsXFrac ?? MEASURED.gapsX.map((g) => g / MEASURED.width)
   const topDeltasYFrac = opts?.topDeltasYFrac ?? MEASURED.topDeltasY.map((d) => d / MEASURED.height)
 
-  if (gapsXFrac.length < count - 1 || topDeltasYFrac.length < count - 1) {
-    throw new RangeError(`rhythm arrays must cover ${count - 1} steps`)
+  // Explicit placement (per-block fractions) bypasses the walk per axis —
+  // the walk inputs are dead there, so they also skip coverage validation.
+  const leftsFrac = opts?.leftsFrac
+  const topsFrac = opts?.topsFrac
+
+  if (leftsFrac) validateFractions('leftsFrac', leftsFrac, count)
+  if (topsFrac) validateFractions('topsFrac', topsFrac, count)
+  if (!leftsFrac && gapsXFrac.length < count - 1) {
+    throw new RangeError(`gapsXFrac must cover ${count - 1} steps`)
+  }
+  if (!topsFrac && topDeltasYFrac.length < count - 1) {
+    throw new RangeError(`topDeltasYFrac must cover ${count - 1} steps`)
   }
 
   const blocks: StairBlock[] = []
   let x = left
   let y = top
   for (let i = 0; i < count; i++) {
+    if (leftsFrac) x = leftsFrac[i] * width
+    if (topsFrac) y = topsFrac[i] * height
     const capIdx = Math.min(i, MEASURED.punchCaps.length - 1)
     const punchCap = (MEASURED.punchCaps[capIdx] / MEASURED.height) * height
     const punchWidth = (MEASURED.punchWidths[capIdx] / MEASURED.width) * width
@@ -177,8 +270,8 @@ export function stairLayout(count: number, opts?: StairOptions): StairLayout {
         : undefined,
     })
     if (i < count - 1) {
-      x += gapsXFrac[i] * width
-      y += topDeltasYFrac[i] * height
+      if (!leftsFrac) x += gapsXFrac[i] * width
+      if (!topsFrac) y += topDeltasYFrac[i] * height
     }
   }
 
