@@ -188,6 +188,14 @@ export const RULE_H = 2
 export const RULE_Y_FRACS: [number, number] = [722 / 1080, 970 / 1080]
 export const RULE_COLOR = '#1e1e20'
 
+// Dim ambience plate behind the composition (ref-sampled settled frame):
+// flat #0b0b0b spanning the bar/data zone — the slide field outside stays black.
+export const PLATE_X_FRAC = 216 / 1920
+export const PLATE_Y_FRAC = 296 / 1080
+export const PLATE_W_FRAC = 1488 / 1920
+export const PLATE_H_FRAC = 688 / 1080
+export const PLATE_FILL = '#0b0b0b'
+
 /**
  * Full-width dim band above the legend row (measured y276–304, x236–1682;
  * core median #161518 with a soft vertical feather) and the two side rails
@@ -269,6 +277,8 @@ export interface TwoBarCompareLayout {
   note: DataTextLineLayout | null
   /** The two divider rules framing the bar bands (px rects). */
   rules: Array<{ x: number; y: number; w: number; h: number }>
+  /** Static dim ambience plate behind the composition (px rect). */
+  plate: { x: number; y: number; w: number; h: number }
   viewBox: Canvas
 }
 
@@ -410,5 +420,12 @@ export function twoBarCompareLayout(data: TwoBarCompareData, viewBox: Canvas = {
       }))
     : []
 
-  return { bars, topChip, dataText, legend, caption, note, rules, viewBox }
+  const plate = {
+    x: PLATE_X_FRAC * viewBox.width,
+    y: PLATE_Y_FRAC * viewBox.height,
+    w: PLATE_W_FRAC * viewBox.width,
+    h: PLATE_H_FRAC * viewBox.height,
+  }
+
+  return { bars, topChip, dataText, legend, caption, note, rules, plate, viewBox }
 }

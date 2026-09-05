@@ -33,6 +33,11 @@ import {
   MINT_COLOR,
   NOTE_SIZE,
   NOTE_Y_FRAC,
+  PLATE_FILL,
+  PLATE_H_FRAC,
+  PLATE_W_FRAC,
+  PLATE_X_FRAC,
+  PLATE_Y_FRAC,
   RULE_COLOR,
   RULE_H,
   RULE_W_FRAC,
@@ -555,6 +560,23 @@ describe('TwoBarCompare component', () => {
 
     expect(wrapper.find('.sf-tbc-annot').exists()).toBe(true)
     expect(wrapper.findAll('.sf-tbc-rule')).toHaveLength(2)
+  })
+
+  it('renders the static dim ambience plate behind the composition', () => {
+    const wrapper = mountTwoBar({ bars })
+
+    // Static chrome: outside the accessibility tree, no v-click of its own.
+    const group = wrapper.find('.sf-tbc-ambience')
+    expect(group.attributes('aria-hidden')).toBe('true')
+    expect(group.attributes('v-click')).toBeUndefined()
+
+    const plate = wrapper.find('.sf-tbc-plate')
+    expect(plate.attributes('fill')).toBe(PLATE_FILL)
+    // Measured extents: fractions resolve to exact px on the 1920x1080 canvas.
+    expect(plate.attributes('x')).toBe(String(PLATE_X_FRAC * 1920))
+    expect(plate.attributes('y')).toBe(String(PLATE_Y_FRAC * 1080))
+    expect(plate.attributes('width')).toBe(String(PLATE_W_FRAC * 1920))
+    expect(plate.attributes('height')).toBe(String(PLATE_H_FRAC * 1080))
   })
 
   it('renders no annotation layer when the diagram has no labels or chip', () => {

@@ -98,6 +98,22 @@ function fmt(n: number): string {
     :aria-label="`${bars.length}-bar comparison diagram`"
   >
     <!--
+      Dim ambience plate (ref-sampled settled frame): flat #0b0b0b spanning the
+      composition zone — the slide field outside stays black. Static chrome:
+      no v-click, outside the accessibility tree (MilestoneLanes plate pattern).
+    -->
+    <g class="sf-tbc-ambience" aria-hidden="true">
+      <rect
+        class="sf-tbc-plate"
+        :x="layout.plate.x"
+        :y="layout.plate.y"
+        :width="layout.plate.w"
+        :height="layout.plate.h"
+        fill="#0b0b0b"
+      />
+    </g>
+
+    <!--
       One group per bar: the bar pops WHOLE on click i + 1 — no width sweep,
       the recording's bar lands in a single burst — with its icon chip riding
       the same click. Slidev toggles each group's OWN slidev-vclick-hidden
