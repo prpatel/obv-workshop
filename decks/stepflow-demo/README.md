@@ -44,7 +44,7 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 decks/stepflow-demo/
 ├─ slides.md                      # slides: title + 8 family slides (seg01 · seg05 · seg08 · seg11 · seg12 · seg14 · seg15 · seg16)
 ├─ components/
-│  ├─ StairChain.vue              # family: measured seg01 split-ascent staircase (explicit placement, interleaved clicks, annotation waves)
+│  ├─ StairChain.vue              # family: settled-truth seg01 traced-ink staircase (traced title/marker/badge/icons, measured circles+wedges, 7-beat reveal)
 │  ├─ StackPanels.vue             # family: measured seg08 four-panel dark mosaic (per-panel 300ms fades)
 │  ├─ PillarRow.vue               # family: measured seg05 three-card icon row
 │  ├─ ConvergeFlow.vue            # family: measured seg11 converge-branch flow
@@ -54,7 +54,7 @@ decks/stepflow-demo/
 │  ├─ TileSummary.vue             # family: measured seg16 three-tile summary
 │  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance + per-slide measured beats
 │  └─ stepflow/
-│     ├─ stair.ts                 # pure staircase layout math (explicit SEG01_PLACEMENT + default gap/delta walk)
+│     ├─ stair.ts                 # pure staircase layout math + settled-truth traces (SEG01_PLACEMENT, SEG01_INK, wedges, captions + default gap/delta walk)
 │     ├─ panels.ts                # StackPanels contract + pure mosaic layout (dark re-truth)
 │     ├─ pillars.ts               # PillarRow contract + pure card-row layout math
 │     ├─ converge.ts              # ConvergeFlow contract + pure layout math
@@ -76,23 +76,21 @@ code. Slide data travels with the slide as props — the component holds no glob
 ## Authoring a diagram slide
 
 A diagram is data-in via props; reveal state is owned by Slidev's native `v-click`
-(one beat per click — the seg01 slide has ten). The inline props are the exact
+(one beat per click — the seg01 slide has seven). The inline props are the exact
 shape an MCP agent writes:
 
 ```md
 <div class="sf-demo-stage">
 
 <StairChain
-  title="THE DATA"
-  title-accent="SYSTEMS LIFECYCLE"
-  :palette="{ accent: '#3799fb', accentTertiary: '#1fd0ea', accentAlt: '#f9bb1f' }"
+  :palette="{ accent: '#3799fb', accentTertiary: '#1fd0ea' }"
   :steps="[
-    { id: 'ingest', title: '01', caption: 'SOURCE SYSTEMS', click: 2 },
-    { id: 'quality', title: '04', tone: 'tertiary', caption: 'TESTS GATE DEPLOYS', click: 3 },
+    { id: 'ingest', caption: 'PIPELINES' },
+    { id: 'quality', tone: 'tertiary', caption: 'GIT' },
   ]"
 />
 
-<AutoAdvance :duration-sec="3.07" :step-schedule-sec="[0.27, 0.53, 0.67, 0.80, 0.93, 1.07, 1.27, 2.07, 2.67, 3.07]" />
+<AutoAdvance :duration-sec="3.133" :step-schedule-sec="[0.2, 0.533, 0.8, 1.067, 2.067, 2.733, 3.133]" />
 
 </div>
 ```
@@ -101,12 +99,14 @@ Component props (StairChain — the seg01 slide's family):
 
 | Prop        | Type                            | Purpose                                                                        |
 | ----------- | ------------------------------- | ------------------------------------------------------------------------------ |
-| `steps`     | `StairStep[]` (required)        | One entry per block: `id`, punched-number `title`, `caption`, optional `tone`/`click` |
-| `callout`   | `StairCallout`                  | The amber floating annotation revealed on click 1                              |
-| `placement` | `StairPlacement`                | Explicit per-block fractions (`SEG01_PLACEMENT`'s measured values) — omit for the default walk |
-| `annotations` | `StairAnnotation[]`           | Late mark/text waves, each at its own 1-based click                             |
+| `steps`     | `StairStep[]` (required)        | One entry per block: `id`, `caption`, optional `tone`/`click`                  |
+| `placement` | `StairPlacement`                | Explicit per-block fractions (`SEG01_PLACEMENT`'s measured values) — omit for the measured walk |
 | `palette`   | `Partial<StepFlowPalette>`      | Merged over the `chainBlue` preset (settled medians as slide-level props)       |
-| `title` / `titleAccent` | `string`           | Two-tone mono header through the shared `TitleChrome`                           |
+
+All other settled-frame ink — the two-tone traced title, the olive badge, the
+amber `01` marker, the six dark icon glyphs — is `stair.ts`'s `SEG01_INK`
+rendered as absolute-coordinate paths, not component props. The marker reveals
+on click 1; blocks take clicks 2…7 (a per-step `click` overrides).
 
 Icon keys resolve against the Lucide registry in `components/stepflow/icons.ts`
 (see [Icon registry keys](#icon-registry-keys-componentsstepflowiconsts));
@@ -136,7 +136,7 @@ the deck style, not a palette field.
 
 | Field            | Type     | Fallback             | Consumed by                              |
 | ---------------- | -------- | -------------------- | ---------------------------------------- |
-| `accentAlt`      | `string` | — (stays undefined)  | amber tones — StairChain's annotation wave, StepPanel's amber group |
+| `accentAlt`      | `string` | — (stays undefined)  | amber tones — StepPanel's amber group |
 | `accentTertiary` | `string` | `accent`             | teal-green (`#1cd798` family): StairChain's cyan block split, ConvergeFlow's cyan left column, StepPanel's teal cluster |
 | `accentQuaternary` | `string` | `accent`           | fourth accent slot — StackPanels' four-tone mosaic (green) |
 
@@ -186,7 +186,7 @@ data order is the click order for every family. Click counts below are the
 
 | Component      | Source segment | Clicks | Choreography summary                                                   | Slide |
 | -------------- | -------------- | ------ | ---------------------------------------------------------------------- | ----- |
-| `StairChain`   | seg01          | 10     | callout → six interleaved block/caption beats → two annotation waves → closing mark | 2 |
+| `StairChain`   | seg01          | 7      | amber `01` marker → six blocks (icons, wedges, captions ride their block) | 2 |
 | `PillarRow`    | seg05          | 6      | per card: glyph+label, then badge (card 3's badge rides its card) → summary rows | 3 |
 | `StackPanels`  | seg08          | 4      | per panel: full-size fade (blue → cyan → amber → green) + the late frame/label/caption annotation on the final click | 4 |
 | `ConvergeFlow` | seg11          | 5      | left table → SQL + left label → right plate (+ pins / PIPELINES) → bar draw + right label → footer | 5 |
@@ -198,22 +198,25 @@ data order is the click order for every family. Click counts below are the
 Every family mounts with the two-tone measured title (`title` white,
 `titleAccent` chrome green, through `TitleChrome`) and pins its complete
 measured beat list on the slide (`R-6`: one entry per click — every beat
-listed, nothing repeated by convention).
+listed, nothing repeated by convention). Exception: StairChain's settled
+frame mounts its traced title ink instead (below).
 
-#### StairChain — split-ascent staircase (seg01, slide 2)
+#### StairChain — settled-truth traced staircase (seg01, slide 2)
 
-Ten clicks: the amber floating callout reveals first, blocks/captions land
-interleaved (`click` offsets on the steps), then two annotation waves and the
-closing mark. Geometry is explicit placement (`stair.ts`'s `SEG01_PLACEMENT`).
+Seven clicks: the traced amber `01` marker reveals first, then one block per
+click (the settled frame's onsets 0.533/0.8/1.067/2.067/2.733/3.133 s) — icon,
+wedge, and caption ride their block's beat. The settled-frame ink is traced,
+not typeset: `stair.ts`'s `SEG01_INK` carries the title (white "More like " +
+green "software engineering"), the olive badge, the amber marker, and the six
+dark icon glyphs as absolute-coordinate SVG paths; geometry is explicit
+placement (`stair.ts`'s `SEG01_PLACEMENT`, measured connected components).
+The former glow-trace connector is dropped — the reference has no connector.
 
 | Prop          | Type                       | Purpose                                                    |
 | ------------- | -------------------------- | ---------------------------------------------------------- |
-| `steps`       | `StairStep[]` (required)   | One entry per block: `id`, punched-number `title`, `caption`, optional `tone`/`click` |
-| `callout`     | `StairCallout`             | The amber floating annotation revealed on click 1          |
-| `placement`   | `StairPlacement`           | Explicit per-block fractions — omit for the default walk   |
-| `annotations` | `StairAnnotation[]`        | Late mark/text waves, each at its own 1-based click        |
+| `steps`       | `StairStep[]` (required)   | One entry per block: `id`, `caption`, optional `tone`/`click` |
+| `placement`   | `StairPlacement`           | Explicit per-block fractions — defaults to `SEG01_PLACEMENT` |
 | `palette`     | `Partial<StepFlowPalette>` | Merged over `chainBlue` (the slide pins the settled medians) |
-| `title` / `titleAccent` | `string`         | Two-tone mono header through the shared `TitleChrome`      |
 
 #### PillarRow — three-card icon row (seg05, slide 3)
 

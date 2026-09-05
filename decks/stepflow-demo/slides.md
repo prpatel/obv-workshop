@@ -71,59 +71,54 @@ canvasWidth: 1920
 ---
 
 <!--
-  seg01 slide — StairChain split-ascent (user8 seg01, 14–18s @2560×1440).
-  Two-tone run: blocks 1–3 blue (accent), blocks 4–6 cyan (tertiary), with the
-  recording's interleaved build order — blue blocks land on clicks 2/4/6, cyan
-  on 3/5/7 — expressed via per-step `click` overrides. The steps array stays
-  POSITIONAL (stair.ts contract: geometry walks left → right; only `click`
-  remaps), so tones and punched numbers ride array position while the reveal
-  sequence interleave. Geometry is the explicit SEG01_PLACEMENT
-  (measured connected-component lefts/tops from report.json, imported verbatim;
-  the default uniform walk is bypassed):
+  seg01 slide — StairChain settled-truth exact-trace (seg01, 14–18s @2560×1440,
+  reference packet fl_uREjeQ0N). The user directive for this wave: reproduce
+  the settled END state EXACTLY, working backwards from the frame. So the
+  ink is TRACED, not typeset: the title (white "More like " + green "software
+  engineering"), the amber '01' marker, the top-right olive emblem, and the
+  six dark icon glyphs live in stair.ts's SEG01_INK as absolute-coordinate
+  SVG paths extracted from settled_full.png — StairChain renders them
+  directly. The former glow-trace connector is DROPPED (the reference has
+  no connector; the user directive supersedes the earlier standing choice),
+  and the late teal annotation waves are not rendered (the settled frame
+  carries no meaningful teal ink; the t≥2.07s onsets are small marks, not
+  blocks).
 
-    block  1      2       3       4       5       6
-    left  0.1391  0.2797  0.4172  0.5516  0.6855  0.7992
-    top   0.625   0.5757  0.6062  0.5153  0.4611  0.4056
+  Geometry is stair.ts's re-measured SEG01_PLACEMENT (settled_full.png
+  connected components, 2560×1440 → 1920×1080 fractions):
 
-  The amber '3×' callout reveals on click 1 at its measured seg01 box
-  (x 0.135–0.170, y 0.449–0.482 ink; yFrac is the baseline). Three late
-  annotation waves land on clicks 8/9/10 as teal marks — each box is the
-  settled-frame union of its wave's micro-components (tiny dim-teal glyphs at
-  2560×1440 are not resolvable to copy; the measured extents are pinned, the
-  specPanel precedent). Palette: the chainBlue family preset with the settled
-  medians pinned as slide-level props — blue #3799fb, cyan #1fd0ea, amber
-  #f9bb1f (per the seg01 PR). Glow-trace follows the locked user decision:
-  the reference's per-block glow is a capture artifact, so blocks render flat.
+    block  1        2        3        4        5        6
+    left  0.139063  0.280208  0.417708  0.551563  0.685938  0.799479
+    top   0.625000  0.576852  0.607407  0.515741  0.460185  0.405556
 
-  AutoAdvance pins the 10-beat measured schedule (callout 0.27, interleaved
-  blocks 0.53–1.27, annotation waves 2.07/2.67/3.07); `a` toggles a hands-free
-  run, `?autoplay=N` starts one on enter.
+  Blocks 1–3 blue #3799fb, 4–6 cyan #1fd0ea (colors.json modal hexes);
+  captions are the measured block-tinted cores (#4999f2 / #3dcadc), centered
+  under each block, baseline 34px below the bottom edge, mono at 22.33px with
+  the ink width pinned to the measured advance.
+
+  Choreography is the reference's own beat map from onsets.json: amber marker
+  t≈0.2 → click 1, then one block per click at t 0.533 / 0.800 / 1.067
+  (blue 1–3) and 2.067 / 2.733 / 3.133 (cyan 4–6); icons/wedges/captions ride
+  their block's beat. AutoAdvance pins those measured fire times cumulatively
+  (one entry per click, covering every click); `a` toggles a hands-free run,
+  `?autoplay=N` starts one on enter.
 -->
 
 <div class="sf-demo-stage">
 
 <StairChain
-  title="THE DATA"
-  title-accent="SYSTEMS LIFECYCLE"
-  :placement="{ blockFrac: 0.1085, leftsFrac: [0.1391, 0.2797, 0.4172, 0.5516, 0.6855, 0.7992], topsFrac: [0.625, 0.5757, 0.6062, 0.5153, 0.4611, 0.4056] }"
-  :palette="{ accent: '#3799fb', accentTertiary: '#1fd0ea', accentAlt: '#f9bb1f' }"
-  :callout="{ text: '3×', xFrac: 0.1352, yFrac: 0.4806, textLengthFrac: 0.0343 }"
-  :annotations="[
-    { id: 'wave-1', xFrac: 0.5516, yFrac: 0.5153, wFrac: 0.0324, hFrac: 0.1396, click: 8 },
-    { id: 'wave-2', xFrac: 0.6992, yFrac: 0.4944, wFrac: 0.0274, hFrac: 0.1049, click: 9 },
-    { id: 'wave-3', xFrac: 0.8234, yFrac: 0.5097, wFrac: 0.0227, hFrac: 0.0354, click: 10 },
-  ]"
+  :palette="{ accent: '#3799fb', accentTertiary: '#1fd0ea' }"
   :steps="[
-    { id: 'ingest', title: '01', caption: 'SOURCE SYSTEMS', click: 2 },
-    { id: 'transform', title: '02', caption: 'CLEAN + MODEL', click: 4 },
-    { id: 'retry', title: '03', caption: 'EXPECT FAILURE', click: 6 },
-    { id: 'quality', title: '04', tone: 'tertiary', caption: 'TESTS GATE DEPLOYS', click: 3 },
-    { id: 'serve', title: '05', tone: 'tertiary', caption: 'DASHBOARDS + APIS', click: 5 },
-    { id: 'govern', title: '06', tone: 'tertiary', caption: 'LINEAGE + ACCESS', click: 7 },
+    { id: 'ingest', caption: 'PIPELINES' },
+    { id: 'transform', caption: 'WAREHOUSE' },
+    { id: 'retry', caption: 'DATASETS' },
+    { id: 'quality', tone: 'tertiary', caption: 'GIT' },
+    { id: 'serve', tone: 'tertiary', caption: 'TESTS' },
+    { id: 'govern', tone: 'tertiary', caption: 'CI/CD' },
   ]"
 />
 
-<AutoAdvance :duration-sec="3.07" :step-schedule-sec="[0.27, 0.53, 0.67, 0.80, 0.93, 1.07, 1.27, 2.07, 2.67, 3.07]" />
+<AutoAdvance :duration-sec="3.133" :step-schedule-sec="[0.2, 0.533, 0.8, 1.067, 2.067, 2.733, 3.133]" />
 
 </div>
 
