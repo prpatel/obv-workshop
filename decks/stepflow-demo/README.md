@@ -188,7 +188,7 @@ data order is the click order for every family. Click counts below are the
 | -------------- | -------------- | ------ | ---------------------------------------------------------------------- | ----- |
 | `StairChain`   | seg01          | 10     | callout → six interleaved block/caption beats → two annotation waves → closing mark | 2 |
 | `PillarRow`    | seg05          | 6      | per card: glyph+label, then badge (card 3's badge rides its card) → summary rows | 3 |
-| `StackPanels`  | seg08          | 4      | one pop per panel + one shared stepped-label click                     | 4 |
+| `StackPanels`  | seg08          | 4      | per panel: full-size fade (blue → cyan → amber → green) + the late frame/label/caption annotation on the final click | 4 |
 | `ConvergeFlow` | seg11          | 5      | left column → right column → bar + labels → base + row bits → footer   | 5 |
 | `CompareBadge` | seg12          | 5      | badge pop → four alternating plate rows                                | 6 |
 | `SpecPanel`    | seg14          | 7      | plate → status row → heading+body → red accent → teal cluster → spec row → closing line | 7 |
@@ -233,15 +233,23 @@ Crop→stage fit rule: content bbox → full stage, relative layout preserved
 
 #### StackPanels — dark four-panel mosaic (seg08, slide 4)
 
-Four clicks: one ~60 ms pop per panel (reveal order: blue, cyan, amber,
-green), then the shared stepped-label click at 0.87 s. Panels abut directly
-on the black canvas — no plate, no gutters (`panels.ts` dark re-truth).
-Crop→stage mapping is identity (the mosaic fills the stage).
+Four clicks: one ~300 ms full-size fade per panel (reveal order: blue,
+cyan, amber, green — the measured onsets 0.067 / 0.267 / 0.867 / 1.2 s),
+then the late annotation pass rides the final click: the white perimeter
+frame draws clockwise with measured delays (933 → 1200 ms) and the
+in-panel labels land with it, the gray caption follows at 1400 ms. Panels
+abut directly on the black canvas — no plate, no gutters, 45° outer
+chamfer corners with white patches behind (`panels.ts` seg08 seed;
+`annotate-on-last-panel` + `caption-color` on the slide). Crop→stage
+mapping is identity (the mosaic fills the stage). The settled state also
+carries the reference's static olive mark at the top-right (`badge` prop) —
+present from the first frame, outside the click choreography.
 
 | Prop      | Type                      | Purpose                                                     |
 | --------- | ------------------------- | ----------------------------------------------------------- |
 | `panels`  | `StackPanel[]` (required) | List in reveal order: `id`, `title`, `rows`; seeded via `accent`…`accentQuaternary` |
-| `caption` | `string`                  | Optional white caption centered under the composition       |
+| `caption` | `string`                  | Optional caption under the composition (ink via `caption-color`) |
+| `badge`   | `boolean`                 | Static top-right olive mark, rendered raster-faithful and non-interactive |
 | `title` / `titleAccent` | `string`    | Two-tone mono header                                        |
 
 #### ConvergeFlow — converge-branch flow (seg11, slide 5)
@@ -356,7 +364,7 @@ complete: one entry per click, in order (R-6).
 | ----- | ------ | ------ | ------------------ |
 | 2 | StairChain (seg01) | 10 | 0.27 · 0.53 · 0.67 · 0.80 · 0.93 · 1.07 · 1.27 · 2.07 · 2.67 · 3.07 |
 | 3 | PillarRow (seg05) | 6 | 0.067 · 0.267 · 0.600 · 0.733 · 1.000 · 1.467 |
-| 4 | StackPanels (seg08) | 4 | 0.07 · 0.20 · 0.33 · 0.87 |
+| 4 | StackPanels (seg08) | 4 | 0.067 · 0.267 · 0.867 · 1.2 |
 | 5 | ConvergeFlow (seg11) | 5 | 1.07 · 1.53 · 2.20 · 2.60 · 3.07 |
 | 6 | CompareBadge (seg12) | 5 | 0.60 · 1.00 · 1.73 · 3.00 · 4.40 |
 | 7 | SpecPanel (seg14) | 7 | 0.47 · 0.60 · 2.00 · 3.13 · 4.47 · 5.07 · 6.53 |
@@ -519,13 +527,14 @@ cyan ones — reveals with its block at the block's own click.
 
 ### StackPanels (seg08) — dark source-truth mosaic
 
-The seg08 slide mounts the dark re-truth: four abutting panels directly on
-the black canvas — blue `#3799fb` top-left, cyan `#1fd0ea` top-right, amber
-`#f7ba20` bottom-left, green `#1cd798` bottom-right, seeded via
-`accent`/`accentAlt`/`accentTertiary`/`accentQuaternary`. Panels pop in
-~60 ms bursts; the shared stepped-label click lands at 0.87 s — four clicks
-total (`?clicks=4`), the correction that superseded the earlier six-click
-read.
+The seg08 slide mounts the settled re-truth: four abutting panels directly
+on the black canvas — blue `#3799fb` top-left, cyan `#1fd0ea` top-right,
+amber `#f9bb1f` bottom-left, green `#1ed798` bottom-right, seeded via
+`accent`/`accentAlt`/`accentTertiary`/`accentQuaternary`. Panels fade in
+full-size (~300 ms) at the measured onsets 0.067 / 0.267 / 0.867 / 1.2 s;
+the late annotation pass (white perimeter frame + in-panel labels, then
+the gray caption) rides the final panel click with measured delays — four
+clicks total (`?clicks=4`).
 
 ### Fidelity bar
 
