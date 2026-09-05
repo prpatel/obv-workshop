@@ -541,6 +541,25 @@ the late annotation pass (white perimeter frame + in-panel labels, then
 the gray caption) rides the final panel click with measured delays — four
 clicks total (`?clicks=4`).
 
+### PillarRow (seg05) — backwards from the settled frame
+
+The seg05 slide mounts the settled-truth re-read: three near-black station
+plates (`#0e0d0f`-class fills, per-station tint), each carrying the settled
+glyph anatomy — a big ~93–98px circle outline with a SMALL (~25–28% of the
+box) station pictogram, station 1's rendered portrait via an optional
+`iconRotate` — plus the dual label rows, PIN-shaped accent badges straddling
+each plate's right edge (radii 47.5/47.5/46.5px from radial-peak fits), and
+the per-station caption clusters. Title runs render as measured per-token
+ink extents (white `MEASURED` + green `PIPELINE STAGES`, split at x0.4359).
+A sub-pixel Gaussian soften (`sf-video-soft`) reproduces the reference
+frame's LANCZOS-downscale edge softness. Six beats pin the f15 onsets:
+glyph+label 1 @0.067s, badge 1 @0.267s, glyph+label 2 @0.600s, badge 2
+@0.733s, glyph+label 3 @1.000s (badge 3 rides its card), caption clusters
+@1.467s. Settled state measured SSIM 0.8589 / MAD 5.09 — MAD clears the
+family bar; SSIM's named cause is the recordings' condensed display face
+versus the bundled JetBrains Mono (the deck-wide title residual; title ink
+colors and extents match, per-glyph stroke structure cannot).
+
 ### Fidelity bar
 
 Per-family acceptance is SSIM/MAD against the segment's settled reference
