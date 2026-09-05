@@ -6,7 +6,7 @@
 // Upstream files: node_modules/lucide-static/icons/<name>.svg
 //
 // Each value is the CHILDREN of the upstream <svg>, not the whole file. The host
-// <svg> in StepFlow.vue carries the shared stroke conventions
+// <svg> of each family component carries the shared stroke conventions
 // (viewBox="0 0 24 24", fill="none", stroke="currentColor", stroke-width="2",
 // stroke-linecap="round", stroke-linejoin="round") so one `stroke` attribute
 // recolors every icon inside a disc.
@@ -99,6 +99,19 @@ const ICON_REGISTRY: Record<string, string> = {
   <path d="M3 19h4" />
   <path d="M10 19h4" />
   <path d="M17 19h4" />`,
+  // PillarRow station glyphs (seg05 61–63s; visual identification is
+  // medium-low confidence — the ~41px video glyphs don't resolve cleanly, so
+  // the component's visible ICON_FALLBACK covers a wrong guess):
+  // station 1 reads as two reels in a body (cassette-tape), station 2 as a
+  // boxed header + cell grid (table-2), station 3 as a banner on a left pole
+  // (flag).
+  'cassette-tape': `<rect width="20" height="16" x="2" y="4" rx="2" />
+  <circle cx="8" cy="10" r="2" />
+  <path d="M8 12h8" />
+  <circle cx="16" cy="10" r="2" />
+  <path d="m6 20 .7-2.9A1.4 1.4 0 0 1 8.1 16h7.8a1.4 1.4 0 0 1 1.4 1l.7 3" />`,
+  'table-2': `<path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18" />`,
+  flag: `<path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528" />`,
 }
 
 // Visible generic fallback (Lucide "circle-help") for unknown keys, in the same

@@ -181,19 +181,19 @@ describe('StackPanels', () => {
 
     expect(texts[0].text()).toBe('One')
     expect(texts[0].attributes('fill')).toBe('#ffffff')
-    expect(Number(texts[0].attributes('x'))).toBeCloseTo(324.9, 1)
-    expect(Number(texts[0].attributes('textLength'))).toBeCloseTo(194.0, 1)
+    expect(Number(texts[0].attributes('x'))).toBeCloseTo(480, 1)
+    expect(Number(texts[0].attributes('textLength'))).toBeCloseTo(160.0, 1)
     expect(texts[0].attributes('lengthAdjust')).toBe('spacing')
 
     expect(texts[1].text()).toBe('unified environment')
     expect(texts[1].attributes('fill')).toBe('#66fb00')
-    expect(Number(texts[1].attributes('x'))).toBeCloseTo(545.3, 1)
-    expect(Number(texts[1].attributes('textLength'))).toBeCloseTo(961.5, 1)
+    expect(Number(texts[1].attributes('x'))).toBeCloseTo(662, 1)
+    expect(Number(texts[1].attributes('textLength'))).toBeCloseTo(782.0, 1)
 
-    // Shared baseline; per-run caps (lead 50.9, accent 77.3) → fonts 69.7/105.9.
+    // Shared baseline; per-run caps (lead 42, accent 64) → fonts 57.5/87.7.
     expect(texts[0].attributes('y')).toBe(texts[1].attributes('y'))
-    expect(Number(texts[0].attributes('font-size'))).toBeCloseTo(50.9 / 0.730, 1)
-    expect(Number(texts[1].attributes('font-size'))).toBeCloseTo(77.3 / 0.730, 1)
+    expect(Number(texts[0].attributes('font-size'))).toBeCloseTo(42 / 0.730, 1)
+    expect(Number(texts[1].attributes('font-size'))).toBeCloseTo(64 / 0.730, 1)
   })
 
   it('measures the fade mechanism in CSS: ~300ms opacity, instant backward nav', () => {
