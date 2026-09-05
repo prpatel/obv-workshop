@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { stairDips, stairLayout, type StairCallout, type StairStep } from './stepflow/stair'
+import {
+  glowTraceSegments,
+  stairDips,
+  stairLayout,
+  type StairCallout,
+  type StairGlowTrace,
+  type StairStep,
+} from './stepflow/stair'
 import { chainBlue, resolvePalette, type StepFlowPalette, type StepFlowPaletteOverride } from './stepflow/palettes'
 import TitleChrome from './stepflow/TitleChrome.vue'
 import { pinAttrs } from './stepflow/chrome'
@@ -28,6 +35,15 @@ const p = computed(() => resolvePalette({ ...chainBlue, ...props.palette }))
 // geometry.
 const layout = computed(() => stairLayout(props.steps.length))
 const dipByIndex = computed(() => new Map(stairDips(layout.value.blocks).map((d) => [d.index, d.dipPx])))
+
+// Quiet glow trace (user-directed divergence, art_cRMBx282): segment i traces
+// the ascent from block i−1's top-center to block i's, drawing inside block i's
+// existing click window — no extra beats, no change to the click contract.
+const traces = computed(() => {
+  const map = new Map<number, StairGlowTrace>()
+  for (const seg of glowTraceSegments(layout.value.blocks)) map.set(seg.index, seg)
+  return map
+})
 
 // Click choreography: callout = click 1, block k = click k + 1. Without a
 // callout the blocks shift down to clicks 1…n so the sequence stays contiguous.
@@ -120,6 +136,15 @@ function captionFill(step: StairStep): string {
         :fill="WEDGE_SLATE"
         opacity="0.6"
         filter="url(#sf-stair-wedge-blur)"
+      />
+      <!-- Quiet glow trace: draws with this block's rise (≤4px, ≤0.4 opacity,
+           hue-matched to the arriving block). -->
+      <path
+        v-if="traces.get(i)"
+        class="sf-glow-trace"
+        :d="traces.get(i)!.d"
+        :style="{ '--sf-len': `${traces.get(i)!.len}` }"
+        :stroke="blockFill(step, p)"
       />
       <!-- Blocks are circles (⌀ ≈ 146): rx = w/2, not rounded-square corners. -->
       <rect
@@ -242,6 +267,31 @@ function captionFill(step: StairStep): string {
   }
 }
 
+/*
+ * Quiet glow trace (user-directed divergence, art_cRMBx282): the recording
+ * has no connector — this stays deliberately quiet (3px, 0.4 opacity) and
+ * draws inside its block's existing 450ms click window via the StepFlow
+ * dashoffset pattern. Destination-state transition: forward reveal draws,
+ * the hidden state's transition:none snaps backward nav instant.
+ */
+.sf-glow-trace {
+  fill: none;
+  stroke-width: 3px;
+  stroke-linecap: round;
+  opacity: 0.4;
+  stroke-dasharray: var(--sf-len);
+  stroke-dashoffset: var(--sf-len);
+  transition: stroke-dashoffset 450ms ease-out;
+}
+
+.sf-step:not(.slidev-vclick-hidden) .sf-glow-trace {
+  stroke-dashoffset: 0;
+}
+
+.sf-step.slidev-vclick-hidden .sf-glow-trace {
+  transition: none;
+}
+
 .sf-callout {
   transition: opacity 250ms ease-out;
 }
@@ -252,7 +302,8 @@ function captionFill(step: StairStep): string {
 
 @media (prefers-reduced-motion: reduce) {
   .sf-step,
-  .sf-callout {
+  .sf-callout,
+  .sf-glow-trace {
     transition: none;
     animation: none;
   }

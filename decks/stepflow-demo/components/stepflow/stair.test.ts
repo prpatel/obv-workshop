@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { stairDips, stairLayout } from './stair'
+import { glowTraceSegments, stairDips, stairLayout } from './stair'
 
 // Hand-computed constants for the default 1920×1080 canvas, from the measured
 // rhythm (exact-trace sheet art_4A7yguGJ; traces on the settled frame):
@@ -145,5 +145,43 @@ describe('stairLayout — options and validation', () => {
 
   it('n=6 layout snapshot is stable across runs', () => {
     expect(stairLayout(6)).toMatchSnapshot()
+  })
+})
+
+describe('glowTraceSegments — quiet ascent trace', () => {
+  it('emits one two-point diagonal per block past the first, top-center to top-center', () => {
+    const { blocks } = stairLayout(6)
+    const segs = glowTraceSegments(blocks)
+
+    expect(segs).toHaveLength(5)
+    segs.forEach((seg, i) => expect(seg.index).toBe(i + 1))
+    // Segment i connects block i−1's top-center to block i's: exact endpoints
+    // from the measured rhythm (x 63/395/719/1036/1351/1619, y 758/693/734/612/538/465, w = h = 146).
+    expect(segs[0]!.d).toBe('M 136 758 L 468 693')
+    expect(segs[4]!.d).toBe('M 1424 538 L 1692 465')
+  })
+
+  it('carries analytic lengths matching the measured diagonals', () => {
+    const { blocks } = stairLayout(6)
+    const segs = glowTraceSegments(blocks)
+
+    // Hand-computed diagonals over the measured pitches (dx, dy):
+    // 332/−65, 324/41, 317/−122, 315/−74, 268/−73.
+    expect(segs[0]!.len).toBeCloseTo(Math.sqrt(332 * 332 + 65 * 65), 6) // ≈338.303119
+    expect(segs[1]!.len).toBeCloseTo(Math.sqrt(324 * 324 + 41 * 41), 6) // ≈326.583833
+    expect(segs[2]!.len).toBeCloseTo(Math.sqrt(317 * 317 + 122 * 122), 6) // ≈339.666012
+    expect(segs[3]!.len).toBeCloseTo(Math.sqrt(315 * 315 + 74 * 74), 6) // ≈323.575339
+    expect(segs[4]!.len).toBeCloseTo(Math.sqrt(268 * 268 + 73 * 73), 6) // ≈277.764289
+  })
+
+  it('is empty for a single block and traces n−1 segments off-nominal', () => {
+    expect(glowTraceSegments(stairLayout(1).blocks)).toEqual([])
+    const off = stairLayout(3, {
+      gapsXFrac: [0.2, 0.2],
+      topDeltasYFrac: [-0.1, 0.05],
+    })
+    const segs = glowTraceSegments(off.blocks)
+    expect(segs).toHaveLength(2)
+    for (const seg of segs) expect(seg.len).toBeGreaterThan(0)
   })
 })

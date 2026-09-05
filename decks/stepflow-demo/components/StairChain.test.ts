@@ -235,6 +235,19 @@ describe('StairChain', () => {
     expect(groups[5].find('.sf-wedge').exists()).toBe(false)
   })
 
+  it('renders the quiet glow trace: one hue-matched segment per block past the first', () => {
+    const wrapper = mountStairChain({ steps, callout, palette: demoPalette })
+    const traces = wrapper.findAll('.sf-glow-trace')
+
+    // Block 0 has no predecessor; blocks 2-6 trace from their left neighbor.
+    expect(traces).toHaveLength(5)
+    expect(traces[0].attributes('d')).toBe('M 136 758 L 468 693')
+    // Hue-matched: the segment into block k carries block k's tone fill — the
+    // two-tone split makes trace k blue while k+1 is blue, cyan from block 4 on.
+    const fills = traces.map((t) => t.attributes('stroke'))
+    expect(fills).toEqual(['#3599fb', '#3599fb', '#1fd0ea', '#1fd0ea', '#1fd0ea'])
+  })
+
   it('marks the dip block for the down-then-up choreography', () => {
     const wrapper = mountStairChain({ steps, callout, palette: demoPalette })
     const groups = wrapper.findAll('.sf-step')
@@ -254,6 +267,16 @@ describe('StairChain', () => {
     expect(css).toContain('250ms') // callout fade
     expect(css).toContain('sf-stair-dip') // down-then-up keyframes for block 3
     expect(css).not.toContain('80ms')
+    // Glow trace draws inside the block's existing 450ms window, quiet by
+    // design: 3px stroke (≤4) at 0.4 opacity (≤0.4), hue-matched per block.
+    expect(css).toContain('.sf-glow-trace')
+    expect(css).toContain('stroke-width: 3px')
+    expect(css).toContain('opacity: 0.4')
+    expect(css).toContain('stroke-dashoffset: var(--sf-len)')
+    expect(css).toContain('.sf-step:not(.slidev-vclick-hidden) .sf-glow-trace')
+    // The trace joins the reduced-motion freeze list.
+    const reduced = css.match(/@media \(prefers-reduced-motion: reduce\)[\s\S]*$/)?.[0] ?? ''
+    expect(reduced).toContain('.sf-glow-trace')
     expect(css).toContain('prefers-reduced-motion') // transitions disabled, instant state
   })
 
@@ -265,6 +288,9 @@ describe('StairChain', () => {
     expect(hiddenRule).toContain('transition: none')
     const calloutHidden = css.match(/\.sf-callout\.slidev-vclick-hidden[^{]*\{[^}]*\}/)?.[0] ?? ''
     expect(calloutHidden).toContain('transition: none')
+    // The glow trace snaps with its block on backward navigation.
+    const traceHidden = css.match(/\.sf-step\.slidev-vclick-hidden \.sf-glow-trace[\s\S]*?\}/)?.[0] ?? ''
+    expect(traceHidden).toContain('transition: none')
   })
 
   it('renders the shared centered two-tone title chrome (sheet Title row: glyph core 78, white y49–126, ≈x916)', () => {

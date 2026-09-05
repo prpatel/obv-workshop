@@ -194,3 +194,32 @@ export function stairDips(blocks: StairBlock[]): StairDip[] {
   }
   return dips
 }
+
+/** One glow-trace segment: the diagonal from block i−1's top-center to block i's. */
+export interface StairGlowTrace {
+  /** Block index whose click reveals this segment (always ≥ 1 — block 0 has no predecessor). */
+  index: number
+  d: string
+  len: number
+}
+
+/**
+ * Quiet glow-trace segments (user-directed divergence, art_cRMBx282): a soft
+ * hue-matched stroke tracing the staircase ascent. The recording has no
+ * connector; the trace stays deliberately quiet (≤4px, ≤0.4 opacity) and each
+ * segment draws inside its arriving block's existing click window — no extra
+ * beats. Segment i runs between the top-centers of blocks i−1 and i.
+ */
+export function glowTraceSegments(blocks: StairBlock[]): StairGlowTrace[] {
+  const segs: StairGlowTrace[] = []
+  for (let i = 1; i < blocks.length; i++) {
+    const x1 = blocks[i - 1].x + blocks[i - 1].w / 2
+    const y1 = blocks[i - 1].y
+    const x2 = blocks[i].x + blocks[i].w / 2
+    const y2 = blocks[i].y
+    const len = Math.hypot(x2 - x1, y2 - y1)
+    segs.push({ index: i, d: `M ${x1} ${y1} L ${x2} ${y2}`, len })
+  }
+  return segs
+}
+
