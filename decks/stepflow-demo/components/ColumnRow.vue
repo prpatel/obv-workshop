@@ -419,8 +419,8 @@ function px(n: number): string {
       :title="title"
       :title-accent="titleAccent"
       :title-text-length="titleTextLength"
-      :cap-height="78"
-      :cap-top="98"
+      :cap-height="57"
+      :cap-top="104.2"
       badge
     />
   </svg>

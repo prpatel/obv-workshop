@@ -6,9 +6,33 @@
  * .slidev-layout so presenter-mode chrome keeps its own styling, per the
  * documented warning about global CSS leaking into the presenter UI.
  *
- * Font stack per build spec open question #1: system mono fallbacks only —
- * no network webfont dependency. Self-hosting is a later, reversible change.
+ * Font stack: self-hosted JetBrains Mono (OFL, bundled under public/fonts/,
+ * latin-subset woff2 ≈29KB per weight). font-display: block keeps reveals
+ * deterministic — glyphs never render in a fallback face mid-animation; the
+ * stack ends in the same system fallbacks as before the bundle.
  */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('/fonts/JetBrainsMono-Regular.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: block;
+  src: url('/fonts/JetBrainsMono-Medium.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url('/fonts/JetBrainsMono-Bold.woff2') format('woff2');
+}
+
 .slidev-layout {
   background: #000000;
   color: #e8e9eb;

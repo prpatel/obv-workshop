@@ -106,7 +106,7 @@ describe('HexCluster — the exact-trace composition', () => {
       const plate = layout.plates[i]
       expect(Number(labels[i].attributes('x'))).toBeCloseTo(plate.label.cx, 4)
       expect(Number(labels[i].attributes('y'))).toBeCloseTo(plate.label.baseline, 4)
-      expect(Number(labels[i].attributes('font-size'))).toBeCloseTo(31 / 0.752, 4)
+      expect(Number(labels[i].attributes('font-size'))).toBeCloseTo(31 / 0.730, 4)
       expect(labels[i].attributes('text-anchor')).toBe('middle')
     }
     // Sheet tones: cyan #26c8dd left, blue #3b95eb right.
@@ -118,11 +118,11 @@ describe('HexCluster — the exact-trace composition', () => {
     const wrapper = mountHexCluster({ title: 'DATA', titleAccent: 'MESH DATA GRID' })
     const header = wrapper.find('.sf-chrome-title')
 
-    // Direction-2 foundation: corrected to the measured 78px glyph core,
-    // centered ≈ x916 (cap band y49–127).
-    expect(Number(header.attributes('font-size'))).toBeCloseTo(78 / 0.752, 4)
+    // Direction-2 foundation: corrected to the stem-measured 65px glyph core,
+    // centered ≈ x916 (cap band y60.3–125.3).
+    expect(Number(header.attributes('font-size'))).toBeCloseTo(65 / 0.730, 4)
     expect(Number(header.attributes('x'))).toBeCloseTo(916, 4)
-    expect(Number(header.attributes('y'))).toBe(127)
+    expect(Number(header.attributes('y'))).toBe(125.3)
     expect(header.text()).toContain('DATA')
     expect(header.text()).toContain('MESH DATA GRID')
     expect(wrapper.html()).toContain('#66fb00')

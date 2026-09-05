@@ -359,10 +359,14 @@ describe('ratioStripLayout — validation throws instead of rendering blank', ()
 })
 
 describe('RatioStrip component', () => {
-  it('binds exactly 3 native v-clicks: band pop, three-burst re-flow, then band-text/caption state', () => {
+  it('binds exactly 6 native v-click beats: band pop, settled layer + burst 1, burst 2, final segments, mint settle, then band-text/caption state', () => {
     const captured: number[] = []
     mountRatioStrip({ ...data(), title: 'RUNTIME', titleAccent: 'SHARE' }, captured)
-    expect(captured).toEqual([1, 2, 3])
+    // Generation-7 decomposition (art_cRMBx282): the settled layer, bursts,
+    // final segments, and mint settle are independently addressable beats.
+    // Vue mounts nested directives bottom-up: the final group's children
+    // (seg1 rects in DOM order, then bursts) capture before the group itself.
+    expect(captured).toEqual([1, 4, 5, 4, 2, 3, 2, 6])
   })
 
   it('renders one build rect and one final rect per segment on the measured band', () => {
@@ -436,7 +440,7 @@ describe('RatioStrip component', () => {
     expect(Number(heading.attributes('x'))).toBeCloseTo(369, 4)
     expect(Number(heading.attributes('y'))).toBeCloseTo(380, 4)
     expect(heading.attributes('textLength')).toBe('339')
-    expect(Number(heading.attributes('font-size'))).toBeCloseTo(17 / 0.752, 3)
+    expect(Number(heading.attributes('font-size'))).toBeCloseTo(17 / 0.730, 3)
     // Row 2: gray caps in the body field, spread over the measured 396px.
     const heading2 = wrapper.find('text.sf-rs-heading2')
     expect(heading2.text()).toBe('TIME IN ONE WORKING DAY')
@@ -444,7 +448,7 @@ describe('RatioStrip component', () => {
     expect(Number(heading2.attributes('x'))).toBeCloseTo(276, 4)
     expect(Number(heading2.attributes('y'))).toBeCloseTo(481, 4)
     expect(heading2.attributes('textLength')).toBe('396')
-    expect(Number(heading2.attributes('font-size'))).toBeCloseTo(17 / 0.752, 3)
+    expect(Number(heading2.attributes('font-size'))).toBeCloseTo(17 / 0.730, 3)
     // 9 measurement ticks: 4×25px at y510, first tick centered on x281.
     const ticks = wrapper.findAll('.sf-rs-ticks rect')
     expect(ticks).toHaveLength(9)
@@ -494,29 +498,33 @@ describe('RatioStrip component', () => {
     expect(chips[0].attributes('fill')).toBe('#020404')
   })
 
-  it('ships width-transition classes with measured delays and hidden-state snap (transition: none)', () => {
+  it('ships width-transition classes with measured beats and hidden-state snap (transition: none)', () => {
     mountRatioStrip(data())
     const css = Array.from(document.querySelectorAll('style'))
       .map((tag) => tag.textContent ?? '')
       .join('\n')
 
-    // Revealed states: 120ms pop (click 1), measured burst eases (click 2).
+    // Revealed states: 120ms pop (beat 1), measured burst eases (beats 2–5).
     expect(css).toMatch(/\.sf-rs-seg0[^{]*\{[^}]*width 120ms/)
     expect(css).toMatch(/\.sf-rs-burst0[^{]*\{[^}]*width 700ms/)
     expect(css).toMatch(/\.sf-rs-burst1[^{]*\{[^}]*width 350ms/)
     expect(css).toMatch(/\.sf-rs-seg1[^{]*\{[^}]*width 350ms/)
-    // Stepped burst delays: 0 / 1133 / 2967ms (the final copies carry 2967),
-    // the mint settle after burst 3 at 3433ms, sweep 2 at 283ms.
-    expect(css).toMatch(/\.sf-rs-burst1[^{]*\{[^}]*transition-delay:\s*1133ms/)
-    expect(css).toMatch(/\.sf-rs-seg1[^{]*\{[^}]*transition-delay:\s*2967ms/)
-    expect(css).toMatch(/\.sf-rs-mint[^{]*\{[^}]*transition-delay/)
+    // Generation-7 decomposition: the 1133/2967/3433ms intra-click delays are
+    // explicit v-click beats now — no delay on the burst/final/mint states.
+    // The 283ms two-stroke sweep micro-stagger stays (intentional choreography).
+    expect(css).not.toMatch(/\.sf-rs-(burst|seg1|mint)[^{]*\{[^}]*transition-delay/)
     expect(css).toMatch(/\.sf-rs-sweep1[^{]*\{[^}]*transition-delay:\s*283ms/)
     // Hidden states: width 0 + transition none → forward reveal animates,
-    // backward nav snaps (the locked decision).
+    // backward nav snaps (the locked decision). Element-level rules keep a
+    // revealed group's pending beat children snapped shut.
     expect(css).toMatch(/\.sf-rs-build\.slidev-vclick-hidden[^{]*\.sf-rs-seg0[^{]*\{[^}]*width:\s*0/)
     expect(css).toMatch(/\.sf-rs-final\.slidev-vclick-hidden[^{]*\.sf-rs-seg1[^{]*\{[^}]*width:\s*0/)
     expect(css).toMatch(/\.sf-rs-final\.slidev-vclick-hidden[^{]*\.sf-rs-burst[^{]*\{[^}]*width:\s*0/)
     expect(css).toMatch(/\.sf-rs-final\.slidev-vclick-hidden[^{]*\.sf-rs-seg1[^{]*\{[^}]*transition:\s*none/)
+    expect(css).toMatch(/\.sf-rs-burst\.slidev-vclick-hidden[^{]*\{[^}]*width:\s*0/)
+    expect(css).toMatch(/\.sf-rs-seg1\.slidev-vclick-hidden[^{]*\{[^}]*width:\s*0/)
+    expect(css).toMatch(/\.sf-rs-burst\.slidev-vclick-hidden[^{]*\{[^}]*transition:\s*none/)
+    expect(css).toMatch(/\.sf-rs-seg1\.slidev-vclick-hidden[^{]*\{[^}]*transition:\s*none/)
     expect(css).toMatch(/\.sf-rs-text\.slidev-vclick-hidden[^{]*\.sf-rs-sweep[^{]*\{[^}]*width:\s*0/)
     expect(css).toMatch(/\.sf-rs-text\.slidev-vclick-hidden[^{]*\.sf-rs-caption[^{]*\{[^}]*transition:\s*none/)
     // Reduced motion freezes every reveal.
@@ -568,9 +576,9 @@ describe('RatioStrip component', () => {
     expect(texts.every((t) => t.attributes('font-weight') === '700')).toBe(true)
     expect(texts.map((t) => Number(t.attributes('x')))).toEqual([730, 969, 1302])
     expect(texts.every((t) => Number(t.attributes('y')) === 683)).toBe(true) // measured label baseline
-    expect(Number(texts[0].attributes('font-size'))).toBeCloseTo(20 / 0.752, 3)
+    expect(Number(texts[0].attributes('font-size'))).toBeCloseTo(20 / 0.730, 3)
     expect(texts.map((t) => Number(t.attributes('textLength')))).toEqual([160, 255, 218])
-    expect(texts.every((t) => t.attributes('lengthAdjust') === 'spacingAndGlyphs')).toBe(true)
+    expect(texts.every((t) => t.attributes('lengthAdjust') === 'spacing')).toBe(true)
     // The clip group carries the sweep; individual labels are unclipped.
     expect(wrapper.find('g[clip-path="url(#sf-rs-band-sweep)"]').exists()).toBe(true)
     // Two sweep rects: [702→1282] then [1282→1551] — the measured split between boxes 2–3.
@@ -598,7 +606,7 @@ describe('RatioStrip component', () => {
     expect(capTexts[0].attributes('fill')).toBe('#e94343') // measured red, not chrome-dim
     expect(Number(capTexts[0].attributes('x'))).toBeCloseTo(277, 4)
     expect(Number(capTexts[0].attributes('y'))).toBeCloseTo(858, 4)
-    expect(Number(capTexts[0].attributes('font-size'))).toBeCloseTo(23 / 0.752, 3)
+    expect(Number(capTexts[0].attributes('font-size'))).toBeCloseTo(23 / 0.730, 3)
     expect(capTexts[0].attributes('textLength')).toBe('332')
     expect(capTexts[0].attributes('lengthAdjust')).toBe('spacing')
     expect(capTexts[1].text()).toBe('ACTUAL DATA PROBLEMS')

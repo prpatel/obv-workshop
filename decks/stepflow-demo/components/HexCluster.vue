@@ -69,8 +69,8 @@ const coreFill = computed(() => (dimmed.value ? HEX_COLORS.plateFill : HEX_COLOR
 // The title chrome centers on the measured header axis (≈ x916 — Direction-2
 // foundation note), independent of the plate composition.
 const TITLE_AXIS_X = 916
-const TITLE_CAP_HEIGHT = 78
-const TITLE_CAP_TOP = 49
+const TITLE_CAP_HEIGHT = 65
+const TITLE_CAP_TOP = 60.3
 </script>
 
 <template>
@@ -151,7 +151,7 @@ const TITLE_CAP_TOP = 49
         :x="plate.label.cx"
         :y="plate.label.baseline"
         text-anchor="middle"
-        :font-size="plate.label.capHeight / 0.752"
+        :font-size="plate.label.capHeight / 0.730"
         letter-spacing="0.045em"
         :fill="labelColor(plate.data.tone)"
       >{{ plate.data.label }}</text>

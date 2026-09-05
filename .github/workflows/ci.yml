@@ -24,6 +24,15 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      # Typography lock: the deck renders natural JetBrains Mono metrics and
+      # pins runs spacing-only. Glyph-squeezing lengthAdjust is banned.
+      - name: No glyph-squeezing text pins
+        run: |
+          if grep -rn "spacingAndGlyphs" decks/ --include='*.vue' --include='*.ts' --include='*.md'; then
+            echo "::error::spacingAndGlyphs found — text pins must be lengthAdjust=spacing only"
+            exit 1
+          fi
+
       - name: Test
         run: npm run test
 

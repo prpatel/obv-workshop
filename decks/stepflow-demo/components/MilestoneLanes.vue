@@ -37,6 +37,7 @@ import {
   type MilestoneDiamond,
 } from './stepflow/lanes'
 import { iconPath, ICON_FALLBACK } from './stepflow/icons'
+import { pinAttrs } from './stepflow/chrome'
 import { resolvePalette, statusAmber, type StepFlowPaletteOverride } from './stepflow/palettes'
 import TitleChrome from './stepflow/TitleChrome.vue'
 
@@ -59,7 +60,7 @@ const props = withDefaults(defineProps<{
   titleAccent?: string
   /**
    * Pinned title ink extent in px at 1920 scale — forwarded to TitleChrome's
-   * `titleTextLength` (SVG textLength + spacingAndGlyphs). The reference title
+   * `titleTextLength` (spacing-only SVG textLength pin). The reference title
    * measures 798px, which the mono face cannot reach naturally at cap 78.
    */
   titleTextLength?: number
@@ -336,8 +337,7 @@ function resolveIcon(key: string): string {
           :font-size="type.textSize"
           :fill="BAR_TEXT_FILL"
           letter-spacing="0.06em"
-          :textLength="bar.textLength ? bar.textLength * (layout.viewBox.width / 1920) : undefined"
-          :lengthAdjust="bar.textLength ? 'spacingAndGlyphs' : undefined"
+          v-bind="pinAttrs(bar.text, type.textSize, bar.textLength ? bar.textLength * (layout.viewBox.width / 1920) : undefined)"
         >{{ bar.text }}</text>
       </g>
     </g>
@@ -403,8 +403,8 @@ function resolveIcon(key: string): string {
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
-      :cap-height="78"
-      :cap-top="98"
+      :cap-height="57"
+      :cap-top="104.2"
       :title-text-length="titleTextLength"
       badge
     />

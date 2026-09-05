@@ -4,6 +4,8 @@ import {
   CHROME_GREEN,
   TITLE_WHITE,
   TOP_RIGHT_BADGE,
+  naturalInkExtent,
+  spacingPin,
   titleBaseline,
   titleFontSize,
   type TitleToken,
@@ -16,10 +18,12 @@ import {
  * band, plus the optional top-right recording badge for the six families
  * whose sheets document it.
  *
- * Token mode: when `tokens` carries sheet-measured ink runs (art_mkVNxsft
- * Title rows), each token renders as its own condensate-fitted <text> — per-
- * token x, textLength, and cap band absorb the recordings' condensed-face
- * advance (the deck mono runs wider than the recorded face at equal cap).
+ * Token mode: when `tokens` carries measured ink runs, each token renders
+ * at its measured x and cap band. A token whose natural JetBrains Mono
+ * width misses its measured extent by more than PIN_THRESHOLD gets a
+ * spacing-only `textLength` pin (the recordings' condensed face); within
+ * the threshold it renders natural. Glyphs are never squeezed — the
+ * glyph-squeezing lengthAdjust mode is banned deck-wide (CI-gated).
  *
  * Renders an SVG fragment: mount it inside the family's 1920×1080 svg. Slide 2
  * (StepFlow) predates this chrome and does not consume it.
@@ -29,12 +33,14 @@ const props = withDefaults(defineProps<{
   title?: string
   /** Tail rendered in chrome green (titleAccent convention). */
   titleAccent?: string
-  /** Sheet/reference-measured title ink extent in canvas px. The deck's mono
-   * face runs wider than the recordings' condensed face at the same cap
-   * height; families pin this to their sheet's Title-row extent and the SVG
-   * condenses advances + glyphs to match (`textLength` +
-   * `lengthAdjust="spacingAndGlyphs"`). Undefined = natural mono width. */
+  /** Sheet/reference-measured title ink extent in canvas px. When the natural
+   * mono width misses this by more than the pin threshold, the run is pinned
+   * spacing-only (`textLength` + `lengthAdjust="spacing"` — glyphs never
+   * squeeze). Undefined = natural mono width. */
   titleTextLength?: number
+  /** Per-run letter-spacing override in em. Undefined = natural tracking
+   * (the recordings' tracking is absorbed by the measured pins). */
+  letterSpacing?: number
   /** Sheet-measured cap height in 1920×1080 pixels (43–97 across the sheets). */
   capHeight: number
   /** Sheet-measured top of the title band in 1920×1080 pixels. */
@@ -63,11 +69,30 @@ const fontSize = computed(() => titleFontSize(props.capHeight))
 const baseline = computed(() => titleBaseline(props.capTop, props.capHeight))
 // Tail gap between the two-tone halves (the recordings' word gap ≈ 0.3em).
 const tailGap = computed(() => `${(fontSize.value * 0.3).toFixed(4)}`)
+
+/** Spacing-only pin for a token: measured extent when >2% off natural. */
+function tokenPin(t: TitleToken): number | undefined {
+  const fs = titleFontSize(t.capHeight ?? props.capHeight)
+  return spacingPin(naturalInkExtent(t.text, fs), t.width)
+}
+
+/** Spacing-only pin for the centered lead/tail pair: per-run natural ink
+ * plus the rendered tail gap — the honest full-title extent comparison. */
+const titlePin = computed(() => {
+  if (!props.titleTextLength) return undefined
+  const title = props.title.trim()
+  const accent = props.titleAccent.trim()
+  const gap = title && accent ? fontSize.value * 0.3 : 0
+  const natural =
+    naturalInkExtent(title, fontSize.value) + gap +
+    naturalInkExtent(accent, fontSize.value)
+  return spacingPin(natural, props.titleTextLength)
+})
 </script>
 
 <template>
   <g class="sf-title-chrome">
-    <!-- Token mode: one condensate-fitted <text> per measured ink run. -->
+    <!-- Token mode: one measured <text> per ink run, spacing-only pins. -->
     <template v-if="tokens.length">
       <text
         v-for="(t, i) in tokens"
@@ -77,8 +102,8 @@ const tailGap = computed(() => `${(fontSize.value * 0.3).toFixed(4)}`)
         :y="titleBaseline(t.capTop ?? capTop, t.capHeight ?? capHeight)"
         :font-size="titleFontSize(t.capHeight ?? capHeight)"
         :fill="t.accent ? CHROME_GREEN : TITLE_WHITE"
-        :textLength="t.width"
-        lengthAdjust="spacingAndGlyphs"
+        :textLength="tokenPin(t)"
+        :lengthAdjust="tokenPin(t) ? 'spacing' : undefined"
       >{{ t.text }}</text>
     </template>
 
@@ -90,9 +115,9 @@ const tailGap = computed(() => `${(fontSize.value * 0.3).toFixed(4)}`)
       text-anchor="middle"
       :font-size="fontSize"
       :fill="TITLE_WHITE"
-      :textLength="titleTextLength"
-      :lengthAdjust="titleTextLength ? 'spacingAndGlyphs' : undefined"
-      letter-spacing="0.06em"
+      :textLength="titlePin"
+      :lengthAdjust="titlePin ? 'spacing' : undefined"
+      :letter-spacing="letterSpacing !== undefined ? `${letterSpacing}em` : undefined"
     ><tspan
       v-if="accentFirst && titleAccent"
       :fill="CHROME_GREEN"

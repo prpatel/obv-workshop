@@ -33,6 +33,11 @@ import {
   MINT_COLOR,
   NOTE_SIZE,
   NOTE_Y_FRAC,
+  PLATE_FILL,
+  PLATE_H_FRAC,
+  PLATE_W_FRAC,
+  PLATE_X_FRAC,
+  PLATE_Y_FRAC,
   RULE_COLOR,
   RULE_H,
   RULE_W_FRAC,
@@ -335,7 +340,7 @@ describe('twoBarCompareLayout — resolved geometry', () => {
 })
 
 describe('TwoBarCompare component', () => {
-  it('renders one group per bar plus the annotation layer, consuming exactly 3 clicks', () => {
+  it('renders one group per bar plus the annotation layer, consuming exactly 5 clicks', () => {
     const wrapper = mountTwoBar({ bars, chip: 'GENERATED' })
 
     expect(wrapper.find('svg.twobarcompare').exists()).toBe(true)
@@ -343,13 +348,19 @@ describe('TwoBarCompare component', () => {
     expect(barGroups).toHaveLength(2)
     expect(wrapper.find('.sf-tbc-annot').exists()).toBe(true)
 
-    // Click choreography: bar 1 → click 1, bar 2 → click 2, annotations → click 3.
+    // Beat choreography (generation-7 decomposition, art_cRMBx282): bar 1 →
+    // beat 1, bar 2 → beat 2, annotations → beat 3, then the on-bar labels
+    // are their own measured beats 4 and 5.
     expect(barGroups[0].attributes('data-vclick')).toBe('1')
     expect(barGroups[1].attributes('data-vclick')).toBe('2')
     expect(wrapper.find('.sf-tbc-annot').attributes('data-vclick')).toBe('3')
 
+    const labels = wrapper.findAll('.sf-tbc-label')
+    expect(labels[0].attributes('data-vclick')).toBe('4')
+    expect(labels[1].attributes('data-vclick')).toBe('5')
+
     const indices = wrapper.findAll('[data-vclick]').map((el) => Number(el.attributes('data-vclick')))
-    expect(Math.max(...indices)).toBe(3) // the slide's total click count
+    expect(Math.max(...indices)).toBe(5) // the slide's total beat count
   })
 
   it('exposes the measured canvas and an accessible name', () => {
@@ -426,9 +437,12 @@ describe('TwoBarCompare component', () => {
     // Measured extents pin the condensed-face tails (ref ink x352–912/x352–948).
     expect(labels[0].attributes('textLength')).toBe('564')
     expect(labels[1].attributes('textLength')).toBe('600')
-    labels.forEach((label) => expect(label.attributes('lengthAdjust')).toBe('spacingAndGlyphs'))
+    labels.forEach((label) => expect(label.attributes('lengthAdjust')).toBe('spacing'))
     expect(labels[0].text()).toBe('EVERY CUSTOMER COMES BACK TWICE')
     expect(labels[1].text()).toBe('THIS BACKFILLS THE SAME DAY TWICE')
+    // Each label is its own measured beat (2800–2983 / 7467–7667ms windows).
+    expect(labels[0].attributes('data-vclick')).toBe('4')
+    expect(labels[1].attributes('data-vclick')).toBe('5')
   })
 
   it('still renders optional under-bar subs for the generic contract (the ref frame has none)', () => {
@@ -548,6 +562,23 @@ describe('TwoBarCompare component', () => {
     expect(wrapper.findAll('.sf-tbc-rule')).toHaveLength(2)
   })
 
+  it('renders the static dim ambience plate behind the composition', () => {
+    const wrapper = mountTwoBar({ bars })
+
+    // Static chrome: outside the accessibility tree, no v-click of its own.
+    const group = wrapper.find('.sf-tbc-ambience')
+    expect(group.attributes('aria-hidden')).toBe('true')
+    expect(group.attributes('v-click')).toBeUndefined()
+
+    const plate = wrapper.find('.sf-tbc-plate')
+    expect(plate.attributes('fill')).toBe(PLATE_FILL)
+    // Measured extents: fractions resolve to exact px on the 1920x1080 canvas.
+    expect(plate.attributes('x')).toBe(String(PLATE_X_FRAC * 1920))
+    expect(plate.attributes('y')).toBe(String(PLATE_Y_FRAC * 1080))
+    expect(plate.attributes('width')).toBe(String(PLATE_W_FRAC * 1920))
+    expect(plate.attributes('height')).toBe(String(PLATE_H_FRAC * 1080))
+  })
+
   it('renders no annotation layer when the diagram has no labels or chip', () => {
     const wrapper = mountTwoBar({ bars: [{ id: 'a', wFrac: 0.3, tone: 'accent' }, { id: 'b', wFrac: 0.2, tone: 'alt' }] })
 
@@ -567,12 +598,16 @@ describe('TwoBarCompare component', () => {
 
     expect(css).toContain('150ms') // bar pop + static annotation fade (§9 scale)
     expect(css).toContain('183ms') // label 1 fade duration: window 2800–2983ms
-    expect(css).toContain('2800ms') // label 1 delay — settles first, arrives late
     expect(css).toContain('200ms') // label 2 fade duration: window 7467–7667ms
-    expect(css).toContain('7467ms') // label 2 delay
-    // The annotation group flips instantly; its children own the fades.
+    // Generation-7 decomposition: the 2800/7467ms intra-click delays became
+    // explicit label beats 4/5 — the delays are gone from the styles.
+    expect(css).not.toContain('transition-delay: 2800ms')
+    expect(css).not.toContain('transition-delay: 7467ms')
+    // The annotation group flips instantly; the labels own their fades, with
+    // element-level hidden states for instant backward nav past a label beat.
     expect(css).toContain('.sf-tbc-annot.slidev-vclick-hidden .sf-tbc-annot-core')
-    expect(css).toContain('.sf-tbc-annot.slidev-vclick-hidden .sf-tbc-label')
+    expect(css).toContain('.sf-tbc-label.slidev-vclick-hidden')
+    expect(css).not.toContain('.sf-tbc-annot.slidev-vclick-hidden .sf-tbc-label')
     expect(css).toContain('prefers-reduced-motion') // transitions disabled, instant state
   })
 
@@ -585,6 +620,6 @@ describe('TwoBarCompare component', () => {
     // The ref headline's measured ink extent x565–1359 → 796px textLength pin
     // (TitleChrome.titleTextLength, the PR #42 mechanism).
     expect(header.html()).toContain('textLength="796"')
-    expect(header.html()).toContain('lengthAdjust="spacingAndGlyphs"')
+    expect(header.html()).toContain('lengthAdjust="spacing"')
   })
 })

@@ -178,8 +178,14 @@ export const STACKPANELS_HEADER = {
   accent: 'unified environment',
   leadBox: { xFrac: 324.9 / 1920, wFrac: 194.0 / 1920 },
   accentBox: { xFrac: 545.3 / 1920, wFrac: 961.5 / 1920 },
-  capHeight: 69.9,
-  baseline: 127.0,
+  /** Per-span glyph-core caps (direct stem histograms on the settled frame):
+   * 'One' cap 50.9 top 74.4; 'unified environment' ascender band 77.3 top 49.0
+   * — the two runs share a ≈126 baseline but NOT a size (the green phrase is
+   * display-size display type, the white lead small).
+   */
+  leadCapHeight: 50.9,
+  accentCapHeight: 77.3,
+  baseline: 126.0,
 } as const
 
 /**

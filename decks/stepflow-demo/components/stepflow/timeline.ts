@@ -75,6 +75,12 @@ export interface Canvas {
 
 /** Measured node radius: discs span d≈103 at source height 1080. */
 export const NODE_R_FRAC = 51.5 / 1080
+
+/** Measured halo radius: hue-matched glows extend ~51px beyond each 103px disc
+ *  (reference-truth connector scans, art_jItoEY9Q) — 51.5 + 51 = 102.5 at 1080. */
+export const HALO_R_FRAC = 102.5 / 1080
+/** Halo layer opacity above the radial falloff gradient (settled-frame skim). */
+export const HALO_OPACITY = 0.5
 /** Measured tick run below each disc: y550–692 = 142px at source height 1080. */
 export const TICK_LEN_FRAC = 142 / 1080
 /** Tick starts 2px below the disc's bottom edge (measured disc bottom y548, tick top y550). */
@@ -235,6 +241,8 @@ export interface SegmentLayout {
   nodeCx: number
   nodeCy: number
   nodeR: number
+  /** Node glow radius px — the halo circle behind the disc. */
+  haloR: number
   /** Tick line x (the node's center) and span, hanging from just below the disc. */
   tickX: number
   tickY0: number
@@ -315,6 +323,7 @@ export function segmentTimelineLayout(data: SegmentTimelineData, viewBox: Canvas
   }
 
   const nodeR = NODE_R_FRAC * viewBox.height
+  const haloR = HALO_R_FRAC * viewBox.height
   const nodeCy = track.y + track.height / 2
   const labelOffset = LABEL_CX_OFFSET_FRAC * viewBox.width
 
@@ -343,6 +352,7 @@ export function segmentTimelineLayout(data: SegmentTimelineData, viewBox: Canvas
       nodeCx,
       nodeCy,
       nodeR,
+      haloR,
       tickX: nodeCx,
       tickY0: nodeCy + nodeR + TICK_GAP,
       tickLen: TICK_LEN_FRAC * viewBox.height,

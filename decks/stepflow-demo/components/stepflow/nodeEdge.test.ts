@@ -420,7 +420,9 @@ describe('NodeEdge component', () => {
     // Raw textContent — the leading space IS the gap after the `$` prompt.
     expect(panel.find('text.sf-ne-cmd').element.textContent).toBe(' meshctl status --verbose')
     expect(panel.find('text.sf-ne-cmd').attributes('fill')).toBe('#838288')
-    expect(Number(panel.find('text.sf-ne-cmd').attributes('textLength'))).toBeCloseTo(459.615, 2)
+    // Natural mono ink lands within the 2% pin threshold of the measured
+    // 459.615px extent — natural render, no pin attribute.
+    expect(panel.find('text.sf-ne-cmd').attributes('textLength')).toBeUndefined()
     // Stat row: teal block cursor + condensed gray extent.
     expect(panel.find('rect.sf-ne-cursor').attributes('fill')).toBe('#225d66')
     expect(panel.find('text.sf-ne-stat').text()).toBe('nodes : 6 healthy · 2')
@@ -456,10 +458,10 @@ describe('NodeEdge component', () => {
     const wrapper = mountNodeEdge({ nodes, edges, title: 'DATA', titleAccent: 'PLATFORM' })
     const header = wrapper.find('.sf-chrome-title')
 
-    // Sheet Title row: cap 77 in the band y49–126 → font-size 77/0.752,
-    // baseline at the band bottom y126.
-    expect(Number(header.attributes('font-size'))).toBeCloseTo(77 / 0.752, 4)
-    expect(Number(header.attributes('y'))).toBe(126)
+    // Sheet Title row: glyph-core cap 68.8 in the band y56.5–125.3 →
+    // font-size 68.8/0.730, baseline at the band bottom y125.3.
+    expect(Number(header.attributes('font-size'))).toBeCloseTo(68.8 / 0.730, 4)
+    expect(Number(header.attributes('y'))).toBe(125.3)
     expect(header.text()).toContain('DATA')
     expect(header.html()).toContain('#66fb00')
   })
@@ -524,12 +526,12 @@ describe('terminal-log ambience — measured dark-field (reference frame profile
 })
 
 describe('title condensation — mono face vs the recordings’ condensed face', () => {
-  it('pins the title extent when titleTextLength is set (textLength + spacingAndGlyphs)', () => {
+  it('pins the title extent when titleTextLength is set (spacing-only pin)', () => {
     const wrapper = mountNodeEdge({ nodes, edges, title: 'DATA', titleAccent: 'PLATFORM', titleTextLength: 1105 })
     const title = wrapper.find('.sf-chrome-title')
 
     expect(Number(title.attributes('textLength'))).toBe(1105)
-    expect(title.attributes('lengthAdjust')).toBe('spacingAndGlyphs')
+    expect(title.attributes('lengthAdjust')).toBe('spacing')
   })
 
   it('leaves the natural mono width when titleTextLength is omitted', () => {

@@ -1,8 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { stairDips, stairLayout, type StairCallout, type StairStep } from './stepflow/stair'
+import {
+  glowTraceSegments,
+  stairDips,
+  stairLayout,
+  type StairCallout,
+  type StairGlowTrace,
+  type StairStep,
+} from './stepflow/stair'
 import { chainBlue, resolvePalette, type StepFlowPalette, type StepFlowPaletteOverride } from './stepflow/palettes'
 import TitleChrome from './stepflow/TitleChrome.vue'
+import { pinAttrs } from './stepflow/chrome'
 
 const props = withDefaults(defineProps<{
   /** One entry per block; content travels with the slide. */
@@ -28,6 +36,15 @@ const p = computed(() => resolvePalette({ ...chainBlue, ...props.palette }))
 const layout = computed(() => stairLayout(props.steps.length))
 const dipByIndex = computed(() => new Map(stairDips(layout.value.blocks).map((d) => [d.index, d.dipPx])))
 
+// Quiet glow trace (user-directed divergence, art_cRMBx282): segment i traces
+// the ascent from block i−1's top-center to block i's, drawing inside block i's
+// existing click window — no extra beats, no change to the click contract.
+const traces = computed(() => {
+  const map = new Map<number, StairGlowTrace>()
+  for (const seg of glowTraceSegments(layout.value.blocks)) map.set(seg.index, seg)
+  return map
+})
+
 // Click choreography: callout = click 1, block k = click k + 1. Without a
 // callout the blocks shift down to clicks 1…n so the sequence stays contiguous.
 const blockClick = (i: number): number => i + 1 + (props.callout ? 1 : 0)
@@ -35,12 +52,12 @@ const blockClick = (i: number): number => i + 1 + (props.callout ? 1 : 0)
 // Typography as fractions of the viewBox height, from the settled-frame
 // traces: captions are a 19–20px cap band (→ font 24.84) running a condensed
 // ~10.5px advance per character; the punched numbers take the per-block
-// measured caps through the mono's 0.752 cap ratio; the '3×' callout cap is
+// measured caps through the mono's 0.730 cap ratio; the '3×' callout cap is
 // 45.3px (→ font 60.2).
 const type = computed(() => {
   const height = layout.value.viewBox.height
   return {
-    punchCapRatio: 0.752, // JetBrains Mono cap-height ratio (title chrome convention)
+    punchCapRatio: 0.730, // JetBrains Mono cap-height ratio (title chrome convention)
     captionSize: 0.023 * height,
     captionAdvance: 10.5, // px per character at 1920 — the recording's condensed mono
     captionGap: 0.037 * height, // caption baseline sits 40px below the block's bottom edge
@@ -120,6 +137,15 @@ function captionFill(step: StairStep): string {
         opacity="0.6"
         filter="url(#sf-stair-wedge-blur)"
       />
+      <!-- Quiet glow trace: draws with this block's rise (≤4px, ≤0.4 opacity,
+           hue-matched to the arriving block). -->
+      <path
+        v-if="traces.get(i)"
+        class="sf-glow-trace"
+        :d="traces.get(i)!.d"
+        :style="{ '--sf-len': `${traces.get(i)!.len}` }"
+        :stroke="blockFill(step, p)"
+      />
       <!-- Blocks are circles (⌀ ≈ 146): rx = w/2, not rounded-square corners. -->
       <rect
         class="sf-block"
@@ -139,8 +165,7 @@ function captionFill(step: StairStep): string {
         :y="layout.blocks[i].punchBaseline"
         text-anchor="middle"
         :font-size="layout.blocks[i].punchCap / type.punchCapRatio"
-        :textLength="layout.blocks[i].punchWidth"
-        lengthAdjust="spacingAndGlyphs"
+        v-bind="pinAttrs(step.title, layout.blocks[i].punchCap / type.punchCapRatio, layout.blocks[i].punchWidth)"
         :fill="punchFill(step)"
         font-weight="400"
       >{{ step.title }}</text>
@@ -153,8 +178,7 @@ function captionFill(step: StairStep): string {
         :y="captionBaseline(layout.blocks[i].y, layout.blocks[i].h)"
         text-anchor="start"
         :font-size="type.captionSize"
-        :textLength="step.caption.length * type.captionAdvance"
-        lengthAdjust="spacingAndGlyphs"
+        v-bind="pinAttrs(step.caption, type.captionSize, step.caption.length * type.captionAdvance)"
         :fill="captionFill(step)"
       >{{ step.caption }}</text>
     </g>
@@ -170,19 +194,20 @@ function captionFill(step: StairStep): string {
       :y="callout.yFrac * layout.viewBox.height"
       :font-size="type.calloutSize"
       :fill="p.accentAlt"
-      :textLength="callout.textLengthFrac ? callout.textLengthFrac * layout.viewBox.width : undefined"
-      lengthAdjust="spacingAndGlyphs"
+      v-bind="pinAttrs(callout.text, type.calloutSize, callout.textLengthFrac ? callout.textLengthFrac * layout.viewBox.width : undefined)"
     >{{ callout.text }}</text>
 
     <!-- Shared title chrome: sheet-measured centered two-tone title
          (StairChain Title row: band y48–144 is glow-inclusive; the glyph core
-         matches NodeEdge's — white y49–126, cap 77 ≈ 78, centered ≈x916). -->
+         matches NodeEdge's — white y56.5–125.3, cap 68.8, centered ≈x916,
+         ink extent pinned to the measured 1473px). -->
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
-      :cap-height="78"
-      :cap-top="49"
+      :cap-height="68.8"
+      :cap-top="56.5"
       :center-x="916"
+      :title-text-length="1473"
     />
   </svg>
 </template>
@@ -242,6 +267,31 @@ function captionFill(step: StairStep): string {
   }
 }
 
+/*
+ * Quiet glow trace (user-directed divergence, art_cRMBx282): the recording
+ * has no connector — this stays deliberately quiet (3px, 0.4 opacity) and
+ * draws inside its block's existing 450ms click window via the StepFlow
+ * dashoffset pattern. Destination-state transition: forward reveal draws,
+ * the hidden state's transition:none snaps backward nav instant.
+ */
+.sf-glow-trace {
+  fill: none;
+  stroke-width: 3px;
+  stroke-linecap: round;
+  opacity: 0.4;
+  stroke-dasharray: var(--sf-len);
+  stroke-dashoffset: var(--sf-len);
+  transition: stroke-dashoffset 450ms ease-out;
+}
+
+.sf-step:not(.slidev-vclick-hidden) .sf-glow-trace {
+  stroke-dashoffset: 0;
+}
+
+.sf-step.slidev-vclick-hidden .sf-glow-trace {
+  transition: none;
+}
+
 .sf-callout {
   transition: opacity 250ms ease-out;
 }
@@ -252,7 +302,8 @@ function captionFill(step: StairStep): string {
 
 @media (prefers-reduced-motion: reduce) {
   .sf-step,
-  .sf-callout {
+  .sf-callout,
+  .sf-glow-trace {
     transition: none;
     animation: none;
   }

@@ -164,7 +164,7 @@ export interface TerminalLogData {
  * - Traffic lights: ≈23 px circles at y358–380 — red x32–54, amber x67–89,
  *   green x102–123 (centers 43/78/112.5, r 11).
  * - Command line `$ meshctl status --verbose`: band x128–606, y357–380. 26
- *   glyphs over 478 px = 18.4 px/char at cap 23 (font-size 23/0.752 = 30.6,
+ *   glyphs over 478 px = 18.4 px/char at cap 23 (font-size 23/0.730 = 31.5,
  *   the standard 0.6 em mono advance — this row is NOT condensed).
  * - Stat row: text x128–387 (259 px over 21 glyphs = 12.33 px/char at cap 20 —
  *   the recordings' condensed face; the component pins it with textLength),

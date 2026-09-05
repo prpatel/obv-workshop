@@ -14,6 +14,7 @@ import {
   type CompareBar,
   type DataTextBlock,
 } from './stepflow/compare'
+import { pinAttrs } from './stepflow/chrome'
 import { resolvePalette, statusAmber, type StepFlowPaletteOverride } from './stepflow/palettes'
 import { iconPath, ICON_FALLBACK } from './stepflow/icons'
 import TitleChrome from './stepflow/TitleChrome.vue'
@@ -97,6 +98,22 @@ function fmt(n: number): string {
     :aria-label="`${bars.length}-bar comparison diagram`"
   >
     <!--
+      Dim ambience plate (ref-sampled settled frame): flat #0b0b0b spanning the
+      composition zone — the slide field outside stays black. Static chrome:
+      no v-click, outside the accessibility tree (MilestoneLanes plate pattern).
+    -->
+    <g class="sf-tbc-ambience" aria-hidden="true">
+      <rect
+        class="sf-tbc-plate"
+        :x="layout.plate.x"
+        :y="layout.plate.y"
+        :width="layout.plate.w"
+        :height="layout.plate.h"
+        fill="#0b0b0b"
+      />
+    </g>
+
+    <!--
       One group per bar: the bar pops WHOLE on click i + 1 — no width sweep,
       the recording's bar lands in a single burst — with its icon chip riding
       the same click. Slidev toggles each group's OWN slidev-vclick-hidden
@@ -146,7 +163,11 @@ function fmt(n: number): string {
       row, the data-text block, the glyphs on/under each bar and the top-right
       chip — one shared click after the bars (the recording's labels arrive
       late). Hidden entirely until that click; the static layers fade in
-      together, the on-bar labels fade later on the recording's windows.
+      together. The on-bar labels are their own measured beats (generation-7
+      decomposition, art_cRMBx282): beat 4 = label 1 at the measured
+      clip-relative window 2800–2983ms, beat 5 = label 2 at 7467–7667ms over
+      the already-settled composition — the slide's AutoAdvance schedule
+      lands them there.
     -->
     <g
       v-if="layout.bars.some((b) => b.label || b.sub) || chip || layout.dataText.length || layout.legend || layout.caption || layout.note || layout.rules.length"
@@ -282,14 +303,14 @@ function fmt(n: number): string {
       <template v-for="(bar, bi) in layout.bars" :key="`annot-${bar.id}`">
         <text
           v-if="bar.label"
+          v-click="layout.bars.length + 2 + bi"
           :class="['sf-tbc-label', `sf-tbc-label-${bi + 1}`]"
           :x="bar.labelX"
           :y="bar.labelY"
           dominant-baseline="central"
           :font-size="type.labelSize"
           :fill="LABEL_COLOR"
-          :textLength="bar.labelLength ?? undefined"
-          :lengthAdjust="bar.labelLength != null ? 'spacingAndGlyphs' : undefined"
+          v-bind="pinAttrs(bar.label, type.labelSize, bar.labelLength ?? undefined)"
         >{{ bar.label }}</text>
         <text
           v-if="bar.sub"
@@ -311,8 +332,8 @@ function fmt(n: number): string {
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
-      :cap-height="53"
-      :cap-top="98"
+      :cap-height="53.2"
+      :cap-top="108"
       :center-x="962"
       :title-text-length="HEADLINE_TEXT_LENGTH"
       badge
@@ -374,20 +395,24 @@ function fmt(n: number): string {
 }
 
 .sf-tbc-label {
-  /* Label 1: fade window 2800–2983ms after the annotation click (delay +
-   * duration) — the composition settles first, the label arrives late. */
+  /* Label 1: fade window 2800–2983ms (generation-7 beat decomposition — the
+   * 2800ms intra-click delay became explicit beat 4, art_cRMBx282). */
   transition: opacity 183ms ease-out;
-  transition-delay: 2800ms;
 }
 
 .sf-tbc-label-2 {
-  /* Label 2: fade window 7467–7667ms after the annotation click. */
+  /* Label 2: fade window 7467–7667ms — explicit beat 5. */
   transition-duration: 200ms;
-  transition-delay: 7467ms;
 }
 
-.sf-tbc-annot.slidev-vclick-hidden .sf-tbc-annot-core,
-.sf-tbc-annot.slidev-vclick-hidden .sf-tbc-label {
+.sf-tbc-annot.slidev-vclick-hidden .sf-tbc-annot-core {
+  transition: none;
+  opacity: 0;
+}
+
+/* Element-level hidden states: backward navigation past a label beat snaps
+ * it instantly (the locked decision). */
+.sf-tbc-label.slidev-vclick-hidden {
   transition: none;
   opacity: 0;
 }

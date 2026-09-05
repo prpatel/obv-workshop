@@ -31,7 +31,6 @@ import {
   CHIP_TEXT_COLOR,
   CHIP_Y_FRAC,
   CHIPS,
-  MINT_SETTLE_DELAY_MS,
   RED_GRADIENT_END,
   TICK_COLOR,
   TICK_H_PX,
@@ -44,7 +43,7 @@ import {
   type StripSegmentLayout,
 } from './stepflow/strip'
 import { resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
-import { titleFontSize } from './stepflow/chrome'
+import { pinAttrs, titleFontSize } from './stepflow/chrome'
 import TitleChrome from './stepflow/TitleChrome.vue'
 
 const props = withDefaults(defineProps<{
@@ -246,14 +245,16 @@ const chipGeom = computed(() => ({
     </g>
 
     <!--
-      Reveal binding (3 native v-clicks), two-phase build: click 1 pops the
-      band at initial proportions (~120ms width ease). Click 2 re-flows the
-      band to its settled three-segment shares in three bursts (measured
-      clip-relative windows 650–1350 / 1783–2133 / 3617–3967ms → stepped
-      transition-delays over the final copies), then the mint segment
-      settles (4083–4200ms). Click 3 reveals the in-band dark display text
-      in two left→right sweeps (4567–4950ms) with the red caption row.
-      Hidden states snap (transition: none) so backward navigation is instant.
+      Reveal binding (6 native v-click beats, generation-7 decomposition of
+      the burst/mint delays — art_cRMBx282): beat 1 pops the band at initial
+      proportions (~120ms width ease). Beat 2 reveals the settled layer +
+      burst 1 at the measured clip-relative window 650–1350ms; beat 3 runs
+      burst 2 at 1783–2133ms; beat 4 re-flows the final segments at
+      3617–3967ms; beat 5 settles the mint segment at 4083–4200ms; beat 6
+      reveals the in-band dark display text in two left→right sweeps
+      (4567–4950ms) with the red caption row. Each beat carries its own
+      reveal — a manual press never snaps a lagging group — and hidden
+      states snap (transition: none) so backward navigation is instant.
     -->
     <g v-click="1" class="sf-rs-build">
       <rect
@@ -272,6 +273,7 @@ const chipGeom = computed(() => ({
       <rect
         v-for="seg in layout.segments"
         :key="`final-${seg.id}`"
+        v-click="seg.tone === 'mint' ? 5 : 4"
         class="sf-rs-seg1"
         :class="{ 'sf-rs-mint': seg.tone === 'mint' }"
         :x="seg.x1"
@@ -281,10 +283,11 @@ const chipGeom = computed(() => ({
         :fill="toneFill(seg)"
       />
       <template v-for="seg in tertiaries" :key="`teal-${seg.id}`">
-        <!-- Burst copies 1–2: stepped reveal of the fixed gradient field. -->
+        <!-- Burst copies 1–2: measured beats 2–3 reveal the fixed gradient field. -->
         <rect
           v-for="(bw, i) in tealBursts(seg)"
           :key="`burst-${seg.id}-${i}`"
+          v-click="i + 2"
           class="sf-rs-burst"
           :class="`sf-rs-burst${i}`"
           :x="seg.x1"
@@ -309,10 +312,11 @@ const chipGeom = computed(() => ({
       />
     </g>
 
-    <!-- Caption row + chip labels (click 3): the labels are clipped by two
-         rects whose widths sweep left→right at the measured delays; the
-         clipPath lives inside the group so the hidden-state selectors reach it. -->
-    <g v-click="3" class="sf-rs-text">
+    <!-- Caption row + chip labels (beat 6): the labels are clipped by two
+         rects whose widths sweep left→right with the 283ms two-stroke
+         micro-stagger; the clipPath lives inside the group so the hidden-state
+         selectors reach it. -->
+    <g v-click="6" class="sf-rs-text">
       <defs>
         <clipPath id="sf-rs-band-sweep">
           <rect
@@ -341,8 +345,7 @@ const chipGeom = computed(() => ({
           :font-size="TYPE.chipText"
           :fill="CHIP_TEXT_COLOR"
           font-weight="700"
-          :textLength="t.chip.ink1 - t.chip.ink0"
-          lengthAdjust="spacingAndGlyphs"
+          v-bind="pinAttrs(t.label, TYPE.chipText, t.chip.ink1 - t.chip.ink0)"
         >{{ t.label }}</text>
       </g>
       <text
@@ -374,8 +377,8 @@ const chipGeom = computed(() => ({
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
-      :cap-height="54"
-      :cap-top="107"
+      :cap-height="53.2"
+      :cap-top="108"
       :center-x="963"
       :title-text-length="1026"
       badge
@@ -418,22 +421,18 @@ const chipGeom = computed(() => ({
 
 .sf-rs-burst0 {
   transition: width 700ms cubic-bezier(0, 0, 0.2, 1);
-  transition-delay: 0ms;
 }
 
 .sf-rs-burst1 {
   transition: width 350ms cubic-bezier(0, 0, 0.2, 1);
-  transition-delay: 1133ms;
 }
 
 .sf-rs-seg1 {
   transition: width 350ms cubic-bezier(0, 0, 0.2, 1);
-  transition-delay: 2967ms;
 }
 
 .sf-rs-mint {
   transition: width 120ms cubic-bezier(0, 0, 0.2, 1);
-  transition-delay: v-bind('`${MINT_SETTLE_DELAY_MS}ms`');
 }
 
 .sf-rs-sweep {
@@ -447,6 +446,14 @@ const chipGeom = computed(() => ({
 .sf-rs-build.slidev-vclick-hidden .sf-rs-seg0,
 .sf-rs-final.slidev-vclick-hidden .sf-rs-seg1,
 .sf-rs-final.slidev-vclick-hidden .sf-rs-burst {
+  width: 0;
+  transition: none;
+}
+
+/* Element-level hidden states for the beats after the settled layer: a
+ * revealed group with a pending child beat keeps the child snapped shut. */
+.sf-rs-burst.slidev-vclick-hidden,
+.sf-rs-seg1.slidev-vclick-hidden {
   width: 0;
   transition: none;
 }

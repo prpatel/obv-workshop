@@ -190,7 +190,7 @@ canvasWidth: 1920
 <NodeEdge
   title="DATA MESH CORE"
   title-accent="PLATFORM"
-  :title-text-length="1105"
+  :title-text-length="1453"
   :palette="{ accent: '#33a5cd', accentAlt: '#e6b434', track: '#5a1e1e' }"
   :terminal-log="{ command: 'meshctl status --verbose', stat: 'nodes : 6 healthy · 2' }"
   :nodes="[
@@ -254,8 +254,8 @@ canvasWidth: 1920
 <VerticalSpine
   :palette="{ accent: '#21cfe9', accentAlt: '#3698fb' }"
   :title-tokens="[
-    { text: 'SQL', accent: true, x: 228.8, width: 188.4, capHeight: 84, capTop: 58.5 },
-    { text: 'and pipelines still matter', x: 439.0, width: 1163.8, capHeight: 72.3, capTop: 53.8 },
+    { text: 'SQL', accent: true, x: 229.9, width: 187.5, capHeight: 65.9, capTop: 60.3 },
+    { text: 'and pipelines still matter', x: 440.0, width: 1162.5, capHeight: 68.8, capTop: 56.5 },
   ]"
   :footer="{ left: 'QUERIES DRAFTED IN SECONDS', right: 'WHAT MOVES THE DATA EVERY DAY' }"
   :nodes="[
@@ -389,10 +389,9 @@ canvasWidth: 1920
   default, so no palette prop is needed. AutoAdvance is renderless
   deck-level wiring: the `a` key toggles a hands-free run and ?autoplay=N in
   the URL starts one on slide enter. The clip window starts post-pop (bars
-  and annotations already present; sheet art_7bTnqSB3 §1.3), so AutoAdvance
-  compresses the 3-click build into the first 0.3s and lets the label fades
-  land at ≈3.1s/7.8s — the measured 2800–2983/7467–7667ms clip-relative
-  windows.
+  and annotations already present; sheet art_7bTnqSB3 §1.3), so the schedule
+  compresses the 3-click build into the first 0.3s and lands the label beats
+  at the measured 2800–2983/7467–7667ms clip-relative windows exactly.
 -->
 
 <div class="sf-demo-stage">
@@ -415,7 +414,7 @@ canvasWidth: 1920
   ]"
 />
 
-<AutoAdvance :duration-sec="0.3" :step-schedule-sec="[0.1, 0.2, 0.3]" />
+<AutoAdvance :duration-sec="7.7" :step-schedule-sec="[0.1, 0.2, 0.3, 2.8, 7.467]" />
 
 </div>
 
@@ -493,7 +492,10 @@ canvasWidth: 1920
   v-clicks — one per tile, fired on the sheet-measured growing stagger
   (art_7bTnqSB3 §2.3: 550ms after entrance, then gaps 400/1383/1434/1050/
   1800ms — the stepScheduleSec beats below; uniform spacing cannot express
-  them). Measured anatomy: saturated #1ed0e8 hex cores with a soft glow
+  them) — followed by two connector-track v-click beats (generation-7 wave,
+  art_cRMBx282): the recording's 1500/2483ms intra-click track delays became
+  discrete beats 7–8, so manual stepping plays the identical measured rhythm
+  as autoplay. Measured anatomy: saturated #1ed0e8 hex cores with a soft glow
   halo, a ~12px #353642 connector track through tile centers that stays dark
   until after tile 6 (source 8117–9117ms; row 2 trails row 1 by ~983ms), a
   #a0ecfb sheen at the first tile's lit vertex, ~40px near-black icons, and
@@ -526,11 +528,13 @@ canvasWidth: 1920
   :y0-frac="0.384722"
 />
 
-<!-- Measured click-fire beats (s from run start) — tiles.ts
-     tileStaggerSchedule(6): click k at 550 + Σ gaps ms. -->
+<!-- Measured beat-fire times (s from run start) — tiles.ts
+     tileBeatSchedule(6): tiles k at 550 + Σ gaps ms, then the track beats at
+     8117ms (row 1) and 9100ms (row 2) — one press per beat, no intra-click
+     lag on manual stepping. -->
 <AutoAdvance
-  :duration-sec="8.7"
-  :step-schedule-sec="[0.55, 0.95, 2.333, 3.767, 4.817, 6.617]"
+  :duration-sec="9.2"
+  :step-schedule-sec="[0.55, 0.95, 2.333, 3.767, 4.817, 6.617, 8.117, 9.1]"
 />
 
 </div>
@@ -576,8 +580,12 @@ canvasWidth: 1920
   the video is the scoring target, so this slide typesets the
   video-verified strings. Initial proportions are [I]: the teal region
   starts at ~1/5 of its settled share and the mint segment near-closed; red
-  holds the rest. All three v-clicks are pure revealed-state transitions
-  — backward nav snaps instantly.
+  holds the rest. Six native v-click beats (generation-7 decomposition of
+  the intra-click delays, art_cRMBx282): band pop, settled layer + burst 1,
+  burst 2, final segments, mint settle, then the text/caption state — the
+  AutoAdvance schedule pins each to its measured clip-relative window and
+  a manual press lands the same beat. All reveals are pure
+  revealed-state transitions — backward nav snaps instantly.
 -->
 
 <div class="sf-demo-stage">
@@ -601,7 +609,7 @@ canvasWidth: 1920
   ]"
 />
 
-<AutoAdvance :duration-sec="4.567" :step-schedule-sec="[0.3, 0.65, 4.567]" />
+<AutoAdvance :duration-sec="4.95" :step-schedule-sec="[0.3, 0.65, 1.783, 3.617, 4.083, 4.567]" />
 
 </div>
 

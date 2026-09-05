@@ -434,7 +434,7 @@ describe('MilestoneLanes component', () => {
     expect(Number(captions[0].attributes('y'))).toBeCloseTo(525 + 25, 6)
     expect(captions[0].attributes('fill')).toBe('#0a0202')
     expect(captions[0].attributes('textLength')).toBe('292')
-    expect(captions[0].attributes('lengthAdjust')).toBe('spacingAndGlyphs')
+    expect(captions[0].attributes('lengthAdjust')).toBe('spacing')
     // Bar 3's caption rides the center-out bar's measured band.
     expect(captions[1].text()).toBe('HARDER TO REPLACE')
     expect(Number(captions[1].attributes('x'))).toBeCloseTo(1307 + 26, 6)
@@ -553,9 +553,10 @@ describe('MilestoneLanes component', () => {
 
     expect(header.text()).toContain('DATA')
     expect(header.html()).toContain('#66fb00')
-    // The measured 798px extent is pinned through TitleChrome's textLength.
+    // The measured 798px extent is pinned through TitleChrome's textLength
+    // (spacing-only — glyphs are never squeezed).
     expect(header.html()).toContain('textLength="798"')
-    expect(header.html()).toContain('spacingAndGlyphs')
+    expect(header.html()).toContain('lengthAdjust="spacing"')
   })
 
   it('renders the dim plate as the only ambience — no frame, no washes, no ticks', () => {
