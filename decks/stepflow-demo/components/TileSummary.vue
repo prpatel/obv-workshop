@@ -79,6 +79,7 @@ function iconTransform(tile: TileSummaryRect): string {
         :font-size="header.fontSize"
         v-bind="pinAttrs(title, header.fontSize, header.lead.w)"
         text-anchor="start"
+        font-weight="700"
         :fill="TITLE_WHITE"
       >{{ title }}</text>
       <text
@@ -89,6 +90,7 @@ function iconTransform(tile: TileSummaryRect): string {
         :font-size="header.fontSize"
         v-bind="pinAttrs(titleAccent, header.fontSize, header.accent.w)"
         text-anchor="start"
+        font-weight="700"
         :fill="CHROME_GREEN"
       >{{ titleAccent }}</text>
     </g>
@@ -173,9 +175,9 @@ function iconTransform(tile: TileSummaryRect): string {
          ~200ms behind (t≈1.667), summary text ~266ms behind (t≈1.733) —
          white text last, inside the locked 4-click contract. -->
     <g v-click="plan.bracketClick" :data-sf-click="plan.bracketClick" class="ts-bracket">
-      <rect class="ts-vert ts-vert--right" :x="layout.verticals.right.x" :y="layout.verticals.right.y" :width="layout.verticals.right.w" :height="layout.verticals.right.h" :fill="p.accent" />
+      <rect class="ts-vert ts-vert--right" :x="layout.verticals.right.x" :y="layout.verticals.right.y" :width="layout.verticals.right.w" :height="layout.verticals.right.h" :fill="p.accentAlt ?? p.accent" />
       <rect class="ts-bar" :x="layout.bar.x" :y="layout.bar.y" :width="layout.bar.w" :height="layout.bar.h" :fill="p.accent" />
-      <rect class="ts-vert ts-vert--left" :x="layout.verticals.left.x" :y="layout.verticals.left.y" :width="layout.verticals.left.w" :height="layout.verticals.left.h" :fill="p.accent" />
+      <rect class="ts-vert ts-vert--left" :x="layout.verticals.left.x" :y="layout.verticals.left.y" :width="layout.verticals.left.w" :height="layout.verticals.left.h" :fill="p.accentAlt ?? p.accent" />
       <text
         v-if="summarySpec"
         class="ts-summary"

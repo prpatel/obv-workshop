@@ -263,6 +263,8 @@ canvasWidth: 1920
 <ConvergeFlow
   title-accent="ETL"
   title="EVERYTHING CONVERGES"
+  left-box-text="CICD"
+  left-lower-text="RUN 412"
 />
 
 <AutoAdvance :duration-sec="3.07" :step-schedule-sec="[1.07, 1.53, 2.2, 2.6, 3.07]" />
@@ -433,6 +435,7 @@ canvasWidth: 1920
   title="ETL IN"
   title-accent="THREE MOVES"
   summary="three tiles, one measured run"
+  :palette="{ accentAlt: '#3799fb' }"
   :seed="[
     { id: 'extract', label: 'EXTRACT', xFrac: 0.2277, wFrac: 0.077 },
     { id: 'transform', label: 'TRANSFORM', xFrac: 0.4613, wFrac: 0.0774 },
