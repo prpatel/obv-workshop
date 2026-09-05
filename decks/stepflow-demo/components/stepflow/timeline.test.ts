@@ -16,6 +16,7 @@ import {
   LEGEND_BAR_H,
   LEGEND_MINT,
   MEASURED_POP_MS,
+  HALO_R_FRAC,
   NODE_BLUE,
   NODE_CYAN,
   NODE_DIGIT_SIZE,
@@ -98,6 +99,7 @@ const fullProps = { ...data, title: 'Where is it', titleAccent: 'heading?', titl
 describe('measured constants — the settled frame over the 1920×1080 read', () => {
   it('node, tick, and label-block geometry in canvas fractions', () => {
     expect(NODE_R_FRAC * 1080).toBeCloseTo(51.5, 6) // d≈103 discs
+    expect(HALO_R_FRAC * 1080).toBeCloseTo(102.5, 6) // ~51px hue-matched halo beyond each disc
     expect(TICK_LEN_FRAC * 1080).toBeCloseTo(142, 6) // ticks y550–692
     expect(LABEL_CX_OFFSET_FRAC * 1920).toBeCloseTo(27, 6) // row-1 blocks sit 27px right of the node
     expect(LABEL_BASELINE_FRAC * 1080).toBeCloseTo(729, 6)
@@ -199,6 +201,7 @@ describe('segmentTimelineLayout', () => {
     expect(first!.nodeCy).toBeCloseTo(497, 6)
     for (const seg of layout.segments) {
       expect(seg.nodeR).toBeCloseTo(51.5, 6)
+      expect(seg.haloR).toBeCloseTo(102.5, 6)
     }
   })
 
@@ -364,7 +367,7 @@ describe('SegmentTimeline component', () => {
     expect(fills[2]!.attributes('fill')).toBe('#f75720')
   })
 
-  it('renders one solid node disc per segment with a dark step number — no glow gradient', () => {
+  it('renders one solid node disc per segment with a dark step number, riding a hue-matched halo', () => {
     const wrapper = mountTimeline(fullProps)
     const discs = wrapper.findAll('.disc')
     expect(discs).toHaveLength(3)
@@ -373,10 +376,18 @@ describe('SegmentTimeline component', () => {
       expect(parseFloat(disc.attributes('cy')!)).toBeCloseTo(497, 4)
       expect(['#3699fa', '#1ed0e8', '#f75720']).toContain(disc.attributes('fill'))
     }
+    // Halos: ~51px beyond each disc, tone-bound to the same palette.
+    const halos = wrapper.findAll('.sf-tl-halo')
+    expect(halos).toHaveLength(3)
+    for (const [i, halo] of halos.entries()) {
+      expect(parseFloat(halo.attributes('r')!)).toBeCloseTo(102.5, 4)
+      expect(parseFloat(halo.attributes('cy')!)).toBeCloseTo(497, 4)
+      expect(halo.attributes('fill')).toBe(`url(#sf-tl-glow-${['accent', 'tertiary', 'alt'][i]})`)
+    }
+    expect(wrapper.html()).toContain('radialGradient')
     const digits = wrapper.findAll('.sf-tl-digit')
     expect(digits.map((digit) => digit.text())).toEqual(['01', '02', '03'])
     expect(digits[0]!.attributes('fill')).toBe('#050505')
-    expect(wrapper.html()).not.toContain('radialGradient')
   })
 
   it('renders 4px node-colored ticks dropping from just below each disc toward the labels', () => {
@@ -464,6 +475,10 @@ describe('SegmentTimeline component', () => {
     expect(css).toContain('transition: transform 100ms')
     expect(css).toContain('transform: scale(0.6)')
     expect(css).toContain('.sf-tl-node.slidev-vclick-hidden .disc')
+    // Halos pop with the disc; their hidden state snaps instantly too.
+    const haloHidden = css.match(/\.sf-tl-node\.slidev-vclick-hidden \.sf-tl-halo[\s\S]*?\}/)?.[0] ?? ''
+    expect(haloHidden).toContain('opacity: 0')
+    expect(haloHidden).toContain('transition: none')
     // Tick + row-1 label cascade ~400ms after the pop.
     expect(css).toContain('opacity 250ms ease-out 400ms')
     // Row-2 dim label ~900ms after the cascade.
@@ -479,6 +494,7 @@ describe('SegmentTimeline component', () => {
 
     expect(reduced).toContain('.sf-tl-seg')
     expect(reduced).toContain('.sf-tl-node')
+    expect(reduced).toContain('.sf-tl-halo')
     expect(reduced).toContain('.disc')
     expect(reduced).toContain('transition: none')
   })

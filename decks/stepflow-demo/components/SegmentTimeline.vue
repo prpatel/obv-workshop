@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import {
   ARROW_WHITE,
   DIGIT_INK,
+  HALO_OPACITY,
   LABEL_SIZE,
   LABEL_WHITE,
   LEGEND_SIZE,
@@ -56,8 +57,9 @@ const props = withDefaults(defineProps<{
 })
 
 // The family's measured trio — blue/cyan/red nodes and dim track — composed
-// over chainBlue so unmeasured fields keep house values. No persistent glow:
-// the settled ref frame shows crisp disc edges with no halo skirt.
+// over chainBlue so unmeasured fields keep house values. Hue-matched node
+// halos ride the disc (reference-truth connector scans, art_jItoEY9Q):
+// ~51px beyond each 103px disc, present from its pop onward.
 const p = computed(() => resolvePalette({
   ...chainBlue,
   accent: NODE_BLUE,
@@ -107,6 +109,24 @@ function px(n: number): string {
     role="img"
     :aria-label="`${segments.length}-segment timeline diagram`"
   >
+    <defs>
+      <!-- Hue-matched node halos: radial falloff behind each disc, tone-bound
+           so a palette override re-hues them automatically (ref: ~51px glow
+           beyond each 103px disc, connector scans art_jItoEY9Q). -->
+      <radialGradient id="sf-tl-glow-accent">
+        <stop offset="0" :stop-color="toneColor('accent')" stop-opacity="0.9" />
+        <stop offset="1" :stop-color="toneColor('accent')" stop-opacity="0" />
+      </radialGradient>
+      <radialGradient id="sf-tl-glow-tertiary">
+        <stop offset="0" :stop-color="toneColor('tertiary')" stop-opacity="0.9" />
+        <stop offset="1" :stop-color="toneColor('tertiary')" stop-opacity="0" />
+      </radialGradient>
+      <radialGradient id="sf-tl-glow-alt">
+        <stop offset="0" :stop-color="toneColor('alt')" stop-opacity="0.9" />
+        <stop offset="1" :stop-color="toneColor('alt')" stop-opacity="0" />
+      </radialGradient>
+    </defs>
+
     <!-- Dim base track: always visible (the source shows the empty track axis
          before the first node pops). -->
     <rect
@@ -148,6 +168,15 @@ function px(n: number): string {
       v-click="i + 1"
       class="sf-tl-node"
     >
+      <!-- The halo pops with the disc (present from its node's pop onward). -->
+      <circle
+        class="sf-tl-halo"
+        :cx="seg.nodeCx"
+        :cy="seg.nodeCy"
+        :r="seg.haloR"
+        :fill="`url(#sf-tl-glow-${seg.tone})`"
+        :opacity="HALO_OPACITY"
+      />
       <circle class="disc" :cx="seg.nodeCx" :cy="seg.nodeCy" :r="seg.nodeR" :fill="toneColor(seg.tone)" />
       <text
         class="sf-tl-digit"
@@ -297,6 +326,10 @@ function px(n: number): string {
   transition: transform 100ms cubic-bezier(0, 0, 0.2, 1), opacity 100ms ease-out;
 }
 
+.sf-tl-halo {
+  transition: opacity 100ms ease-out;
+}
+
 .sf-tl-digit {
   transition: opacity 100ms ease-out;
 }
@@ -334,6 +367,11 @@ function px(n: number): string {
   transition: none;
 }
 
+.sf-tl-node.slidev-vclick-hidden .sf-tl-halo {
+  opacity: 0;
+  transition: none;
+}
+
 .sf-tl-legend.slidev-vclick-hidden {
   opacity: 0;
   transition: none;
@@ -342,6 +380,7 @@ function px(n: number): string {
 @media (prefers-reduced-motion: reduce) {
   .sf-tl-seg,
   .sf-tl-node,
+  .sf-tl-halo,
   .disc,
   .sf-tl-digit,
   .sf-tl-tick,
