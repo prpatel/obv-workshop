@@ -1,0 +1,110 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`pillarRowLayout — options and validation > n=3 layout snapshot is stable across runs 1`] = `
+{
+  "cards": [
+    {
+      "badge": {
+        "coreRx": 24.768,
+        "coreRy": 25.164,
+        "cx": 590.208,
+        "cy": 641.25,
+        "rx": 40.512,
+        "ry": 45.738,
+      },
+      "glyph": {
+        "cx": 339.36,
+        "cy": 555.39,
+        "size": 98.112,
+      },
+      "index": 0,
+      "label": {
+        "baselineY": 638.28,
+        "capHeight": 15.012,
+        "textLength": 67.968,
+        "x": 306.048,
+      },
+      "plate": {
+        "h": 216,
+        "w": 307.2,
+        "x": 249.6,
+        "y": 486,
+      },
+    },
+    {
+      "badge": {
+        "coreRx": 24.768,
+        "coreRy": 25.164,
+        "cx": 1091.616,
+        "cy": 641.25,
+        "rx": 40.512,
+        "ry": 45.738,
+      },
+      "glyph": {
+        "cx": 840.768,
+        "cy": 555.39,
+        "size": 97.536,
+      },
+      "index": 1,
+      "label": {
+        "baselineY": 638.28,
+        "capHeight": 15.012,
+        "textLength": 67.968,
+        "x": 793.536,
+      },
+      "plate": {
+        "h": 216,
+        "w": 307.2,
+        "x": 739.2,
+        "y": 486,
+      },
+    },
+    {
+      "badge": {
+        "coreRx": 24.768,
+        "coreRy": 25.164,
+        "cx": 1592.448,
+        "cy": 641.25,
+        "rx": 40.512,
+        "ry": 45.738,
+      },
+      "glyph": {
+        "cx": 1342.464,
+        "cy": 555.39,
+        "size": 97.536,
+      },
+      "index": 2,
+      "label": {
+        "baselineY": 638.28,
+        "capHeight": 15.012,
+        "textLength": 54.3744,
+        "x": 1302.72,
+      },
+      "plate": {
+        "h": 216,
+        "w": 307.2,
+        "x": 1228.8,
+        "y": 486,
+      },
+    },
+  ],
+  "textRows": [
+    {
+      "baselineY": 728.244,
+      "capHeight": 21.708,
+      "textLength": 1090.56,
+      "x": 535.488,
+    },
+    {
+      "baselineY": 754.488,
+      "capHeight": 18.684,
+      "textLength": 1080,
+      "x": 553.536,
+    },
+  ],
+  "viewBox": {
+    "height": 1080,
+    "width": 1920,
+  },
+}
+`;
