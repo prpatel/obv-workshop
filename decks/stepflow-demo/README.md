@@ -189,7 +189,7 @@ data order is the click order for every family. Click counts below are the
 | `StairChain`   | seg01          | 10     | callout → six interleaved block/caption beats → two annotation waves → closing mark | 2 |
 | `PillarRow`    | seg05          | 6      | per card: glyph+label, then badge (card 3's badge rides its card) → summary rows | 3 |
 | `StackPanels`  | seg08          | 4      | per panel: full-size fade (blue → cyan → amber → green) + the late frame/label/caption annotation on the final click | 4 |
-| `ConvergeFlow` | seg11          | 5      | left column → right column → bar + labels → base + row bits → footer   | 5 |
+| `ConvergeFlow` | seg11          | 5      | left table → SQL + left label → right plate (+ pins / PIPELINES) → bar draw + right label → footer | 5 |
 | `CompareBadge` | seg12          | 5      | badge pop → four alternating plate rows                                | 6 |
 | `SpecPanel`    | seg14          | 7      | plate → status row → heading+body → red accent → teal cluster → spec row → closing line | 7 |
 | `StepPanel`    | seg15          | 7      | plate draw → three rows → left annotation → amber group → title burst  | 8 |
@@ -254,21 +254,23 @@ present from the first frame, outside the click choreography.
 
 #### ConvergeFlow — converge-branch flow (seg11, slide 5)
 
-Five clicks: left cyan column, right blue column (with its six-box base row),
-the dim-orange bar bracket drawing across, the white base labels, then the
-gray footer band. The funnel assembly (ring, cone, tick row, stem) is the
-clip's mid-state — it renders from f0001 and never animates. Tones are the
-re-measured pair: bright funnel orange `#f25726` vs dim bar orange `#bf521c`
-(`converge.ts` family preset). Copy defaults to `CONVERGE_SEED`; in-box glyph
-rows stay sub-resolution props (left boxes empty). Crop→stage: content bbox →
-full stage (`converge.ts` docblock).
+Five clicks: the left cyan table (outline, then two dividers, then two
+cell-bar pairs), the cyan `SQL` run + gray left label, the right blue plate
+with its two through-pins + blue `PIPELINES` run, the dim-orange bar bracket
+drawing across, then the gray footer band. The funnel assembly (ring, cone,
+DATA ENGINEERS row, stem) is the clip's mid-state — it renders from f0001
+and never animates. Tones are the re-measured set: bright funnel orange
+`#f25726`, dim bar orange `#bf521c`, label gray `#a7a6ab` (`converge.ts`
+family preset). Copy defaults to `CONVERGE_SEED` (OCR-confirmed); the left
+table's cells render as measured bars — no in-box text props. Crop→stage:
+content bbox → full stage (`converge.ts` docblock).
 
 | Prop             | Type                       | Purpose                                              |
 | ---------------- | -------------------------- | ---------------------------------------------------- |
-| `title` / `titleAccent` | `string`            | Two-tone token header (green lead first, per the sheet) |
-| `labels`         | `{ left?, right? }`        | White base labels under the two columns              |
-| `funnelLabel`    | `string`                   | The funnel's tick-row numerals                       |
-| `leftBoxText` / `rightBoxText` | `string`     | In-box text (right box carries the seed's `DWH`)     |
+| `title` / `titleAccent` | `string`            | Two-tone token header (green `SQL` lead first, per the sheet) |
+| `labels`         | `{ left?, right? }`        | Gray base labels under the two columns               |
+| `funnelLabel`    | `string`                   | The funnel's tracked row (seed: `DATA ENGINEERS`)    |
+| `leftLowerText` / `slabText` | `string`       | The bare cyan run under the table / blue run across the right base |
 | `palette`        | `Partial<StepFlowPalette>` | Optional override over the measured family preset    |
 
 #### CompareBadge — plate-and-badge comparison (seg12, slide 6)

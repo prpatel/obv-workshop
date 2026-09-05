@@ -5,30 +5,28 @@ import {
   CONVERGE_SEED,
   FOOTER_GRAY,
   FUNNEL_ORANGE,
-  LABEL_WHITE,
+  LABEL_GRAY,
   convergeDrawPaths,
   convergeLayout,
   convergePalette,
 } from './stepflow/converge'
 import { resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
 import TitleChrome from './stepflow/TitleChrome.vue'
-import { CAP_HEIGHT_RATIO, pinAttrs } from './stepflow/chrome'
+import { CAP_HEIGHT_RATIO, pinAttrs, titleFontSizeFromXHeight } from './stepflow/chrome'
 
 const props = withDefaults(defineProps<{
-  /** White title tail, e.g. 'EVERYTHING CONVERGES'. */
+  /** White lowercase title tail, e.g. 'and pipelines still matter'. */
   title?: string
-  /** Chrome-green title LEAD — this family's sheet reads the green phrase first ('ETL'). */
+  /** Chrome-green title LEAD — the sheet reads the green phrase first ('SQL'). */
   titleAccent?: string
-  /** White base labels under the two columns. */
+  /** Gray base labels under the two columns. */
   labels?: { left?: string; right?: string }
-  /** Orange numeric tick row under the funnel cone. */
+  /** Orange tracked row under the funnel cone. */
   funnelLabel?: string
-  /** Optional text inside the left main box (sub-resolution in the reference). */
-  leftBoxText?: string
-  /** Optional text inside the left lower box. */
+  /** The bare cyan text run under the left table. */
   leftLowerText?: string
-  /** Optional text inside the right main box. */
-  rightBoxText?: string
+  /** The blue text run across the right column's base. */
+  slabText?: string
   /** Partial palette merged over the family's `convergePalette` preset. */
   palette?: StepFlowPaletteOverride
 }>(), {
@@ -36,13 +34,12 @@ const props = withDefaults(defineProps<{
   titleAccent: CONVERGE_SEED.titleAccent,
   labels: () => ({ ...CONVERGE_SEED.labels }),
   funnelLabel: CONVERGE_SEED.funnelLabel,
-  leftBoxText: '',
-  leftLowerText: '',
-  rightBoxText: CONVERGE_SEED.rightBoxText,
+  leftLowerText: CONVERGE_SEED.leftLowerText,
+  slabText: CONVERGE_SEED.slabText,
   palette: () => ({}),
 })
 
-// convergePalette is ConvergeFlow's family preset: measured right-column blue
+// convergePalette is ConvergeFlow's family preset: settled right-column blue
 // as `accent`, left-column cyan as `accentTertiary`. resolvePalette merges the
 // default `cyanOnBlack` underneath, so an override can re-tint any field.
 const p = computed(() => resolvePalette({ ...convergePalette, ...props.palette }))
@@ -52,41 +49,82 @@ const p = computed(() => resolvePalette({ ...convergePalette, ...props.palette }
 const layout = computed(() => convergeLayout())
 const draws = computed(() => convergeDrawPaths(layout.value))
 
-// Title chrome, measured off the seg11 settled frame: green lead ink
-// x402.048–555.072 (153.024 wide), white tail ink x572.928–1489.536
-// (916.608 wide), cap band y104.22–161.244 (cap 57.024). Token mode pins
-// each ink run independently — the short lead measures ~11% wider than its
-// natural mono run, the tail ~2% narrow (natural).
+// Title chrome, measured off the seg11 settled frame: green 'SQL' lead ink
+// x402.048–555.072 (153.024 wide, cap band y107–161.5) over the white
+// lowercase tail 'and pipelines still matter'. The tail runs in the
+// recording's PROPORTIONAL face — per-glyph boxes from the settled frame
+// (layout.charRuns.titleTail) replace the old single pinned run, because
+// JBM's mono advance cannot follow the ref rhythm ('I' pitch 15px vs 'P'
+// 31px). The tail is sized from its measured x-height band (y118.5–161,
+// 43px) with baseline 161. Token mode pins each ink run independently; the
+// render weight is 700 with a fill-colored stroke (see the :deep rules).
 const TITLE = {
-  capHeight: 57.024,
-  capTop: 104.22,
+  capHeight: 54.5,
+  capTop: 107,
 } as const
-const titleTokens = computed(() => [
-  { text: props.titleAccent, x: 402.048, width: 153.024, accent: true },
-  { text: props.title, x: 572.928, width: 916.608 },
-])
 
-// Typography through the deck's measured cap ratio; text inside the boxes is
-// centered on each box (the reference's in-box glyph rows are sub-resolution).
+// Tail sizing through the deck's measured x-height ratio: the ref tail band
+// is x-height 43px on baseline 161.
+const TAIL = { xHeight: 43, baseline: 161 } as const
+const tailFontSize = titleFontSizeFromXHeight(TAIL.xHeight)
+const TAIL_TOKEN = {
+  capHeight: tailFontSize * CAP_HEIGHT_RATIO,
+  baseline: TAIL.baseline,
+} as const
+
+// Same proportional-face treatment for PIPELINES.
+const slabChars = computed(() =>
+  props.slabText === CONVERGE_SEED.slabText ? layout.value.charRuns.pipelines : [],
+)
+const titleTokens = computed(() => {
+  const lead = { text: props.titleAccent, x: 402.048, width: 153.024, accent: true }
+  if (props.title !== CONVERGE_SEED.title) {
+    // Non-seed copy: no measured boxes — fall back to one uniform pin.
+    return [lead, { text: props.title, x: 573, width: 948, capHeight: 51.1, capTop: 105.4 }]
+  }
+  return [
+    lead,
+    ...layout.value.charRuns.titleTail.map((c) => ({
+      text: c.char,
+      x: c.x,
+      width: c.width,
+      capHeight: TAIL_TOKEN.capHeight,
+      capTop: TAIL_TOKEN.baseline - TAIL_TOKEN.capHeight,
+    })),
+  ]
+})
+
+// Typography through the deck's measured cap ratio; the colored text runs
+// render at their measured ink runs (spacing-pinned, glyphs never squeeze).
 const type = computed(() => {
-  const c = layout.value.columns
+  const runs = layout.value.textRuns
   return {
     labelSize: layout.value.labels.left.capHeight / CAP_HEIGHT_RATIO,
     funnelLabelSize: layout.value.funnel.label.capHeight / CAP_HEIGHT_RATIO,
-    boxCap: 16,
-    leftBoxCenter: { x: c.left.x + c.left.w / 2, baseline: c.left.y + c.left.h / 2 + 8 },
-    leftLowerCenter: { x: c.leftLower.x + c.leftLower.w / 2, baseline: c.leftLower.y + c.leftLower.h / 2 + 6 },
-    rightBoxCenter: { x: c.right.x + c.right.w / 2, baseline: c.right.y + c.right.h / 2 + 9 },
+    leftLowerSize: runs.leftLower.capHeight / CAP_HEIGHT_RATIO,
+    slabSize: runs.slab.capHeight / CAP_HEIGHT_RATIO,
   }
 })
 
-function boxFontSize(h: number): number {
-  return h / CAP_HEIGHT_RATIO
-}
-
-/** Funnel strokes are thin (≈2.5px at 1920); the bar carries its measured 3px line. */
+/** Stroke widths re-measured off the settled frame's ink bands: the funnel
+ * ring/cone ≈4.5px, the table outline band y625–631 (6px), the plate walls
+ * x1268–1273/x1372–1377 (6px). Text renders with a matching stroke under the
+ * fill (paint-order) to reach the recording's heavier face — see styles. */
 const STROKES = {
-  funnel: 2.5,
+  funnel: 4.5,
+  table: 6,
+  plate: 6,
+} as const
+
+/** Text stroke-fattening (px): the recording's face inks heavier than JBM
+ * Bold on the bright chrome and colored runs (title lead mass 2818 vs our
+ * bold 1986), while the dim gray labels and the funnel row run LIGHTER than
+ * bold (label mass 1542 vs our bold+stroke 3097) — those render at their
+ * base weight with no stroke. Values tuned against settled-frame ink-mass
+ * ratios and region MADs. */
+const INK_STROKE = {
+  run: 2.5,
+  sqlRun: 3,
 } as const
 </script>
 
@@ -134,108 +172,152 @@ const STROKES = {
         :y="layout.funnel.label.baseline"
         :font-size="type.funnelLabelSize"
         :fill="FUNNEL_ORANGE"
+        font-weight="500"
         v-bind="pinAttrs(funnelLabel, type.funnelLabelSize, layout.funnel.label.width)"
       >{{ funnelLabel }}</text>
     </g>
 
-    <!-- Click 1 (t1.07): left cyan main box pops. -->
+    <!-- Click 1 (t0.933): the left cyan table pops — outline first, then the
+         interior dividers (≈+130ms) and cell-bar pairs (≈+200ms), matching
+         the onsets.json build (outline 0.933 → contents 1.067/1.133). -->
     <g v-click="1" class="sf-col">
       <rect
-        class="sf-box"
+        class="sf-el"
         :x="layout.columns.left.x"
         :y="layout.columns.left.y"
         :width="layout.columns.left.w"
         :height="layout.columns.left.h"
         fill="none"
         :stroke="p.accentTertiary"
-        stroke-width="3"
+        :stroke-width="STROKES.table"
       />
-      <text
-        v-if="leftBoxText"
-        :x="type.leftBoxCenter.x"
-        :y="type.leftBoxCenter.baseline"
-        text-anchor="middle"
-        :font-size="boxFontSize(type.boxCap)"
+      <rect
+        v-for="(divider, i) in layout.columns.leftTable.dividers"
+        :key="`d${i}`"
+        class="sf-el sf-d1"
+        :x="divider.x"
+        :y="divider.y"
+        :width="divider.w"
+        :height="divider.h"
         :fill="p.accentTertiary"
-      >{{ leftBoxText }}</text>
+      />
+      <rect
+        v-for="(bar, i) in layout.columns.leftTable.bars"
+        :key="`b${i}`"
+        class="sf-el sf-d2"
+        :x="bar.x"
+        :y="bar.y"
+        :width="bar.w"
+        :height="bar.h"
+        :fill="p.accentTertiary"
+      />
     </g>
 
-    <!-- Click 2 (t1.53): left lower box pops, left label fades in (label's
-         measured onset t1.667 rides the nearer 1.53 beat). -->
+    <!-- Click 2 (t1.533): the bare cyan "SQL" run pops and the gray left
+         label fades in (label's measured white onsets 1.667–1.8 ride ≈+130ms). -->
     <g v-click="2" class="sf-col">
-      <rect
-        class="sf-box"
-        :x="layout.columns.leftLower.x"
-        :y="layout.columns.leftLower.y"
-        :width="layout.columns.leftLower.w"
-        :height="layout.columns.leftLower.h"
-        fill="none"
-        :stroke="p.accentTertiary"
-        stroke-width="3"
-      />
       <text
         v-if="leftLowerText"
-        :x="type.leftLowerCenter.x"
-        :y="type.leftLowerCenter.baseline"
-        text-anchor="middle"
-        :font-size="boxFontSize(type.boxCap)"
+        class="sf-el"
+        :x="layout.textRuns.leftLower.x"
+        :y="layout.textRuns.leftLower.baseline"
+        :font-size="type.leftLowerSize"
         :fill="p.accentTertiary"
+        :stroke="p.accentTertiary"
+        :stroke-width="INK_STROKE.sqlRun"
+        paint-order="stroke"
+        font-weight="700"
+        v-bind="pinAttrs(leftLowerText, type.leftLowerSize, layout.textRuns.leftLower.width)"
       >{{ leftLowerText }}</text>
       <text
         v-if="labels.left"
-        class="sf-label"
+        class="sf-el sf-d1"
         :x="layout.labels.left.x"
         :y="layout.labels.left.baseline"
         :font-size="type.labelSize"
-        :fill="LABEL_WHITE"
+        :fill="LABEL_GRAY"
+        font-weight="500"
         v-bind="pinAttrs(labels.left, type.labelSize, layout.labels.left.width)"
       >{{ labels.left }}</text>
     </g>
 
-    <!-- Click 3 (t2.20): right blue main box + the row of six small boxes pop. -->
+    <!-- Click 3 (t2.2): the right blue plate pops, its two through-pins ride
+         ≈+130ms (measured 2.267), the blue "PIPELINES" run ≈+200ms (2.4). -->
     <g v-click="3" class="sf-col">
       <rect
-        class="sf-box"
-        :x="layout.columns.right.x"
-        :y="layout.columns.right.y"
-        :width="layout.columns.right.w"
-        :height="layout.columns.right.h"
+        class="sf-el"
+        :x="layout.columns.right.plate.x"
+        :y="layout.columns.right.plate.y"
+        :width="layout.columns.right.plate.w"
+        :height="layout.columns.right.plate.h"
+        :rx="layout.columns.right.plate.rx"
         fill="none"
         :stroke="p.accent"
-        stroke-width="3"
+        :stroke-width="STROKES.plate"
       />
+      <line
+        v-for="pinX in [layout.columns.right.pins.x1, layout.columns.right.pins.x2]"
+        :key="`p${pinX}`"
+        class="sf-el sf-d1"
+        :x1="pinX"
+        :y1="layout.columns.right.pins.top"
+        :x2="pinX"
+        :y2="layout.columns.right.pins.bottom"
+        :stroke="p.accent"
+        :stroke-width="layout.columns.right.pins.width"
+      />
+      <line
+        v-for="slotX in [layout.columns.right.slots.x1, layout.columns.right.slots.x2]"
+        :key="`s${slotX}`"
+        class="sf-el sf-d1"
+        :x1="slotX"
+        :y1="layout.columns.right.slots.top"
+        :x2="slotX"
+        :y2="layout.columns.right.slots.bottom"
+        :stroke="p.accent"
+        :stroke-width="layout.columns.right.slots.width"
+      />
+      <!-- PIPELINES runs in the recording's proportional face: one measured
+           ink box per glyph (JBM's mono advance can't follow the ref rhythm). -->
       <text
-        v-if="rightBoxText"
-        :x="type.rightBoxCenter.x"
-        :y="type.rightBoxCenter.baseline"
-        text-anchor="middle"
-        :font-size="boxFontSize(type.boxCap)"
+        v-if="slabText && !slabChars.length"
+        class="sf-el sf-d2"
+        :x="layout.textRuns.slab.x"
+        :y="layout.textRuns.slab.baseline"
+        :font-size="type.slabSize"
         :fill="p.accent"
-      >{{ rightBoxText }}</text>
-      <rect
-        v-for="(box, i) in layout.columns.rightRow"
-        :key="i"
-        class="sf-box sf-row-box"
-        :x="box.x"
-        :y="box.y"
-        :width="box.w"
-        :height="box.h"
-        fill="none"
         :stroke="p.accent"
-        stroke-width="2.5"
-      />
+        :stroke-width="INK_STROKE.run"
+        paint-order="stroke"
+        font-weight="700"
+        v-bind="pinAttrs(slabText, type.slabSize, layout.textRuns.slab.width)"
+      >{{ slabText }}</text>
+      <text
+        v-for="(sc, i) in slabChars"
+        v-else-if="slabChars.length"
+        :key="`sc-${i}`"
+        class="sf-el sf-d2"
+        :x="sc.x"
+        :y="layout.textRuns.slab.baseline"
+        :font-size="type.slabSize"
+        :fill="p.accent"
+        :stroke="p.accent"
+        :stroke-width="INK_STROKE.run"
+        paint-order="stroke"
+        font-weight="700"
+      >{{ sc.char }}</text>
     </g>
 
-    <!-- Click 4 (t2.60): the bar bracket DRAWS — f15 evidence shows the stem
+    <!-- Click 4 (t2.533): the bar bracket DRAWS — f15 evidence shows the stem
          dropping first, then the line sweeping left→right (a stroke draw,
-         not a fade) — and the right label fades (measured onset t2.533). -->
+         not a fade) — and the gray right label fades (measured onset 2.533). -->
     <g v-click="4" class="sf-fade">
       <path
         class="sf-draw sf-draw-stem"
         :d="draws.stem.d"
         :style="{ '--sf-len': `${draws.stem.len}` }"
         :stroke="BAR_ORANGE"
-        :stroke-width="layout.bar.h"
+        stroke-width="3.2"
       />
       <path
         class="sf-draw sf-draw-bracket"
@@ -250,12 +332,13 @@ const STROKES = {
         :x="layout.labels.right.x"
         :y="layout.labels.right.baseline"
         :font-size="type.labelSize"
-        :fill="LABEL_WHITE"
+        :fill="LABEL_GRAY"
+        font-weight="500"
         v-bind="pinAttrs(labels.right, type.labelSize, layout.labels.right.width)"
       >{{ labels.right }}</text>
     </g>
 
-    <!-- Click 5 (t3.07): footer band + rising end ticks fade in last. -->
+    <!-- Click 5 (t3.067): footer band + rising end ticks fade in last. -->
     <g v-click="5" class="sf-fade">
       <rect
         class="sf-footer-tick"
@@ -284,11 +367,13 @@ const STROKES = {
     </g>
 
     <!-- Shared title chrome: seg11 measures the GREEN phrase first, cap band
-         y104.2–161.2, token-mode ink runs (see TITLE above). -->
+         y104.2–161.2, token-mode ink runs (see TITLE above). The settled frame
+         also carries the recording pill top-right (green, x≈1851 y≈23). -->
     <TitleChrome
       :tokens="titleTokens"
       :cap-height="TITLE.capHeight"
       :cap-top="TITLE.capTop"
+      badge
     />
   </svg>
 </template>
@@ -304,23 +389,64 @@ const STROKES = {
   font-family: var(--sf-font-mono, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace);
 }
 
+/* The recording's face is bold across the sheet — title runs included. The
+   shared chrome renders weight 400 by default; this family overrides weight
+   and adds a fill-colored stroke under the paint (the recording inks much
+   heavier than JBM Bold) without touching the shared component (scoped
+   :deep; the attribute selectors key on each token's bound fill). */
+.convergeflow :deep(.sf-title-chrome text) {
+  font-weight: 700;
+  paint-order: stroke;
+}
+
+/* Bright tokens ink heavier: the green lead mass ratio is ≈1.42 over JBM
+   Bold, the white tail ≈1.2. */
+.convergeflow :deep(.sf-title-chrome text[fill='#66fb00']) {
+  stroke: #66fb00;
+  stroke-width: 6px;
+}
+
+.convergeflow :deep(.sf-title-chrome text[fill='#ffffff']) {
+  stroke: #ffffff;
+  stroke-width: 4.5px;
+}
+
 /*
- * Measured motion (seg11 f15 dumps): the columns pop on their clicks; the
- * bar bracket DRAWS — stem first (≈140ms), then the left→right sweep
- * (≈220ms) — via the StepFlow dashoffset pattern; labels and the footer
- * fade. Transition is taken from the destination state: forward reveal
- * plays, the hidden state's transition:none makes backward nav instant —
- * the locked decision. Scoped selectors (0,2,0 + attribute) beat Slidev's
- * built-in .slidev-vclick-target { transition: all .1s ease }.
+ * Measured motion (seg11 onsets.json + f15 dumps): reveal elements pop on
+ * their click; interior ink rides per-element delays (dividers ≈+130ms,
+ * cell bars / PIPELINES ≈+200ms); the bar bracket DRAWS — stem first
+ * (≈140ms), then the left→right sweep (≈220ms) — via the StepFlow dashoffset
+ * pattern; labels and the footer fade. Transition is taken from the
+ * destination state: forward reveal plays, the hidden state's transition:none
+ * makes backward nav instant — the locked decision. Scoped selectors
+ * (0,2,0 + attribute) beat Slidev's built-in
+ * .slidev-vclick-target { transition: all .1s ease }.
  */
-.sf-col {
+.sf-el {
   transition:
     opacity 450ms ease-out,
     transform 450ms cubic-bezier(0, 0, 0.2, 1);
 }
 
-.sf-col.slidev-vclick-hidden {
+.sf-d1 {
+  transition:
+    opacity 450ms ease-out 130ms,
+    transform 450ms cubic-bezier(0, 0, 0.2, 1) 130ms;
+}
+
+.sf-d2 {
+  transition:
+    opacity 450ms ease-out 200ms,
+    transform 450ms cubic-bezier(0, 0, 0.2, 1) 200ms;
+}
+
+g.slidev-vclick-hidden .sf-el {
+  opacity: 0;
   transform: translateY(12px) scale(0.85);
+  transition: none;
+}
+
+.sf-col.slidev-vclick-hidden {
   transition: none;
 }
 
@@ -360,7 +486,7 @@ g.slidev-vclick-hidden .sf-draw-bracket {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .sf-col,
+  .sf-el,
   .sf-fade,
   .sf-draw-stem,
   .sf-draw-bracket {
