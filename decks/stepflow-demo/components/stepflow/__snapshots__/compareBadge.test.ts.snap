@@ -1,0 +1,168 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`compareBadgeLayout — measured seg12 composition > default layout snapshot is stable across runs 1`] = `
+{
+  "core": {
+    "corner": 22.5,
+    "h": 183.75,
+    "w": 195.75,
+    "x": 864,
+    "y": 536.25,
+  },
+  "glyph": {
+    "h": 84,
+    "w": 86.25,
+    "x": 922.5,
+    "y": 588,
+  },
+  "halo": {
+    "cx": 960.75,
+    "cy": 629.25,
+    "r": 122.25,
+  },
+  "leaders": [
+    {
+      "x1": 738,
+      "x2": 840,
+      "y1": 498.00000000000006,
+      "y2": 558.75,
+    },
+    {
+      "x1": 1183.5,
+      "x2": 1081.5,
+      "y1": 498.00000000000006,
+      "y2": 558.75,
+    },
+    {
+      "x1": 738,
+      "x2": 840,
+      "y1": 760.5,
+      "y2": 699.75,
+    },
+    {
+      "x1": 1183.5,
+      "x2": 1081.5,
+      "y1": 760.5,
+      "y2": 699.75,
+    },
+  ],
+  "rows": [
+    {
+      "bright": {
+        "bandHeight": 27,
+        "baseline": 493.5,
+        "topY": 466.5,
+        "x": 351,
+      },
+      "click": 2,
+      "dim": {
+        "bandHeight": 15,
+        "baseline": 532.5,
+        "topY": 517.5,
+        "x": 351,
+      },
+      "icon": {
+        "h": 47.25,
+        "w": 51,
+        "x": 267,
+        "y": 472.5,
+      },
+      "id": "leftTop",
+      "plate": {
+        "h": 129,
+        "w": 498.00000000000006,
+        "x": 235.5,
+        "y": 432,
+      },
+    },
+    {
+      "bright": {
+        "bandHeight": 27,
+        "baseline": 493.5,
+        "topY": 466.5,
+        "x": 1302,
+      },
+      "click": 3,
+      "dim": {
+        "bandHeight": 15,
+        "baseline": 532.5,
+        "topY": 517.5,
+        "x": 1302,
+      },
+      "icon": {
+        "h": 47.25,
+        "w": 60,
+        "x": 1215,
+        "y": 472.5,
+      },
+      "id": "rightTop",
+      "plate": {
+        "h": 129,
+        "w": 498.00000000000006,
+        "x": 1186.5,
+        "y": 432,
+      },
+    },
+    {
+      "bright": {
+        "bandHeight": 27,
+        "baseline": 804,
+        "topY": 777,
+        "x": 351,
+      },
+      "click": 4,
+      "dim": {
+        "bandHeight": 15,
+        "baseline": 843,
+        "topY": 828,
+        "x": 351,
+      },
+      "icon": {
+        "h": 43.5,
+        "w": 63,
+        "x": 267,
+        "y": 784.5,
+      },
+      "id": "leftBottom",
+      "plate": {
+        "h": 128.25,
+        "w": 498.00000000000006,
+        "x": 235.5,
+        "y": 742.5,
+      },
+    },
+    {
+      "bright": {
+        "bandHeight": 27,
+        "baseline": 804,
+        "topY": 777,
+        "x": 1302,
+      },
+      "click": 5,
+      "dim": {
+        "bandHeight": 15,
+        "baseline": 843,
+        "topY": 828,
+        "x": 1302,
+      },
+      "icon": {
+        "h": 57.75,
+        "w": 61.49999999999999,
+        "x": 1215,
+        "y": 772.5,
+      },
+      "id": "rightBottom",
+      "plate": {
+        "h": 128.25,
+        "w": 498.00000000000006,
+        "x": 1186.5,
+        "y": 742.5,
+      },
+    },
+  ],
+  "viewBox": {
+    "height": 1080,
+    "width": 1920,
+  },
+}
+`;
