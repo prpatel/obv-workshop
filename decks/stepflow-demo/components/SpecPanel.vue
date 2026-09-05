@@ -22,74 +22,81 @@ const props = withDefaults(defineProps<{
   /** Partial palette merged over the family's `cyanOnBlack` default. */
   palette?: StepFlowPaletteOverride
 }>(), {
-  title: 'Universal spec-driven',
-  titleAccent: 'agents in action',
+  title: 'Using it',
+  titleAccent: 'properly',
   seed: () => ({}),
 })
 
-// The seg14 recording settles on the default palette tokens: dim rows at
-// subtext #a6a8ae (sampled rgb(163,162,169)), teal at the family teal token.
+// The seg14 recording settles on the default palette tokens for text tones;
+// the teal marks route through accentTertiary when the slide overrides it.
 const p = computed(() => resolvePalette(props.palette ?? {}))
 
 // Every box, beat, and delay comes from the measured layout module
-// (report.json seg14_153s-160s + settled-frame sampling) — the seed carries
-// content, not geometry.
+// (settled-truth packet fl_KbQNQoum + OCR reads) — the seed carries content,
+// not geometry.
 const layout = specPanelLayout()
 
 const seed = computed<SpecPanelSeed>(() => ({ ...SPEC_PANEL_SEED, ...props.seed }))
 
-// Single-line rows render in one pass; the body block renders its three lines
-// with the block's measured pitch.
-const singleRows = computed(() => layout.rows.filter((row) => row.id !== 'body'))
+/** Row text split into pinned spans: one per measured word when the seed's
+ * space-split matches the word spans, else the whole row as a single span
+ * (custom seeds keep row-level pinning). */
+function rowSpans(row: SpecRow): { text: string; x: number; w: number }[] {
+  const text = rowText(row)
+  const words = text.split(' ')
+  if (row.words.length === words.length && row.words.length > 0) {
+    return row.words.map((span, i) => ({ text: words[i], x: span.box.x, w: span.box.w }))
+  }
+  return [{ text, x: row.box.x, w: row.box.w }]
+}
 
-const bodyRow = computed<SpecRow>(() => {
-  const row = layout.rows.find((row) => row.id === 'body')
-  if (!row) throw new Error('specPanel layout must include the body row')
-  return row
-})
-
-/** Row id → its seed copy (the body block renders its three lines). */
-function rowLines(row: SpecRow): string[] {
+/** Row id → its seed copy. */
+function rowText(row: SpecRow): string {
   const s = seed.value
   switch (row.id) {
     case 'status':
-      return [s.status]
+      return s.status
     case 'statusTeal':
-      return [s.statusTeal]
+      return s.statusTeal
     case 'heading':
-      return [s.heading]
-    case 'body':
-      return s.body
+      return s.heading
+    case 'bodyLine':
+      return s.bodyLine
     case 'redLine':
-      return [s.redLine]
+      return s.redLine
     case 'tealLine':
-      return [s.tealLine]
+      return s.tealLine
     case 'lastLine':
-      return [s.lastLine]
+      return s.lastLine
   }
 }
 
 /** Ink fill for a row's measured tone. */
 function rowFill(row: SpecRow): string {
-  if (row.tone === 'teal') return p.value.accentTertiary ?? p.value.accent
+  if (row.tone === 'teal') return TEAL_CLUSTER
   return row.tone === 'dim' ? p.value.subtext : SPEC_WHITE
 }
 
-// Family color constants measured off the settled frame (report.json §structure
-// medians + pixel samples). Ambient tones are family constants, not palette
-// roles — only the text tones route through the palette above.
+// Family color constants measured off the settled frame (packet colors.json
+// + settled-frame pixel medians). Ambient tones are family constants, not
+// palette roles — only the text tones route through the palette above.
 const SPEC_WHITE = '#f5f4f7' // settled bright rows, rgb(245,244,247)
-const PLATE_FILL = '#0d0d10' // settled plate rgb(13,13,16), luma ≈14 (V-3)
+const PLATE_FILL = '#0f0e11' // settled plate rgb(15,14,17), luma ≈14 (V-3)
 const RED_EDGE = '#ec413f' // red strip median rgb(236,65,63)
-const TILE_FILL = '#0f0e11' // teal tile's dark interior rgb(15,14,17)
-const DOT_RED = '#f55d54' // traffic dot rgb(245,93,84)
-const DOT_AMBER = '#f9b82b' // traffic dot rgb(249,184,43)
-const DOT_GREEN = '#29c541' // traffic dot rgb(41,197,65)
+// The settled frame's teal cluster inks (status text rgb(42,187,144), zap
+// glyph rgb(45,183,142), tile ring rgb(42,198,152)) are all a muted teal —
+// distinct from the brighter slide-token teal the accent strip keeps.
+const TEAL_CLUSTER = '#2abc91'
+const DOT_RED = '#f15e59' // traffic dot rgb(241,94,89)
+const DOT_AMBER = '#f9b82c' // traffic dot rgb(249,184,44)
+const DOT_GREEN = '#2ac441' // traffic dot rgb(42,196,65)
 
 /** Sub-beat transition delay as a scoped custom property. */
 function delayStyle(delayMs: number) {
   return { '--sf-delay': `${delayMs}ms` }
 }
+
+const teal = computed(() => p.value.accentTertiary ?? p.value.accent)
 </script>
 
 <template>
@@ -133,75 +140,182 @@ function delayStyle(delayMs: number) {
       :fill="dot.id === 'red' ? DOT_RED : dot.id === 'amber' ? DOT_AMBER : DOT_GREEN"
     />
 
-    <!-- One text element per measured row line, each pinned to the row's
-         measured ink extent (spacing-only — glyphs never squeeze). -->
-    <text
-      v-for="row in singleRows"
-      :key="row.id"
-      v-click="row.click"
-      class="sf-fade"
-      :x="row.box.x"
-      :y="specRowBaseline(row)"
-      text-anchor="start"
-      :font-size="specRowFont(row)"
-      :fill="rowFill(row)"
-      :style="delayStyle(row.delayMs)"
-      v-bind="pinAttrs(rowLines(row)[0], specRowFont(row), row.box.w)"
-    >{{ rowLines(row)[0] }}</text>
+    <!-- One text element per measured word span (the recording's word gaps
+         deviate from a uniform mono advance), each pinned spacing-only to its
+         measured extent and faux-bolded to the row's measured stroke. -->
+    <template v-for="row in layout.rows" :key="row.id">
+      <text
+        v-for="(span, si) in rowSpans(row)"
+        :key="`${row.id}-${si}`"
+        v-click="row.click"
+        class="sf-fade"
+        :x="span.x"
+        :y="specRowBaseline(row)"
+        text-anchor="start"
+        :font-size="specRowFont(row)"
+        :font-weight="row.weight"
+        :fill="rowFill(row)"
+        :stroke="rowFill(row)"
+        :stroke-width="row.strokePx"
+        :style="delayStyle(row.delayMs)"
+        v-bind="pinAttrs(span.text, specRowFont(row), span.w)"
+      >{{ span.text }}</text>
+    </template>
 
-    <!-- Body block: the measured three-line zone. Only the block's width is
-         measured (per-line extents are resolution-limited); every line is
-         pinned to the block width. The sub-beat delay staggers it one frame
-         after the heading. -->
-    <text
-      v-for="(line, i) in rowLines(bodyRow)"
-      :key="`body-${i}`"
-      v-click="bodyRow.click"
+    <!-- The teal cluster's `<zap>` mark: chevron + bolt + chevron, read off
+         the settled frame at 2560. Rides the statusTeal beat. -->
+    <g
+      v-click="2"
       class="sf-fade"
-      :x="bodyRow.box.x"
-      :y="specRowBaseline(bodyRow, i)"
-      text-anchor="start"
-      :font-size="specRowFont(bodyRow)"
-      :fill="rowFill(bodyRow)"
-      :style="delayStyle(bodyRow.delayMs + i * 60)"
-      v-bind="pinAttrs(line, specRowFont(bodyRow), bodyRow.box.w)"
-    >{{ line }}</text>
+      :style="delayStyle(66)"
+      :fill="TEAL_CLUSTER"
+      :stroke="TEAL_CLUSTER"
+    >
+      <path
+        :d="`M ${layout.statusGlyph.x} ${layout.statusGlyph.y + layout.statusGlyph.h * 0.32}
+             l ${-layout.statusGlyph.w * 0.28} ${layout.statusGlyph.h * 0.18}
+             l ${layout.statusGlyph.w * 0.28} ${layout.statusGlyph.h * 0.18}`"
+        fill="none"
+        stroke-width="5"
+      />
+      <path
+        :d="`M ${layout.statusGlyph.x + layout.statusGlyph.w * 0.78} ${layout.statusGlyph.y + layout.statusGlyph.h * 0.32}
+             l ${layout.statusGlyph.w * 0.28} ${layout.statusGlyph.h * 0.18}
+             l ${-layout.statusGlyph.w * 0.28} ${layout.statusGlyph.h * 0.18}`"
+        fill="none"
+        stroke-width="5"
+      />
+      <path
+        :d="`M ${layout.statusGlyph.x + layout.statusGlyph.w * 0.58} ${layout.statusGlyph.y}
+             L ${layout.statusGlyph.x + layout.statusGlyph.w * 0.34} ${layout.statusGlyph.y + layout.statusGlyph.h * 0.55}
+             h ${layout.statusGlyph.w * 0.14}
+             L ${layout.statusGlyph.x + layout.statusGlyph.w * 0.42} ${layout.statusGlyph.h + layout.statusGlyph.y}
+             L ${layout.statusGlyph.x + layout.statusGlyph.w * 0.68} ${layout.statusGlyph.y + layout.statusGlyph.h * 0.4}
+             h ${-layout.statusGlyph.w * 0.14}
+             Z`"
+        stroke="none"
+      />
+    </g>
 
-    <!-- Edge accents on their own late beats: red strip (click 4) then the
-         teal strip + dark tile with centered teal glyph (click 5). The
-         recording's one-frame red→orange flash (t3.133→t3.2) settles at the
-         strip's median — rendered flat, noted as a sub-frame simplification. -->
-    <rect
-      v-for="accent in layout.accents"
-      :key="accent.id"
-      v-click="accent.click"
-      class="sf-fade"
-      :x="accent.box.x"
-      :y="accent.box.y"
-      :width="accent.box.w"
-      :height="accent.box.h"
-      :rx="accent.glyph ? 6 : 2"
-      :fill="accent.id === 'redStrip' ? RED_EDGE : accent.id === 'tealStrip' ? (p.accentTertiary ?? p.accent) : TILE_FILL"
-      :style="delayStyle(accent.delayMs)"
-    />
-    <rect
-      v-if="layout.accents[2]?.glyph"
-      v-click="layout.accents[2].click"
-      class="sf-fade"
-      :x="layout.accents[2].glyph.x"
-      :y="layout.accents[2].glyph.y"
-      :width="layout.accents[2].glyph.w"
-      :height="layout.accents[2].glyph.h"
-      :rx="6"
-      fill="none"
-      :stroke="p.accentTertiary ?? p.accent"
-      :stroke-width="5"
-      :style="delayStyle(120)"
-    />
+    <!-- Edge accents and glyph marks on their measured beats: the white
+         cursor-over-square icon (click 3), the red strip (click 4), the teal
+         smile tile + strip (click 5). The recording's one-frame red→orange
+         flash (t3.133→t3.2) settles at the strip's median — rendered flat,
+         noted as a sub-frame simplification. -->
+    <template v-for="accent in layout.accents" :key="accent.id">
+      <!-- Cursor-over-square: rounded square outline with two content dots
+           and a bar, cursor arrow entering from the top. -->
+      <g
+        v-if="accent.kind === 'cursorSquare'"
+        v-click="accent.click"
+        class="sf-fade"
+        :style="delayStyle(accent.delayMs)"
+        :fill="SPEC_WHITE"
+        :stroke="SPEC_WHITE"
+      >
+        <rect
+          :x="accent.box.x + accent.box.w * 0.08"
+          :y="accent.box.y + accent.box.h * 0.38"
+          :width="accent.box.w * 0.85"
+          :height="accent.box.h * 0.6"
+          :rx="8"
+          fill="none"
+          stroke-width="4"
+        />
+        <path
+          :d="`M ${accent.box.x + accent.box.w * 0.5} ${accent.box.y}
+               L ${accent.box.x + accent.box.w * 0.38} ${accent.box.y + accent.box.h * 0.14}
+               L ${accent.box.x + accent.box.w * 0.62} ${accent.box.y + accent.box.h * 0.14}
+               L ${accent.box.x + accent.box.w * 0.5} ${accent.box.y + accent.box.h * 0.08}
+               Z`"
+          stroke="none"
+        />
+        <rect
+          :x="accent.box.x + accent.box.w * 0.44"
+          :y="accent.box.y + accent.box.h * 0.1"
+          :width="accent.box.w * 0.12"
+          :height="accent.box.h * 0.3"
+          stroke="none"
+        />
+        <circle
+          :cx="accent.box.x + accent.box.w * 0.36"
+          :cy="accent.box.y + accent.box.h * 0.67"
+          r="4"
+          stroke="none"
+        />
+        <circle
+          :cx="accent.box.x + accent.box.w * 0.64"
+          :cy="accent.box.y + accent.box.h * 0.67"
+          r="4"
+          stroke="none"
+        />
+        <rect
+          :x="accent.box.x + accent.box.w * 0.34"
+          :y="accent.box.y + accent.box.h * 0.88"
+          :width="accent.box.w * 0.34"
+          height="5"
+          stroke="none"
+        />
+      </g>
 
-    <!-- Shared title chrome: measured two-tone title (white lead band
-         y0.0993–0.150, green tail from x0.4984 — TitleChrome splits on the
-         accent string; ink extent pinned to the measured 634.56px). -->
+      <!-- Teal smile tile: dark interior, teal ring, eyes + smile inside. -->
+      <g
+        v-else-if="accent.kind === 'smileTile'"
+        v-click="accent.click"
+        class="sf-fade"
+        :style="delayStyle(accent.delayMs)"
+        :fill="TEAL_CLUSTER"
+        :stroke="TEAL_CLUSTER"
+      >
+        <rect
+          :x="accent.box.x"
+          :y="accent.box.y"
+          :width="accent.box.w"
+          :height="accent.box.h"
+          :rx="accent.box.h / 2"
+          fill="none"
+          stroke-width="5"
+        />
+        <g v-if="accent.glyph">
+          <circle
+            :cx="accent.glyph.x + accent.glyph.w * 0.25"
+            :cy="accent.glyph.y + accent.glyph.h * 0.3"
+            r="3.5"
+            stroke="none"
+          />
+          <circle
+            :cx="accent.glyph.x + accent.glyph.w * 0.75"
+            :cy="accent.glyph.y + accent.glyph.h * 0.3"
+            r="3.5"
+            stroke="none"
+          />
+          <path
+            :d="`M ${accent.glyph.x + accent.glyph.w * 0.15} ${accent.glyph.y + accent.glyph.h * 0.45}
+                 q ${accent.glyph.w * 0.35} ${accent.glyph.h * 0.55} ${accent.glyph.w * 0.7} 0`"
+            fill="none"
+            stroke-width="5"
+          />
+        </g>
+      </g>
+
+      <!-- Solid edge strips. -->
+      <rect
+        v-else
+        v-click="accent.click"
+        class="sf-fade"
+        :x="accent.box.x"
+        :y="accent.box.y"
+        :width="accent.box.w"
+        :height="accent.box.h"
+        :rx="2"
+        :fill="accent.id === 'redStrip' ? RED_EDGE : teal"
+        :style="delayStyle(accent.delayMs)"
+      />
+    </template>
+
+    <!-- Shared title chrome: measured two-tone title (white "Using it" lead,
+         green "properly" tail from x0.4984 — TitleChrome splits on the
+         accent string; ink extent pinned to the measured 634.9px). -->
     <TitleChrome
       :title="title"
       :title-accent="titleAccent"
@@ -222,7 +336,19 @@ function delayStyle(delayMs: number) {
 
 .specpanel text {
   font-family: var(--sf-font-mono, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace);
+  /* Per-row weight and faux-bold stroke come from the measured ink plan in
+     specPanel.ts (bundled 400/500/700 faces; stroke interpolates stem width
+     against the settled frame) — no deck-wide weight here, the attributes
+     carry it. */
 }
+
+/* Title density note: the recording's title face is heavier than the shared
+ * chrome's bundled-bold rendering, but no slide-local CSS can thicken SVG
+ * text (see NOTE below) — the shared TitleChrome renders as measured and the
+ * remaining density gap is accepted. */
+/* NOTE: `-webkit-text-stroke` is inert on SVG <text> in Chromium — the
+ * property computes but never paints (verified via a CDP style probe), so
+ * the shared title renders at its natural bundled-bold density here. */
 
 /*
  * Measured motion (R-4: rows FADE — every row reaches its full x-extent in
