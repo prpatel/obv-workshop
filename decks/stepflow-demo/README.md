@@ -193,7 +193,7 @@ data order is the click order for every family. Click counts below are the
 | `CompareBadge` | seg12          | 5      | badge pop (rim +70 ms) → four alternating plate rows (row ink trails +70 ms) | 6 |
 | `SpecPanel`    | seg14          | 7      | plate → status row → heading+body → red accent → teal cluster → spec row → closing line | 7 |
 | `StepPanel`    | seg15          | 7      | plate draw → three rows → left annotation → amber group → title burst  | 8 |
-| `TileSummary`  | seg16          | 4      | three tiles → bracket (right vertical, bar, left vertical) with the summary line at bar +0.266 s | 9 |
+| `TileSummary`  | seg16          | 4      | three tiles → settled rail fill + right vertical + settled-extent bar, summary line at bar +0.266 s | 9 |
 
 Every family mounts with the two-tone measured title (`title` white,
 `titleAccent` chrome green, through `TitleChrome`) and pins its complete
@@ -327,14 +327,16 @@ measured ink box (token mode). Seed content is `STEP_PANEL_SEED`
 
 #### TileSummary — three-tile summary (seg16, slide 9)
 
-Four clicks: three cyan tiles (EXTRACT → TRANSFORM → LOAD) over near-black
-backing plates, then the closing bracket — right vertical, full-width bar,
-left vertical 200 ms behind — with the dim-white summary line riding the bar
-onset +0.266 s (`summaryDelaySec`). The clip opens on title-only
-(f0001–f0003): the slide's pre-click empty state is the video's start state.
-Crop→stage mapping is identity (`tileSummary.ts` docblock). Tile sublabels
-and in-tile glyphs are integration-supplied (sub-resolution;
-`ICON_FALLBACK` precedent).
+Four clicks: three cyan tiles (EXTRACT → MOVE → LOAD) over near-black
+backing plates, then the settled bracket — right vertical plus the
+settled-extent bar (x 0.3152–0.8371) with the click-4 rail fill and left
+terminus — with the dim-white summary line riding the bar onset +0.266 s
+(`summaryDelaySec`). The clip STARTS MID-STATE (tile 1 already on-screen at
+f0001): the slide's beat-1 click is pinned from the earliest frames, and the
+settled frame's summary copy is an ~8% ghost. Crop→stage mapping is identity
+(`tileSummary.ts` docblock). Sublabels are measured (OUT OF THE SOURCE /
+ACROSS THE NETWORK / STRAIGHT INTO THE WAREHOUSE); in-tile glyphs are traced
+vessel/rules/banded-box paths with the measured `TILE_SUMMARY_GLYPH_STROKE`.
 
 | Prop      | Type                       | Purpose                                             |
 | --------- | -------------------------- | --------------------------------------------------- |

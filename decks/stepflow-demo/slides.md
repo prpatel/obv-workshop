@@ -413,16 +413,22 @@ canvasWidth: 1920
 ---
 
 <!--
-  TileSummary demo — measured seg16 (user8 seg16, 206–208s @2560×1440).
-  Three cyan tiles (EXTRACT → TRANSFORM → LOAD, the measured seed) over
-  near-black backing plates (plate fill #0c0d0c, the locked V-3 decision),
-  joined by a connector rail. The closing beat draws the bracket — right
-  vertical, full-width bar, left vertical 200ms behind — and the dim-white
-  summary line rides the bar onset +0.266s (the measured bar→text stagger,
-  summaryDelaySec). The clip OPENS on title-only (f0001–f0003): the slide's
-  pre-click empty state is the video's start state (R-5). Tile sublabels and
-  in-tile glyphs are integration-supplied (sub-resolution; the ICON_FALLBACK
-  precedent). Crop→stage mapping is IDENTITY (tileSummary.ts docblock, R-2).
+  TileSummary demo — measured seg16 (user8 seg16, 206–208s @2560×1440),
+  settled to the packet's end state (settled_full.png; the later f0030
+  bracket state is a choreography conflict documented in the ts docblock,
+  not the gate). Three cyan tiles (EXTRACT → MOVE → LOAD, the measured
+  seed; tile 2's line-1 ink is 4 glyphs — the MOVE read, not TRANSFORM)
+  over near-black backing plates (#040b0b, colors.json plate modal),
+  joined by a connector rail whose left terminus is a small thin '>'
+  hugging tile 1's edge and whose right stub meets the bracket. The
+  closing beat fills the rail gaps + stub and draws the bracket — right
+  vertical + settled-extent bar at the bar onset — and the dim summary
+  line rides the bar onset +0.266s (the measured bar→text stagger,
+  summaryDelaySec). The clip STARTS MID-STATE: tile 1 is already on-screen
+  at f0001, so beat 1 is pinned from the earliest frames (R-5). Sublabels
+  are template-classified from the frame crops; in-tile glyphs ship as
+  traced paths (TILE_SUMMARY_GLYPHS). Crop→stage mapping is IDENTITY
+  (tileSummary.ts docblock, R-2).
 
   AutoAdvance pins the complete four-beat schedule — tiles 1/2/3 at the f15
   onsets 0.33 / 0.6 / 1.2, bracket 4 at the bar onset 1.467 with the text
@@ -436,11 +442,11 @@ canvasWidth: 1920
   title="ETL IN"
   title-accent="THREE MOVES"
   summary="three tiles, one measured run"
-  :palette="{ accentAlt: '#3799fb' }"
+  :palette="{ accent: '#1fd0ea' }"
   :seed="[
-    { id: 'extract', label: 'EXTRACT', xFrac: 0.2277, wFrac: 0.077 },
-    { id: 'transform', label: 'TRANSFORM', xFrac: 0.4613, wFrac: 0.0774 },
-    { id: 'load', label: 'LOAD', xFrac: 0.6953, wFrac: 0.077 },
+    { id: 'extract', label: 'EXTRACT', sublabel: 'OUT OF THE SOURCE', xFrac: 0.225, wFrac: 0.082031 },
+    { id: 'move', label: 'MOVE', sublabel: 'ACROSS THE NETWORK', xFrac: 0.458594, wFrac: 0.082292 },
+    { id: 'load', label: 'LOAD', sublabel: 'STRAIGHT INTO THE WAREHOUSE', xFrac: 0.692448, wFrac: 0.081771 },
   ]"
 />
 
