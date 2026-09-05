@@ -26,3 +26,4 @@ replay_pid*
 # Node / build generated artifacts (not committed)
 node_modules/
 dist/
+.gen7-shots/
