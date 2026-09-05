@@ -1,9 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import {
   CORE_FILL,
+  PLATE_EDGE,
   PLATE_FILL,
   REVEAL_BEATS_SEC,
   ROW_IDS,
+  SEG12_INK,
   compareBadgeLayout,
 } from './compareBadge'
 
@@ -11,9 +13,14 @@ import {
  * Every expected number below is hand-computed from the settled-frame
  * measurements documented in compareBadge.ts: native 2560×1440 constants
  * scaled by 0.75 onto the default 1920×1080 stage (e.g. left plate
- * x = 314 × 0.75 = 235.5; bright cap = 36 × 0.75 = 27). Assertions use
+ * x = 310 × 0.75 = 232.5; bright cap = 38 × 0.75 = 28.5). Assertions use
  * toBeCloseTo(…, 6): the /1440×1080 scalings are not all exactly
  * representable in binary floating point.
+ *
+ * SEG12_INK tests parse the traced path data with a small coordinate
+ * regex — the tracer emits `Mx,yLx,y…Z` stage-unit subpaths — so ink
+ * extents are checked against the measured boxes without re-running
+ * OpenCV.
  */
 describe('compareBadgeLayout — measured seg12 composition', () => {
   it('resolves the four plate rows in alternating reveal order on the default stage', () => {
@@ -22,12 +29,13 @@ describe('compareBadgeLayout — measured seg12 composition', () => {
     expect(l.rows.map((r) => r.id)).toEqual(['leftTop', 'rightTop', 'leftBottom', 'rightBottom'])
     expect(ROW_IDS).toEqual(['leftTop', 'rightTop', 'leftBottom', 'rightBottom'])
 
-    // Plates: 664×172/171 native → 498×129/128.25, margins 314 → 235.5.
+    // Plates: 668/666 × 176/177 native (border line included) → 501/499.5
+    // × 132/132.75, margins 310 native → 232.5 (right column margin 312).
     const expectedPlates = [
-      { x: 235.5, y: 432, w: 498, h: 129 },
-      { x: 1186.5, y: 432, w: 498, h: 129 },
-      { x: 235.5, y: 742.5, w: 498, h: 128.25 },
-      { x: 1186.5, y: 742.5, w: 498, h: 128.25 },
+      { x: 232.5, y: 430.5, w: 501, h: 132 },
+      { x: 1186.5, y: 430.5, w: 499.5, h: 132 },
+      { x: 232.5, y: 739.5, w: 501, h: 132.75 },
+      { x: 1186.5, y: 739.5, w: 499.5, h: 132.75 },
     ]
     for (const [i, e] of expectedPlates.entries()) {
       expect(l.rows[i]!.plate.x).toBeCloseTo(e.x, 6)
@@ -51,19 +59,19 @@ describe('compareBadgeLayout — measured seg12 composition', () => {
     }
   })
 
-  it('pins the measured text bands: 27px bright caps and 15px dim x-heights', () => {
+  it('pins the measured text bands: 28.5px bright caps and 13.125px dim x-heights', () => {
     const l = compareBadgeLayout()
-    // Bright rows: cap band 36 native → 27, cap tops 622/1036 → 466.5/777.
-    for (const [i, capTop] of [466.5, 466.5, 777, 777].entries()) {
+    // Bright rows: cap band 38 native → 28.5, cap tops 621/1035 → 465.75/776.25.
+    for (const [i, capTop] of [465.75, 465.75, 776.25, 776.25].entries()) {
       expect(l.rows[i]!.bright.topY).toBeCloseTo(capTop, 6)
-      expect(l.rows[i]!.bright.bandHeight).toBeCloseTo(27, 6)
-      expect(l.rows[i]!.bright.baseline).toBeCloseTo(capTop + 27, 6)
+      expect(l.rows[i]!.bright.bandHeight).toBeCloseTo(28.5, 6)
+      expect(l.rows[i]!.bright.baseline).toBeCloseTo(capTop + 28.5, 6)
     }
-    // Dim rows: x-height band 20 native → 15, tops 690/1104 → 517.5/828.
-    for (const [i, xTop] of [517.5, 517.5, 828, 828].entries()) {
+    // Dim rows: x-height band 17.5 native → 13.125, tops 691/1104 → 518.25/828.
+    for (const [i, xTop] of [518.25, 518.25, 828, 828].entries()) {
       expect(l.rows[i]!.dim.topY).toBeCloseTo(xTop, 6)
-      expect(l.rows[i]!.dim.bandHeight).toBeCloseTo(15, 6)
-      expect(l.rows[i]!.dim.baseline).toBeCloseTo(xTop + 15, 6)
+      expect(l.rows[i]!.dim.bandHeight).toBeCloseTo(13.125, 6)
+      expect(l.rows[i]!.dim.baseline).toBeCloseTo(xTop + 13.125, 6)
     }
     // Line ink starts: x 468 (left) / 1736 (right) native → 351/1302.
     for (const [i, inkStart] of [351, 1302, 351, 1302].entries()) {
@@ -72,30 +80,33 @@ describe('compareBadgeLayout — measured seg12 composition', () => {
     }
   })
 
-  it('resolves badge halo, core, glyph, and leader geometry', () => {
+  it('resolves badge glow, core, glyph, and leader geometry', () => {
     const l = compareBadgeLayout()
-    // Halo: r 163 native at (1281, 839) → (960.75, 629.25) r 122.25.
-    expect(l.halo.cx).toBeCloseTo(960.75, 6)
-    expect(l.halo.cy).toBeCloseTo(629.25, 6)
-    expect(l.halo.r).toBeCloseTo(122.25, 6)
-    // Core: report orange[0] bbox (1152, 715, 261×245, corner 30) × 0.75.
-    expect(l.core.x).toBeCloseTo(864, 6)
-    expect(l.core.y).toBeCloseTo(536.25, 6)
-    expect(l.core.w).toBeCloseTo(195.75, 6)
-    expect(l.core.h).toBeCloseTo(183.75, 6)
-    expect(l.core.corner).toBeCloseTo(22.5, 6)
-    // Dark glyph zone inside the core (1230, 784, 115×112) × 0.75.
-    expect(l.glyph.x).toBeCloseTo(922.5, 6)
-    expect(l.glyph.y).toBeCloseTo(588, 6)
-    expect(l.glyph.w).toBeCloseTo(86.25, 6)
-    expect(l.glyph.h).toBeCloseTo(84, 6)
-    // Leaders: outer tips (±297, ∓175), inner tips (±161, ±94) native.
+    // Radial glow: r 190 native at the core center (1280.5, 840) →
+    // (960.375, 630) r 142.5; the Vue renders it as a gradient peaking at
+    // the core edge (HALO_PEAK_FRAC), not a hard-edged circle.
+    expect(l.halo.cx).toBeCloseTo(960.375, 6)
+    expect(l.halo.cy).toBeCloseTo(630, 6)
+    expect(l.halo.r).toBeCloseTo(142.5, 6)
+    // Core: settled scanline box (1155, 714, 251×247, corner 64) × 0.75.
+    expect(l.core.x).toBeCloseTo(866.25, 6)
+    expect(l.core.y).toBeCloseTo(535.5, 6)
+    expect(l.core.w).toBeCloseTo(188.25, 6)
+    expect(l.core.h).toBeCloseTo(185.25, 6)
+    expect(l.core.corner).toBeCloseTo(48, 6)
+    // Dark glyph zone inside the core (1228, 782, 106×116) × 0.75.
+    expect(l.glyph.x).toBeCloseTo(921, 6)
+    expect(l.glyph.y).toBeCloseTo(586.5, 6)
+    expect(l.glyph.w).toBeCloseTo(79.5, 6)
+    expect(l.glyph.h).toBeCloseTo(87, 6)
+    // Three measured strokes (UL, UR, LL) — the settled frame has no
+    // lower-right leader.
     const expectedLeaders = [
-      { x1: 738, y1: 498, x2: 840, y2: 558.75 },
-      { x1: 1183.5, y1: 498, x2: 1081.5, y2: 558.75 },
-      { x1: 738, y1: 760.5, x2: 840, y2: 699.75 },
-      { x1: 1183.5, y1: 760.5, x2: 1081.5, y2: 699.75 },
+      { x1: 746.25, y1: 497.25, x2: 864.75, y2: 570 },
+      { x1: 1183.5, y1: 495, x2: 1056, y2: 574.5 },
+      { x1: 746.25, y1: 799.5, x2: 862.5, y2: 706.5 },
     ]
+    expect(l.leaders).toHaveLength(3)
     for (const [i, e] of expectedLeaders.entries()) {
       expect(l.leaders[i]!.x1).toBeCloseTo(e.x1, 6)
       expect(l.leaders[i]!.y1).toBeCloseTo(e.y1, 6)
@@ -104,54 +115,55 @@ describe('compareBadgeLayout — measured seg12 composition', () => {
     }
   })
 
-  it('keeps the composition symmetric around its measured centers', () => {
+  it('anchors the leaders as measured (no 4-fold symmetry)', () => {
     const l = compareBadgeLayout()
-    const { cx, cy } = l.halo
-    // Plates mirror around the STAGE center (frame margins are equal, 314px
-    // native on each side). The halo sits 1px right of the frame center —
-    // its own measured center, not the plate mirror axis.
-    expect(l.rows[0]!.plate.x + l.rows[1]!.plate.x + l.rows[1]!.plate.w).toBeCloseTo(1920, 6)
-    expect(l.rows[2]!.plate.x + l.rows[3]!.plate.x + l.rows[3]!.plate.w).toBeCloseTo(1920, 6)
-    // Leaders mirror across both axes around the halo center.
-    expect(l.leaders[0]!.x1 + l.leaders[1]!.x1).toBeCloseTo(2 * cx, 6)
-    expect(l.leaders[2]!.x1 + l.leaders[3]!.x1).toBeCloseTo(2 * cx, 6)
-    expect(l.leaders[0]!.y1).toBeCloseTo(2 * cy - l.leaders[2]!.y1, 6)
-    expect(l.leaders[0]!.y2).toBeCloseTo(2 * cy - l.leaders[2]!.y2, 6)
-    expect(l.leaders[0]!.x2).toBeCloseTo(l.leaders[2]!.x2, 6)
-    // Plates hug the stage edges symmetrically.
-    expect(l.rows[0]!.plate.x).toBeCloseTo(1920 - (l.rows[1]!.plate.x + l.rows[1]!.plate.w), 6)
+    const [ul, ur, ll] = l.leaders
+    // UL/LL outer tips align on one vertical (x 995 native); both hover
+    // just right of the left plates' inner edge (x 733.5 stage).
+    expect(ul!.x1).toBeCloseTo(ll!.x1, 6)
+    expect(ul!.x1).toBeGreaterThan(l.rows[0]!.plate.x + l.rows[0]!.plate.w)
+    expect(ul!.x1 - (l.rows[0]!.plate.x + l.rows[0]!.plate.w)).toBeLessThan(20)
+    // UL ends at the core's left edge; LL ends near the core's bottom-left
+    // corner.
+    expect(ul!.x2).toBeGreaterThan(l.core.x - 4)
+    expect(ll!.y2).toBeLessThan(l.core.y + l.core.h + 4)
+    // UR starts 4px off the right plates' inner edge (x 1186.5 stage).
+    expect(l.rows[1]!.plate.x - ur!.x1).toBeCloseTo(3, 6)
   })
 
   it('scales the composition to an arbitrary canvas', () => {
     const l = compareBadgeLayout({ width: 1280, height: 720 })
-    // ×0.5: core (1152, 715, 261×245, 30) → (576, 357.5, 130.5×122.5, 15).
-    expect(l.core.x).toBeCloseTo(576, 6)
-    expect(l.core.y).toBeCloseTo(357.5, 6)
-    expect(l.core.w).toBeCloseTo(130.5, 6)
-    expect(l.core.h).toBeCloseTo(122.5, 6)
-    expect(l.core.corner).toBeCloseTo(15, 6)
-    expect(l.halo.cx).toBeCloseTo(640.5, 6)
-    expect(l.halo.cy).toBeCloseTo(419.5, 6)
-    expect(l.halo.r).toBeCloseTo(81.5, 6)
-    expect(l.rows[0]!.plate.x).toBeCloseTo(157, 6)
-    expect(l.rows[0]!.plate.y).toBeCloseTo(288, 6)
-    expect(l.rows[0]!.plate.w).toBeCloseTo(332, 6)
-    expect(l.rows[0]!.plate.h).toBeCloseTo(86, 6)
+    // ×2/3: core (1155, 714, 251×247, 64) → (577.5, 357, 125.5×123.5, 32).
+    expect(l.core.x).toBeCloseTo(577.5, 6)
+    expect(l.core.y).toBeCloseTo(357, 6)
+    expect(l.core.w).toBeCloseTo(125.5, 6)
+    expect(l.core.h).toBeCloseTo(123.5, 6)
+    expect(l.core.corner).toBeCloseTo(32, 6)
+    expect(l.halo.cx).toBeCloseTo(640.25, 6)
+    expect(l.halo.cy).toBeCloseTo(420, 6)
+    expect(l.halo.r).toBeCloseTo(95, 6)
+    expect(l.rows[0]!.plate.x).toBeCloseTo(155, 6)
+    expect(l.rows[0]!.plate.y).toBeCloseTo(287, 6)
+    expect(l.rows[0]!.plate.w).toBeCloseTo(334, 6)
+    expect(l.rows[0]!.plate.h).toBeCloseTo(88, 6)
     expect(l.rows[0]!.bright.x).toBeCloseTo(234, 6)
-    expect(l.rows[0]!.bright.topY).toBeCloseTo(311, 6)
-    expect(l.rows[0]!.bright.bandHeight).toBeCloseTo(18, 6)
-    expect(l.rows[0]!.bright.baseline).toBeCloseTo(329, 6)
+    expect(l.rows[0]!.bright.topY).toBeCloseTo(310.5, 6)
+    expect(l.rows[0]!.bright.bandHeight).toBeCloseTo(19, 6)
+    expect(l.rows[0]!.bright.baseline).toBeCloseTo(329.5, 6)
   })
 
   it('keeps plate fill near-black per V-3 (luma 6–40, not gray)', () => {
-    const n = parseInt(PLATE_FILL.slice(1), 16)
-    const r = (n >> 16) & 0xff
-    const g = (n >> 8) & 0xff
-    const b = n & 0xff
-    const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b
+    const luma = (hex: string) => {
+      const n = parseInt(hex.slice(1), 16)
+      return 0.2126 * ((n >> 16) & 0xff) + 0.7152 * ((n >> 8) & 0xff) + 0.0722 * (n & 0xff)
+    }
     // #12131a → luma ≈ 19.29: inside the measured near-black band.
-    expect(luma).toBeGreaterThanOrEqual(6)
-    expect(luma).toBeLessThanOrEqual(40)
+    expect(luma(PLATE_FILL)).toBeGreaterThanOrEqual(6)
+    expect(luma(PLATE_FILL)).toBeLessThanOrEqual(40)
+    // The plates' edge accent line reads brighter than the fill but dimmer
+    // than the bright ink (settled edge median rgb(45,46,55)).
+    expect(luma(PLATE_EDGE.coreColor)).toBeGreaterThan(luma(PLATE_FILL))
+    expect(luma(PLATE_EDGE.coreColor)).toBeLessThanOrEqual(55)
   })
 
   it('pins the settled core sample to the exact deck orange', () => {
@@ -163,8 +175,8 @@ describe('compareBadgeLayout — measured seg12 composition', () => {
     expect(l.rows.map((r) => r.click)).toEqual([2, 3, 4, 5])
   })
 
-  it('drafts a five-beat schedule covering every click', () => {
-    expect(REVEAL_BEATS_SEC).toEqual([0.6, 1.0, 1.73, 3.0, 4.4])
+  it('pins the five-beat schedule covering every click', () => {
+    expect(REVEAL_BEATS_SEC).toEqual([0.6, 1.0, 1.733, 3.0, 4.4])
     for (let i = 1; i < REVEAL_BEATS_SEC.length; i += 1) {
       expect(REVEAL_BEATS_SEC[i]!).toBeGreaterThan(REVEAL_BEATS_SEC[i - 1]!)
     }
@@ -187,5 +199,168 @@ describe('compareBadgeLayout — measured seg12 composition', () => {
 
   it('default layout snapshot is stable across runs', () => {
     expect(compareBadgeLayout()).toMatchSnapshot()
+  })
+})
+
+/** Parse traced `Mx,yLx,y…Z` subpath data into a bounding box + subpath count. */
+function pathBBox(d: string): { x0: number; y0: number; x1: number; y1: number; subpaths: number } {
+  const coords = [...d.matchAll(/[ML](\d+(?:\.\d+)?),(\d+(?:\.\d+)?)/g)].map(
+    (m) => [Number(m[1]), Number(m[2])] as const,
+  )
+  expect(coords.length).toBeGreaterThan(2)
+  const xs = coords.map((c) => c[0]!)
+  const ys = coords.map((c) => c[1]!)
+  return {
+    x0: Math.min(...xs),
+    y0: Math.min(...ys),
+    x1: Math.max(...xs),
+    y1: Math.max(...ys),
+    subpaths: (d.match(/M/g) ?? []).length,
+  }
+}
+
+const HEX = /^#[0-9a-f]{6}$/
+
+/** Union bounding box of one region's paint entries (skirt + core). */
+function regionBBox(paths: { d: string }[]): ReturnType<typeof pathBBox> {
+  const boxes = paths.map((p) => pathBBox(p.d))
+  return {
+    x0: Math.min(...boxes.map((b) => b.x0)),
+    y0: Math.min(...boxes.map((b) => b.y0)),
+    x1: Math.max(...boxes.map((b) => b.x1)),
+    y1: Math.max(...boxes.map((b) => b.y1)),
+    subpaths: boxes.reduce((n, b) => n + b.subpaths, 0),
+  }
+}
+
+describe('SEG12_INK — traced settled reference ink', () => {
+  it('carries the four title runs as skirt+core pairs (three white, one green)', () => {
+    // Each run paints a 0.5-alpha AA-skirt contour, then the opaque core.
+    expect(SEG12_INK.title).toHaveLength(8)
+    for (const [i, run] of SEG12_INK.title.entries()) {
+      expect(run.fill).toMatch(HEX)
+      expect(run.d.startsWith('M')).toBe(true)
+      expect(run.d.endsWith('Z')).toBe(true)
+      if (i % 2 === 0) expect(run.opacity).toBe(0.5)
+      else expect(run.opacity).toBeUndefined()
+    }
+    expect(SEG12_INK.title.filter((r) => r.fill === '#ffffff')).toHaveLength(6)
+    expect(SEG12_INK.title[7]!.fill).toBe('#66fb00')
+    expect(SEG12_INK.title[6]!.fill).toBe('#66fb00')
+  })
+
+  it('places title run ink at the measured extents (stage 1920×1080)', () => {
+    // Native runs (692, 978, 1288, 1758) × 0.75 stage; extents from the
+    // settled white-component scan. The tracer works on the downsampled
+    // frame, so allow ~2px of resampling drift.
+    const expected = [
+      { x0: 519, x1: 713.25 },
+      { x0: 733.5, x1: 943.5 },
+      { x0: 966, x1: 1301.25 },
+      { x0: 1318.5, x1: 1399.5 },
+    ]
+    for (const [i, e] of expected.entries()) {
+      const bb = regionBBox([SEG12_INK.title[2 * i]!, SEG12_INK.title[2 * i + 1]!])
+      expect(bb.x0).toBeGreaterThanOrEqual(e.x0 - 2.5)
+      expect(bb.x0).toBeLessThanOrEqual(e.x0 + 2.5)
+      expect(bb.x1).toBeGreaterThanOrEqual(e.x1 - 2.5)
+      expect(bb.x1).toBeLessThanOrEqual(e.x1 + 2.5)
+      // Title band: caps top 104, descenders to 175 stage.
+      expect(bb.y0).toBeGreaterThanOrEqual(96)
+      expect(bb.y1).toBeLessThanOrEqual(180)
+    }
+  })
+
+  it('renders the top-right reference-only mark in olive + pale', () => {
+    // Single-pass two-tone (the split that measured best against the frame).
+    expect(SEG12_INK.mark.olive.map((r) => r.fill)).toEqual(['#71803f'])
+    expect(SEG12_INK.mark.pale.map((r) => r.fill)).toEqual(['#b8bd9f'])
+    const olive = regionBBox(SEG12_INK.mark.olive)
+    const pale = regionBBox(SEG12_INK.mark.pale)
+    // Mark box: x 1849–1901, y 0–60 on the settled frame.
+    expect(olive.x0).toBeGreaterThanOrEqual(1845)
+    expect(olive.x1).toBeLessThanOrEqual(1905)
+    expect(pale.x0).toBeGreaterThanOrEqual(1845)
+    expect(pale.x1).toBeLessThanOrEqual(1905)
+    expect(Math.max(olive.y1, pale.y1)).toBeLessThanOrEqual(70)
+  })
+
+  it('carries bright + dim + icon ink for every row, sitting inside its plate', () => {
+    const l = compareBadgeLayout()
+    for (const [i, rid] of ROW_IDS.entries()) {
+      const ink = SEG12_INK.rows[rid]
+      const plate = l.rows[i]!.plate
+      for (const piece of [ink.bright, ink.dim, ink.icon]) {
+        expect(piece.length).toBe(2)
+        for (const run of piece) {
+          expect(run.fill).toMatch(HEX)
+          expect(run.d.startsWith('M')).toBe(true)
+          expect(run.d.endsWith('Z')).toBe(true)
+          const bb = pathBBox(run.d)
+          expect(bb.x0).toBeGreaterThanOrEqual(plate.x)
+          expect(bb.x1).toBeLessThanOrEqual(plate.x + plate.w)
+          expect(bb.y0).toBeGreaterThanOrEqual(plate.y - 2)
+          expect(bb.y1).toBeLessThanOrEqual(plate.y + plate.h + 2)
+        }
+      }
+      // Bright ink sits in the bright band; dim ink in the dim band. The
+      // AA skirt (thresholds 40-45) reaches ~7px past the core band tops
+      // the layout measured from the settled white-component scan, and
+      // descenders ('y','g','p') trail ~14px past either baseline.
+      const bright = regionBBox(ink.bright)
+      const dim = regionBBox(ink.dim)
+      expect(bright.y0).toBeGreaterThanOrEqual(l.rows[i]!.bright.topY - 8)
+      expect(bright.y1).toBeLessThanOrEqual(l.rows[i]!.bright.baseline + 14)
+      expect(dim.y0).toBeGreaterThanOrEqual(l.rows[i]!.dim.topY - 8)
+      expect(dim.y1).toBeLessThanOrEqual(l.rows[i]!.dim.baseline + 14)
+    }
+  })
+
+  it('pins per-row sampled icon inks from the settled frame', () => {
+    // 92nd-percentile stroke-core samples (compression-desaturated).
+    for (const rid of ROW_IDS) {
+      expect(SEG12_INK.rows[rid].icon.every((r) => r.fill === SEG12_INK.rows[rid].icon[0]!.fill)).toBe(true)
+    }
+    expect(SEG12_INK.rows.leftTop.icon[0]!.fill).toBe('#2dd1e8')
+    expect(SEG12_INK.rows.rightTop.icon[0]!.fill).toBe('#f55f2d')
+    expect(SEG12_INK.rows.leftBottom.icon[0]!.fill).toBe('#409bf7')
+    expect(SEG12_INK.rows.rightBottom.icon[0]!.fill).toBe('#2dd2a5')
+  })
+
+  it('traces the dark core glyph inside the measured glyph zone', () => {
+    expect(SEG12_INK.coreGlyph.every((r) => r.fill === '#080303')).toBe(true)
+    const bb = regionBBox(SEG12_INK.coreGlyph)
+    // Glyph zone (1228, 782, 106×116) × 0.75 → (921, 586.5, 79.5×87).
+    expect(bb.x0).toBeGreaterThanOrEqual(918)
+    expect(bb.x1).toBeLessThanOrEqual(1004)
+    expect(bb.y0).toBeGreaterThanOrEqual(583)
+    expect(bb.y1).toBeLessThanOrEqual(677)
+  })
+
+  it('traces multi-component even-odd contours (holes preserved)', () => {
+    // The tracer's luma threshold merges some adjacent glyphs, so subpath
+    // counts track connected ink components + counters, not the glyph
+    // count — assert the multi-contour structure itself.
+    expect(regionBBox([SEG12_INK.title[4]!, SEG12_INK.title[5]!]).subpaths).toBeGreaterThanOrEqual(8)
+    expect(regionBBox([SEG12_INK.title[6]!, SEG12_INK.title[7]!]).subpaths).toBeGreaterThanOrEqual(3)
+    expect(regionBBox(SEG12_INK.coreGlyph).subpaths).toBeGreaterThanOrEqual(3)
+  })
+
+  it('paints every region skirt-then-core (AA ramp reconstruction)', () => {
+    // First entry of each pair is the translucent skirt; the core is opaque.
+    for (const region of [SEG12_INK.rows.leftTop.bright, SEG12_INK.rows.rightTop.dim, SEG12_INK.rows.leftBottom.icon]) {
+      expect(region[0]!.opacity).toBe(0.5)
+      expect(region[1]!.opacity).toBeUndefined()
+    }
+  })
+
+  it('is byte-identical across runs (traced ink is static data)', () => {
+    const a = JSON.stringify(SEG12_INK)
+    const b = JSON.stringify(SEG12_INK)
+    expect(a).toBe(b)
+  })
+
+  it('SEG12_INK snapshot is stable across runs', () => {
+    expect(JSON.parse(JSON.stringify(SEG12_INK))).toMatchSnapshot()
   })
 })

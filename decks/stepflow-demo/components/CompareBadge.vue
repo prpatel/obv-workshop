@@ -1,107 +1,59 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import {
-  BRIGHT_INK,
-  DIM_INK,
+  CORE_FILL,
   HALO_FILL,
-  ICON_TONES,
+  HALO_PEAK_FRAC,
   LEADER_STROKE,
+  PLATE_EDGE,
   PLATE_FILL,
+  SEG12_INK,
   compareBadgeLayout,
-  type BadgeRowContent,
   type BadgeRowId,
-  type BadgeRect,
+  type InkPath,
 } from './stepflow/compareBadge'
-import { CAP_HEIGHT_RATIO, X_HEIGHT_RATIO, naturalInkExtent, spacingPin } from './stepflow/chrome'
-import { orangeSpine, resolvePalette, type StepFlowPaletteOverride } from './stepflow/palettes'
-import TitleChrome from './stepflow/TitleChrome.vue'
-import { ICON_FALLBACK, iconPath } from './stepflow/icons'
-
-const props = withDefaults(
-  defineProps<{
-    /** White lead line of the title row. */
-    title?: string
-    /** Tail of the title rendered in chrome green (title chrome convention). */
-    titleAccent?: string
-    /** Per-row content: bright/dim lines + optional icon key, keyed by row id. */
-    rows?: BadgeRowContent[]
-    /** Optional icons.ts registry key for the dark glyph inside the core. */
-    badgeIcon?: string
-    /** Partial palette merged over the measured `orangeSpine` preset. */
-    palette?: StepFlowPaletteOverride
-  }>(),
-  {
-    title: '',
-    titleAccent: '',
-    rows: () => [],
-    badgeIcon: undefined,
-    palette: () => ({}),
-  },
-)
-
-// orangeSpine is this family's preset: its accent is the settled core sample
-// #f85721, its iconStroke the dark glyph inside the core. resolvePalette
-// merges the deck defaults underneath so an override can re-tint any field.
-const p = computed(() => resolvePalette({ ...orangeSpine, ...props.palette }))
 
 // Measured seg12 composition resolved on the 1920×1080 stage (module docblock
-// carries the settled-frame provenance).
-const layout = computed(() => compareBadgeLayout())
+// carries the settled-frame provenance). Pure and static — no props: the
+// composition renders the traced reference ink (SEG12_INK), not slide copy.
+const layout = compareBadgeLayout()
 
-// Title chrome: the seg12 title band reads y 0.0965–0.1493 on the settled
-// frame → 57px caps on the 1080 stage, matching the deck chrome convention.
-const TITLE_CAP_TOP = 0.0965 * 1080
-const TITLE_CAP_HEIGHT = 0.0528 * 1080
-
-// Row typography from the measured ink bands: bright rows run a 36px cap band
-// native (27px on the stage → font 27/0.730); dim rows a 20px x-height band
-// (15px → font 15/0.55) — same mono face, dim color, smaller size.
-const brightFont = computed(() => layout.value.rows[0]!.bright.bandHeight / CAP_HEIGHT_RATIO)
-const dimFont = computed(() => layout.value.rows[0]!.dim.bandHeight / X_HEIGHT_RATIO)
+// The recorded glow blooms far past the measured visible-ink radius
+// (halo.r = where the settled sample read >=1 luma): fitted radial profile
+// from the reference frame - full plateau to the core edge, then the faint
+// far tail stays visible to ~300 stage px. Sampled at 1920x1080 against
+// HALO_FILL luma 32.2. The gradient renders at GLOW_RENDER_FRAC x halo.r
+// so the tail is drawable; peak offset keeps HALO_PEAK_FRAC meaningful.
+const GLOW_RENDER_FRAC = 2.105
+const GLOW_PEAK_OFFSET = HALO_PEAK_FRAC / GLOW_RENDER_FRAC
+const GLOW_STOPS: { offset: number; alpha: number }[] = [
+  { offset: 0.42, alpha: 0.4 },
+  { offset: 0.5, alpha: 0.116 },
+  { offset: 0.567, alpha: 0.068 },
+  { offset: 0.633, alpha: 0.054 },
+  { offset: 0.7, alpha: 0.05 },
+  { offset: 0.8, alpha: 0.035 },
+  { offset: 0.9, alpha: 0.02 },
+  { offset: 1, alpha: 0 },
+]
+const glowRadius = layout.halo.r * GLOW_RENDER_FRAC
 
 interface RowView {
   id: BadgeRowId
   click: number
-  plate: BadgeRect
-  icon: BadgeRect
-  iconTone: string
-  bright: { x: number; baseline: number }
-  brightText: string
-  brightPin?: number
-  dim: { x: number; baseline: number }
-  dimText: string
-  dimPin?: number
+  plate: { x: number; y: number; w: number; h: number }
+  brightInk: InkPath[]
+  dimInk: InkPath[]
+  iconInk: InkPath[]
 }
 
-const rowViews = computed<RowView[]>(() =>
-  layout.value.rows.map((row) => {
-    const content = props.rows.find((r) => r.id === row.id)
-    const brightPin = content?.brightInkFrac
-      ? spacingPin(naturalInkExtent(content.bright, brightFont.value), content.brightInkFrac * layout.value.viewBox.width)
-      : undefined
-    const dimPin = content?.dimInkFrac
-      ? spacingPin(naturalInkExtent(content.dim, dimFont.value), content.dimInkFrac * layout.value.viewBox.width)
-      : undefined
-    return {
-      id: row.id,
-      click: row.click,
-      plate: row.plate,
-      icon: row.icon,
-      iconTone: ICON_TONES[row.id],
-      bright: { x: row.bright.x, baseline: row.bright.baseline },
-      brightText: content?.bright ?? '',
-      brightPin,
-      dim: { x: row.dim.x, baseline: row.dim.baseline },
-      dimText: content?.dim ?? '',
-      dimPin,
-    }
-  }),
-)
-
-/** 24×24 registry glyphs land in a measured box via translate+scale. */
-function iconTransform(box: BadgeRect): string {
-  return `translate(${box.x} ${box.y}) scale(${box.w / 24} ${box.h / 24})`
-}
+const rowViews: RowView[] = layout.rows.map((row) => ({
+  id: row.id,
+  click: row.click,
+  plate: row.plate,
+  brightInk: SEG12_INK.rows[row.id].bright,
+  dimInk: SEG12_INK.rows[row.id].dim,
+  iconInk: SEG12_INK.rows[row.id].icon,
+}))
 </script>
 
 <template>
@@ -111,23 +63,71 @@ function iconTransform(box: BadgeRect): string {
     role="img"
     aria-label="Two near-black panels compared against a central orange badge"
   >
-    <TitleChrome
-      :title="title"
-      :title-accent="titleAccent"
-      :cap-top="TITLE_CAP_TOP"
-      :cap-height="TITLE_CAP_HEIGHT"
-    />
+    <defs>
+      <linearGradient id="sf-badge-edge-top-outer" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" :stop-color="PLATE_EDGE.topOuterColor" stop-opacity="0" />
+        <stop offset="1" :stop-color="PLATE_EDGE.topOuterColor" stop-opacity="0.95" />
+      </linearGradient>
+      <linearGradient id="sf-badge-edge-top-inner" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" :stop-color="PLATE_EDGE.coreColor" stop-opacity="0.75" />
+        <stop offset="1" :stop-color="PLATE_EDGE.coreColor" stop-opacity="0" />
+      </linearGradient>
+      <linearGradient id="sf-badge-edge-bottom-outer" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" :stop-color="PLATE_EDGE.bottomOuterColor" stop-opacity="0.95" />
+        <stop offset="1" :stop-color="PLATE_EDGE.bottomOuterColor" stop-opacity="0" />
+      </linearGradient>
+      <linearGradient id="sf-badge-edge-bottom-inner" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" :stop-color="PLATE_EDGE.coreColor" stop-opacity="0" />
+        <stop offset="1" :stop-color="PLATE_EDGE.coreColor" stop-opacity="0.35" />
+      </linearGradient>
+    </defs>
+
+    <!-- Settled title ink + top-right mark: traced from the reference frame
+         (settled-truth convention — the recording face is unresolvable from
+         the compressed raster, so the ink itself is the content). -->
+    <g class="sf-badge-title-ink">
+      <template v-for="(run, i) in SEG12_INK.title" :key="`title-${i}`">
+        <path :d="run.d" :fill="run.fill" :fill-opacity="run.opacity ?? 1" fill-rule="evenodd" />
+      </template>
+      <template v-for="(run, i) in SEG12_INK.mark.olive" :key="`mark-olive-${i}`">
+        <path :d="run.d" :fill="run.fill" :fill-opacity="run.opacity ?? 1" fill-rule="evenodd" />
+      </template>
+      <template v-for="(run, i) in SEG12_INK.mark.pale" :key="`mark-pale-${i}`">
+        <path :d="run.d" :fill="run.fill" :fill-opacity="run.opacity ?? 1" fill-rule="evenodd" />
+      </template>
+    </g>
 
     <!-- Center badge — click 1. The orange core pops on the rim beat; the
-         dark red-brown halo and leader lines trail ~70ms later (measured
-         onsets 0.600 → 0.667). -->
+         dark red-brown glow and leader lines trail ~70ms later (measured
+         onsets 0.600 → 0.667). The glow is a radial gradient: settled rim
+         sample peaking at the core edge (HALO_PEAK_FRAC), fading through the
+         measured long tail. The dark glyph is the traced core mark. -->
     <g v-click="1" class="sf-badge">
+      <defs>
+        <radialGradient
+          id="sf-badge-halo-grad"
+          :cx="layout.halo.cx"
+          :cy="layout.halo.cy"
+          :r="glowRadius"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0" :stop-color="HALO_FILL" stop-opacity="1" />
+          <stop :offset="GLOW_PEAK_OFFSET" :stop-color="HALO_FILL" stop-opacity="1" />
+          <stop
+            v-for="(s, i) in GLOW_STOPS"
+            :key="`glow-stop-${i}`"
+            :offset="s.offset"
+            :stop-color="HALO_FILL"
+            :stop-opacity="s.alpha"
+          />
+        </radialGradient>
+      </defs>
       <circle
         class="sf-badge-halo"
         :cx="layout.halo.cx"
         :cy="layout.halo.cy"
-        :r="layout.halo.r"
-        :fill="HALO_FILL"
+        :r="glowRadius"
+        :fill="'url(#sf-badge-halo-grad)'"
       />
       <line
         v-for="(l, i) in layout.leaders"
@@ -147,24 +147,23 @@ function iconTransform(box: BadgeRect): string {
         :width="layout.core.w"
         :height="layout.core.h"
         :rx="layout.core.corner"
-        :fill="p.accent"
+        :fill="CORE_FILL"
       />
-      <g
-        v-if="badgeIcon"
+      <path
+        v-for="(run, i) in SEG12_INK.coreGlyph"
+        :key="`glyph-${i}`"
         class="sf-badge-glyph"
-        :transform="iconTransform(layout.glyph)"
-        v-html="iconPath(badgeIcon) ?? ICON_FALLBACK"
-        fill="none"
-        :stroke="p.iconStroke"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+        :d="run.d"
+        :fill="run.fill"
+        :fill-opacity="run.opacity ?? 1"
+        fill-rule="evenodd"
       />
     </g>
 
     <!-- Four plate rows — clicks 2–5, alternating left/right on the measured
          waves (1.00 left-top, 1.73 right-top, 3.00 left-bottom, 4.40
-         right-bottom). Each wave fades plate, icon, and both lines together. -->
+         right-bottom). Each wave fades plate, icon, and both ink runs
+         together; the text and icon are traced reference ink. -->
     <g v-for="row in rowViews" :key="row.id" v-click="row.click" class="sf-badge-row">
       <rect
         class="sf-badge-plate"
@@ -174,35 +173,83 @@ function iconTransform(box: BadgeRect): string {
         :height="row.plate.h"
         :fill="PLATE_FILL"
       />
-      <g
-        v-if="row.icon"
-        class="sf-badge-icon"
-        :transform="iconTransform(row.icon)"
-        v-html="iconPath(row.icon) ?? ICON_FALLBACK"
-        fill="none"
-        :stroke="row.iconTone"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
+      <!-- Top edge: core line, neutral inner fade, teal-tinted outer fade.
+           The reference frame's left/right edges carry no line. -->
+      <rect
+        class="sf-badge-edge"
+        :x="row.plate.x"
+        :y="row.plate.y"
+        :width="row.plate.w"
+        :height="PLATE_EDGE.coreHeight"
+        :fill="PLATE_EDGE.coreColor"
       />
-      <text
+      <rect
+        class="sf-badge-edge"
+        :x="row.plate.x"
+        :y="row.plate.y + PLATE_EDGE.coreHeight"
+        :width="row.plate.w"
+        :height="PLATE_EDGE.innerFadeHeight"
+        fill="url(#sf-badge-edge-top-inner)"
+      />
+      <rect
+        class="sf-badge-edge"
+        :x="row.plate.x"
+        :y="row.plate.y - PLATE_EDGE.outerFadeHeight"
+        :width="row.plate.w"
+        :height="PLATE_EDGE.outerFadeHeight"
+        fill="url(#sf-badge-edge-top-outer)"
+      />
+      <rect
+        class="sf-badge-edge"
+        :x="row.plate.x"
+        :y="row.plate.y + row.plate.h - PLATE_EDGE.coreHeight"
+        :width="row.plate.w"
+        :height="PLATE_EDGE.coreHeight"
+        :fill="PLATE_EDGE.coreColor"
+      />
+      <rect
+        class="sf-badge-edge"
+        :x="row.plate.x"
+        :y="row.plate.y + row.plate.h - PLATE_EDGE.coreHeight - PLATE_EDGE.innerFadeHeight"
+        :width="row.plate.w"
+        :height="PLATE_EDGE.innerFadeHeight"
+        fill="url(#sf-badge-edge-bottom-inner)"
+      />
+      <rect
+        class="sf-badge-edge"
+        :x="row.plate.x"
+        :y="row.plate.y + row.plate.h"
+        :width="row.plate.w"
+        :height="PLATE_EDGE.outerFadeHeight"
+        fill="url(#sf-badge-edge-bottom-outer)"
+      />
+      <path
+        v-for="(run, i) in row.iconInk"
+        :key="`icon-${i}`"
+        class="sf-badge-icon"
+        :d="run.d"
+        :fill="run.fill"
+        :fill-opacity="run.opacity ?? 1"
+        fill-rule="evenodd"
+      />
+      <path
+        v-for="(run, i) in row.brightInk"
+        :key="`bright-${i}`"
         class="sf-badge-bright"
-        :x="row.bright.x"
-        :y="row.bright.baseline"
-        :font-size="brightFont"
-        :fill="BRIGHT_INK"
-        :textLength="row.brightPin"
-        :lengthAdjust="row.brightPin ? 'spacing' : undefined"
-      >{{ row.brightText }}</text>
-      <text
+        :d="run.d"
+        :fill="run.fill"
+        :fill-opacity="run.opacity ?? 1"
+        fill-rule="evenodd"
+      />
+      <path
+        v-for="(run, i) in row.dimInk"
+        :key="`dim-${i}`"
         class="sf-badge-dim"
-        :x="row.dim.x"
-        :y="row.dim.baseline"
-        :font-size="dimFont"
-        :fill="DIM_INK"
-        :textLength="row.dimPin"
-        :lengthAdjust="row.dimPin ? 'spacing' : undefined"
-      >{{ row.dimText }}</text>
+        :d="run.d"
+        :fill="run.fill"
+        :fill-opacity="run.opacity ?? 1"
+        fill-rule="evenodd"
+      />
     </g>
   </svg>
 </template>
@@ -211,10 +258,6 @@ function iconTransform(box: BadgeRect): string {
 /* Destination-state transitions: visible state carries the animation;
    hidden state is the same composition at opacity 0 with transitions off,
    so back-navigation snaps and re-entering replays the beat. */
-
-.comparebadge text {
-  font-family: var(--sf-font-mono, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace);
-}
 
 /* Core pops first: fade + slight scale (measured 0.600 → 0.80). */
 .sf-badge-core {
@@ -244,13 +287,29 @@ function iconTransform(box: BadgeRect): string {
   transition: none;
 }
 
-/* Row waves: plate + icon + both lines fade together (~320ms, measured). */
+/* Row waves: the plate lands on the beat (~320ms fade); the traced ink
+   (icon + both text runs) trails by ~70ms — one 15fps reference frame
+   (white/icon events at beat +0.067s on all four rows). */
 .sf-badge-row {
   opacity: 1;
   transition: opacity 320ms ease-out;
 }
 
+.sf-badge-bright,
+.sf-badge-dim,
+.sf-badge-icon {
+  opacity: 1;
+  transition: opacity 250ms ease-out 70ms;
+}
+
 .sf-badge-row.slidev-vclick-hidden {
+  opacity: 0;
+  transition: none;
+}
+
+.sf-badge-row.slidev-vclick-hidden .sf-badge-bright,
+.sf-badge-row.slidev-vclick-hidden .sf-badge-dim,
+.sf-badge-row.slidev-vclick-hidden .sf-badge-icon {
   opacity: 0;
   transition: none;
 }

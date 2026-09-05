@@ -190,7 +190,7 @@ data order is the click order for every family. Click counts below are the
 | `PillarRow`    | seg05          | 6      | per card: glyph+label, then badge (card 3's badge rides its card) → summary rows | 3 |
 | `StackPanels`  | seg08          | 4      | per panel: full-size fade (blue → cyan → amber → green) + the late frame/label/caption annotation on the final click | 4 |
 | `ConvergeFlow` | seg11          | 5      | left table → SQL + left label → right plate (+ pins / PIPELINES) → bar draw + right label → footer | 5 |
-| `CompareBadge` | seg12          | 5      | badge pop → four alternating plate rows                                | 6 |
+| `CompareBadge` | seg12          | 5      | badge pop (rim +70 ms) → four alternating plate rows (row ink trails +70 ms) | 6 |
 | `SpecPanel`    | seg14          | 7      | plate → status row → heading+body → red accent → teal cluster → spec row → closing line | 7 |
 | `StepPanel`    | seg15          | 7      | plate draw → three rows → left annotation → amber group → title burst  | 8 |
 | `TileSummary`  | seg16          | 4      | three tiles → bracket (right vertical, bar, left vertical) with the summary line at bar +0.266 s | 9 |
@@ -278,20 +278,20 @@ content bbox → full stage (`converge.ts` docblock).
 
 #### CompareBadge — plate-and-badge comparison (seg12, slide 6)
 
-Five clicks: the center badge pops (dark red-brown halo ring around the
-settled `#f85721` core), then the four plate rows fade in alternating
-left/right (`ROW_CLICK_BASE`). Geometry is the `compareBadge.ts`
-native-pixel constants (2560×1440 read, frame-scaled to the stage —
-content-bbox → full-stage fit, module docblock). Row copy is
-integration-supplied (sub-resolution in the recording): legible-in-spirit
-strings over the measured bright/dim bands.
-
-| Prop         | Type                       | Purpose                                                |
-| ------------ | -------------------------- | ------------------------------------------------------ |
-| `rows`       | `CompareRow[]` (required)  | Four entries (leftTop, rightTop, leftBottom, rightBottom): `bright`, `dim`, `icon` |
-| `badgeIcon`  | `string`                   | Registry key for the badge core glyph                  |
-| `title` / `titleAccent` | `string`        | Two-tone mono header (natural width — no ink pin)      |
-| `palette`    | `Partial<StepFlowPalette>` | Optional override                                      |
+Five clicks, prop-less settled truth: the center badge pops (dark
+red-brown radial glow ring around the settled `#f85721` core, rim
+trailing the core ~70 ms), then the four plate rows fade in alternating
+left/right, each row's ink trailing its plate ~70 ms (one 15fps reference
+frame). The component takes no props: the recording's display face and
+glyph shapes are unresolvable from compressed raster, so the settled
+state renders the reference's own ink — title runs, the top-right
+olive/pale mark, row text, icons, and the dark core glyph are
+deterministic even-odd contours traced from the settled frame
+(`SEG12_INK`, the seg01 StairChain precedent), each text/icon region
+painted as an AA-skirt pass plus an opaque core pass. Geometry stays the
+`compareBadge.ts` native-pixel constants (2560×1440 read, frame-scaled
+to the stage); plates carry top/bottom accent lines with soft skirts —
+the settled frame's left/right plate edges carry no line.
 
 #### SpecPanel — progressive spec panel (seg14, slide 7)
 
