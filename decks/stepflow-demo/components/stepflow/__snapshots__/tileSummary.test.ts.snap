@@ -1,0 +1,173 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`tileSummaryLayout — options and validation > the seed layout snapshot is stable across runs 1`] = `
+{
+  "bar": {
+    "h": 4.536,
+    "w": 1216.5120000000002,
+    "x": 384,
+    "y": 830.952,
+  },
+  "header": {
+    "accent": {
+      "w": 463.488,
+      "x": 881.2800000000001,
+    },
+    "baseline": 160.488,
+    "capHeight": 53.244,
+    "capTop": 107.244,
+    "lead": {
+      "w": 280.512,
+      "x": 579.072,
+    },
+  },
+  "rail": [
+    {
+      "click": 4,
+      "h": 18.035999999999998,
+      "w": 54.72000000000005,
+      "x": 382.464,
+      "y": 501.76800000000003,
+    },
+    {
+      "click": 2,
+      "h": 18.035999999999998,
+      "w": 296.256,
+      "x": 589.4399999999999,
+      "y": 501.76800000000003,
+    },
+    {
+      "click": 3,
+      "h": 18.035999999999998,
+      "w": 296.256,
+      "x": 1038.72,
+      "y": 501.76800000000003,
+    },
+    {
+      "click": 4,
+      "h": 18.035999999999998,
+      "w": 120.76800000000013,
+      "x": 1482.816,
+      "y": 501.76800000000003,
+    },
+  ],
+  "summaryBox": {
+    "baseline": 857.952,
+    "capHeight": 16.41599999999999,
+    "centerX": 957.696,
+    "inkW": 412.416,
+  },
+  "tiles": [
+    {
+      "click": 1,
+      "h": 157.46400000000003,
+      "icon": undefined,
+      "iconBox": {
+        "h": 86.60520000000002,
+        "w": 103.488,
+        "x": 459.36,
+        "y": 465.0048,
+      },
+      "id": "extract",
+      "label": "EXTRACT",
+      "labelBox": {
+        "baseline": 653.292,
+        "capHeight": 26.244,
+        "centerX": 511.10400000000004,
+        "inkW": 157.44,
+      },
+      "plate": {
+        "h": 313.416,
+        "w": 225.024,
+        "x": 398.59200000000004,
+        "y": 382.536,
+      },
+      "sublabel": undefined,
+      "sublabelBox": undefined,
+      "w": 147.84,
+      "x": 437.184,
+      "y": 433.512,
+    },
+    {
+      "click": 2,
+      "h": 157.46400000000003,
+      "icon": undefined,
+      "iconBox": {
+        "h": 86.60520000000002,
+        "w": 104.0256,
+        "x": 907.9872,
+        "y": 465.0048,
+      },
+      "id": "transform",
+      "label": "TRANSFORM",
+      "labelBox": {
+        "baseline": 653.292,
+        "capHeight": 26.244,
+        "centerX": 960,
+        "inkW": 174.72,
+      },
+      "plate": {
+        "h": 313.416,
+        "w": 225.024,
+        "x": 847.488,
+        "y": 382.536,
+      },
+      "sublabel": undefined,
+      "sublabelBox": undefined,
+      "w": 148.608,
+      "x": 885.696,
+      "y": 433.512,
+    },
+    {
+      "click": 3,
+      "h": 157.46400000000003,
+      "icon": undefined,
+      "iconBox": {
+        "h": 86.60520000000002,
+        "w": 103.488,
+        "x": 1357.152,
+        "y": 465.0048,
+      },
+      "id": "load",
+      "label": "LOAD",
+      "labelBox": {
+        "baseline": 653.292,
+        "capHeight": 26.244,
+        "centerX": 1408.8960000000002,
+        "inkW": 97.536,
+      },
+      "plate": {
+        "h": 313.416,
+        "w": 225.024,
+        "x": 1296.3840000000002,
+        "y": 382.536,
+      },
+      "sublabel": undefined,
+      "sublabelBox": undefined,
+      "w": 147.84,
+      "x": 1334.976,
+      "y": 433.512,
+    },
+  ],
+  "verticals": {
+    "left": {
+      "delayMs": 200,
+      "h": 311.148,
+      "w": 6.144,
+      "x": 373.44,
+      "y": 519.804,
+    },
+    "right": {
+      "delayMs": 0,
+      "h": 311.148,
+      "w": 5.76,
+      "x": 1606.848,
+      "y": 519.804,
+    },
+  },
+  "viewBox": {
+    "height": 1080,
+    "width": 1920,
+  },
+}
+`;
