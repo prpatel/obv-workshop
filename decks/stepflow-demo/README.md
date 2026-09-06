@@ -44,7 +44,7 @@ npm run export                    # writes decks/stepflow-demo/export/deck.pdf
 decks/stepflow-demo/
 ├─ slides.md                      # slides: title + 8 family slides (seg01 · seg05 · seg08 · seg11 · seg12 · seg14 · seg15 · seg16)
 ├─ components/
-│  ├─ StairChain.vue              # family: measured seg01 split-ascent staircase (explicit placement, interleaved clicks, annotation waves)
+│  ├─ StairChain.vue              # family: settled-truth seg01 traced-ink staircase (traced title/marker/badge/icons, measured circles+wedges, 7-beat reveal)
 │  ├─ StackPanels.vue             # family: measured seg08 four-panel dark mosaic (per-panel 300ms fades)
 │  ├─ PillarRow.vue               # family: measured seg05 three-card icon row
 │  ├─ ConvergeFlow.vue            # family: measured seg11 converge-branch flow
@@ -52,9 +52,9 @@ decks/stepflow-demo/
 │  ├─ SpecPanel.vue               # family: measured seg14 progressive spec panel
 │  ├─ StepPanel.vue               # family: measured seg15 four-step panel
 │  ├─ TileSummary.vue             # family: measured seg16 three-tile summary
-│  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance + per-slide measured beats
+│  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance (active-slide gated) + per-slide measured beats
 │  └─ stepflow/
-│     ├─ stair.ts                 # pure staircase layout math (explicit SEG01_PLACEMENT + default gap/delta walk)
+│     ├─ stair.ts                 # pure staircase layout math + settled-truth traces (SEG01_PLACEMENT, SEG01_INK, wedges, captions + default gap/delta walk)
 │     ├─ panels.ts                # StackPanels contract + pure mosaic layout (dark re-truth)
 │     ├─ pillars.ts               # PillarRow contract + pure card-row layout math
 │     ├─ converge.ts              # ConvergeFlow contract + pure layout math
@@ -76,23 +76,21 @@ code. Slide data travels with the slide as props — the component holds no glob
 ## Authoring a diagram slide
 
 A diagram is data-in via props; reveal state is owned by Slidev's native `v-click`
-(one beat per click — the seg01 slide has ten). The inline props are the exact
+(one beat per click — the seg01 slide has seven). The inline props are the exact
 shape an MCP agent writes:
 
 ```md
 <div class="sf-demo-stage">
 
 <StairChain
-  title="THE DATA"
-  title-accent="SYSTEMS LIFECYCLE"
-  :palette="{ accent: '#3799fb', accentTertiary: '#1fd0ea', accentAlt: '#f9bb1f' }"
+  :palette="{ accent: '#3799fb', accentTertiary: '#1fd0ea' }"
   :steps="[
-    { id: 'ingest', title: '01', caption: 'SOURCE SYSTEMS', click: 2 },
-    { id: 'quality', title: '04', tone: 'tertiary', caption: 'TESTS GATE DEPLOYS', click: 3 },
+    { id: 'ingest', caption: 'PIPELINES' },
+    { id: 'quality', tone: 'tertiary', caption: 'GIT' },
   ]"
 />
 
-<AutoAdvance :duration-sec="3.07" :step-schedule-sec="[0.27, 0.53, 0.67, 0.80, 0.93, 1.07, 1.27, 2.07, 2.67, 3.07]" />
+<AutoAdvance :duration-sec="3.133" :step-schedule-sec="[0.2, 0.533, 0.8, 1.067, 2.067, 2.733, 3.133]" />
 
 </div>
 ```
@@ -101,12 +99,14 @@ Component props (StairChain — the seg01 slide's family):
 
 | Prop        | Type                            | Purpose                                                                        |
 | ----------- | ------------------------------- | ------------------------------------------------------------------------------ |
-| `steps`     | `StairStep[]` (required)        | One entry per block: `id`, punched-number `title`, `caption`, optional `tone`/`click` |
-| `callout`   | `StairCallout`                  | The amber floating annotation revealed on click 1                              |
-| `placement` | `StairPlacement`                | Explicit per-block fractions (`SEG01_PLACEMENT`'s measured values) — omit for the default walk |
-| `annotations` | `StairAnnotation[]`           | Late mark/text waves, each at its own 1-based click                             |
+| `steps`     | `StairStep[]` (required)        | One entry per block: `id`, `caption`, optional `tone`/`click`                  |
+| `placement` | `StairPlacement`                | Explicit per-block fractions (`SEG01_PLACEMENT`'s measured values) — omit for the measured walk |
 | `palette`   | `Partial<StepFlowPalette>`      | Merged over the `chainBlue` preset (settled medians as slide-level props)       |
-| `title` / `titleAccent` | `string`           | Two-tone mono header through the shared `TitleChrome`                           |
+
+All other settled-frame ink — the two-tone traced title, the olive badge, the
+amber `01` marker, the six dark icon glyphs — is `stair.ts`'s `SEG01_INK`
+rendered as absolute-coordinate paths, not component props. The marker reveals
+on click 1; blocks take clicks 2…7 (a per-step `click` overrides).
 
 Icon keys resolve against the Lucide registry in `components/stepflow/icons.ts`
 (see [Icon registry keys](#icon-registry-keys-componentsstepflowiconsts));
@@ -136,7 +136,7 @@ the deck style, not a palette field.
 
 | Field            | Type     | Fallback             | Consumed by                              |
 | ---------------- | -------- | -------------------- | ---------------------------------------- |
-| `accentAlt`      | `string` | — (stays undefined)  | amber tones — StairChain's annotation wave, StepPanel's amber group |
+| `accentAlt`      | `string` | — (stays undefined)  | amber tones — StepPanel's amber group |
 | `accentTertiary` | `string` | `accent`             | teal-green (`#1cd798` family): StairChain's cyan block split, ConvergeFlow's cyan left column, StepPanel's teal cluster |
 | `accentQuaternary` | `string` | `accent`           | fourth accent slot — StackPanels' four-tone mosaic (green) |
 
@@ -186,34 +186,37 @@ data order is the click order for every family. Click counts below are the
 
 | Component      | Source segment | Clicks | Choreography summary                                                   | Slide |
 | -------------- | -------------- | ------ | ---------------------------------------------------------------------- | ----- |
-| `StairChain`   | seg01          | 10     | callout → six interleaved block/caption beats → two annotation waves → closing mark | 2 |
+| `StairChain`   | seg01          | 7      | amber `01` marker → six blocks (icons, wedges, captions ride their block) | 2 |
 | `PillarRow`    | seg05          | 6      | per card: glyph+label, then badge (card 3's badge rides its card) → summary rows | 3 |
-| `StackPanels`  | seg08          | 4      | one pop per panel + one shared stepped-label click                     | 4 |
-| `ConvergeFlow` | seg11          | 5      | left column → right column → bar + labels → base + row bits → footer   | 5 |
-| `CompareBadge` | seg12          | 5      | badge pop → four alternating plate rows                                | 6 |
+| `StackPanels`  | seg08          | 4      | per panel: full-size fade (blue → cyan → amber → green) + the late frame/label/caption annotation on the final click | 4 |
+| `ConvergeFlow` | seg11          | 5      | left table → SQL + left label → right plate (+ pins / PIPELINES) → bar draw + right label → footer | 5 |
+| `CompareBadge` | seg12          | 5      | badge pop (rim +70 ms) → four alternating plate rows (row ink trails +70 ms) | 6 |
 | `SpecPanel`    | seg14          | 7      | plate → status row → heading+body → red accent → teal cluster → spec row → closing line | 7 |
 | `StepPanel`    | seg15          | 7      | plate draw → three rows → left annotation → amber group → title burst  | 8 |
-| `TileSummary`  | seg16          | 4      | three tiles → bracket (right vertical, bar, left vertical) with the summary line at bar +0.266 s | 9 |
+| `TileSummary`  | seg16          | 4      | three tiles → settled rail fill + right vertical + settled-extent bar, summary line at bar +0.266 s | 9 |
 
 Every family mounts with the two-tone measured title (`title` white,
 `titleAccent` chrome green, through `TitleChrome`) and pins its complete
 measured beat list on the slide (`R-6`: one entry per click — every beat
-listed, nothing repeated by convention).
+listed, nothing repeated by convention). Exception: StairChain's settled
+frame mounts its traced title ink instead (below).
 
-#### StairChain — split-ascent staircase (seg01, slide 2)
+#### StairChain — settled-truth traced staircase (seg01, slide 2)
 
-Ten clicks: the amber floating callout reveals first, blocks/captions land
-interleaved (`click` offsets on the steps), then two annotation waves and the
-closing mark. Geometry is explicit placement (`stair.ts`'s `SEG01_PLACEMENT`).
+Seven clicks: the traced amber `01` marker reveals first, then one block per
+click (the settled frame's onsets 0.533/0.8/1.067/2.067/2.733/3.133 s) — icon,
+wedge, and caption ride their block's beat. The settled-frame ink is traced,
+not typeset: `stair.ts`'s `SEG01_INK` carries the title (white "More like " +
+green "software engineering"), the olive badge, the amber marker, and the six
+dark icon glyphs as absolute-coordinate SVG paths; geometry is explicit
+placement (`stair.ts`'s `SEG01_PLACEMENT`, measured connected components).
+The former glow-trace connector is dropped — the reference has no connector.
 
 | Prop          | Type                       | Purpose                                                    |
 | ------------- | -------------------------- | ---------------------------------------------------------- |
-| `steps`       | `StairStep[]` (required)   | One entry per block: `id`, punched-number `title`, `caption`, optional `tone`/`click` |
-| `callout`     | `StairCallout`             | The amber floating annotation revealed on click 1          |
-| `placement`   | `StairPlacement`           | Explicit per-block fractions — omit for the default walk   |
-| `annotations` | `StairAnnotation[]`        | Late mark/text waves, each at its own 1-based click        |
+| `steps`       | `StairStep[]` (required)   | One entry per block: `id`, `caption`, optional `tone`/`click` |
+| `placement`   | `StairPlacement`           | Explicit per-block fractions — defaults to `SEG01_PLACEMENT` |
 | `palette`     | `Partial<StepFlowPalette>` | Merged over `chainBlue` (the slide pins the settled medians) |
-| `title` / `titleAccent` | `string`         | Two-tone mono header through the shared `TitleChrome`      |
 
 #### PillarRow — three-card icon row (seg05, slide 3)
 
@@ -233,52 +236,62 @@ Crop→stage fit rule: content bbox → full stage, relative layout preserved
 
 #### StackPanels — dark four-panel mosaic (seg08, slide 4)
 
-Four clicks: one ~60 ms pop per panel (reveal order: blue, cyan, amber,
-green), then the shared stepped-label click at 0.87 s. Panels abut directly
-on the black canvas — no plate, no gutters (`panels.ts` dark re-truth).
-Crop→stage mapping is identity (the mosaic fills the stage).
+Four clicks: one ~300 ms full-size fade per panel (reveal order: blue,
+cyan, amber, green — the measured onsets 0.067 / 0.267 / 0.867 / 1.2 s),
+then the late annotation pass rides the final click: the white perimeter
+frame draws clockwise with measured delays (933 → 1200 ms) and the
+in-panel labels land with it, the gray caption follows at 1400 ms. Panels
+abut directly on the black canvas — no plate, no gutters, 45° outer
+chamfer corners with white patches behind (`panels.ts` seg08 seed;
+`annotate-on-last-panel` + `caption-color` on the slide). Crop→stage
+mapping is identity (the mosaic fills the stage). The settled state also
+carries the reference's static olive mark at the top-right (`badge` prop) —
+present from the first frame, outside the click choreography.
 
 | Prop      | Type                      | Purpose                                                     |
 | --------- | ------------------------- | ----------------------------------------------------------- |
 | `panels`  | `StackPanel[]` (required) | List in reveal order: `id`, `title`, `rows`; seeded via `accent`…`accentQuaternary` |
-| `caption` | `string`                  | Optional white caption centered under the composition       |
+| `caption` | `string`                  | Optional caption under the composition (ink via `caption-color`) |
+| `badge`   | `boolean`                 | Static top-right olive mark, rendered raster-faithful and non-interactive |
 | `title` / `titleAccent` | `string`    | Two-tone mono header                                        |
 
 #### ConvergeFlow — converge-branch flow (seg11, slide 5)
 
-Five clicks: left cyan column, right blue column (with its six-box base row),
-the dim-orange bar bracket drawing across, the white base labels, then the
-gray footer band. The funnel assembly (ring, cone, tick row, stem) is the
-clip's mid-state — it renders from f0001 and never animates. Tones are the
-re-measured pair: bright funnel orange `#f25726` vs dim bar orange `#bf521c`
-(`converge.ts` family preset). Copy defaults to `CONVERGE_SEED`; in-box glyph
-rows stay sub-resolution props (left boxes empty). Crop→stage: content bbox →
-full stage (`converge.ts` docblock).
+Five clicks: the left cyan table (outline, then two dividers, then two
+cell-bar pairs), the cyan `SQL` run + gray left label, the right blue plate
+with its two through-pins + blue `PIPELINES` run, the dim-orange bar bracket
+drawing across, then the gray footer band. The funnel assembly (ring, cone,
+DATA ENGINEERS row, stem) is the clip's mid-state — it renders from f0001
+and never animates. Tones are the re-measured set: bright funnel orange
+`#f25726`, dim bar orange `#bf521c`, label gray `#a7a6ab` (`converge.ts`
+family preset). Copy defaults to `CONVERGE_SEED` (OCR-confirmed); the left
+table's cells render as measured bars — no in-box text props. Crop→stage:
+content bbox → full stage (`converge.ts` docblock).
 
 | Prop             | Type                       | Purpose                                              |
 | ---------------- | -------------------------- | ---------------------------------------------------- |
-| `title` / `titleAccent` | `string`            | Two-tone token header (green lead first, per the sheet) |
-| `labels`         | `{ left?, right? }`        | White base labels under the two columns              |
-| `funnelLabel`    | `string`                   | The funnel's tick-row numerals                       |
-| `leftBoxText` / `rightBoxText` | `string`     | In-box text (right box carries the seed's `DWH`)     |
+| `title` / `titleAccent` | `string`            | Two-tone token header (green `SQL` lead first, per the sheet) |
+| `labels`         | `{ left?, right? }`        | Gray base labels under the two columns               |
+| `funnelLabel`    | `string`                   | The funnel's tracked row (seed: `DATA ENGINEERS`)    |
+| `leftLowerText` / `slabText` | `string`       | The bare cyan run under the table / blue run across the right base |
 | `palette`        | `Partial<StepFlowPalette>` | Optional override over the measured family preset    |
 
 #### CompareBadge — plate-and-badge comparison (seg12, slide 6)
 
-Five clicks: the center badge pops (dark red-brown halo ring around the
-settled `#f85721` core), then the four plate rows fade in alternating
-left/right (`ROW_CLICK_BASE`). Geometry is the `compareBadge.ts`
-native-pixel constants (2560×1440 read, frame-scaled to the stage —
-content-bbox → full-stage fit, module docblock). Row copy is
-integration-supplied (sub-resolution in the recording): legible-in-spirit
-strings over the measured bright/dim bands.
-
-| Prop         | Type                       | Purpose                                                |
-| ------------ | -------------------------- | ------------------------------------------------------ |
-| `rows`       | `CompareRow[]` (required)  | Four entries (leftTop, rightTop, leftBottom, rightBottom): `bright`, `dim`, `icon` |
-| `badgeIcon`  | `string`                   | Registry key for the badge core glyph                  |
-| `title` / `titleAccent` | `string`        | Two-tone mono header (natural width — no ink pin)      |
-| `palette`    | `Partial<StepFlowPalette>` | Optional override                                      |
+Five clicks, prop-less settled truth: the center badge pops (dark
+red-brown radial glow ring around the settled `#f85721` core, rim
+trailing the core ~70 ms), then the four plate rows fade in alternating
+left/right, each row's ink trailing its plate ~70 ms (one 15fps reference
+frame). The component takes no props: the recording's display face and
+glyph shapes are unresolvable from compressed raster, so the settled
+state renders the reference's own ink — title runs, the top-right
+olive/pale mark, row text, icons, and the dark core glyph are
+deterministic even-odd contours traced from the settled frame
+(`SEG12_INK`, the seg01 StairChain precedent), each text/icon region
+painted as an AA-skirt pass plus an opaque core pass. Geometry stays the
+`compareBadge.ts` native-pixel constants (2560×1440 read, frame-scaled
+to the stage); plates carry top/bottom accent lines with soft skirts —
+the settled frame's left/right plate edges carry no line.
 
 #### SpecPanel — progressive spec panel (seg14, slide 7)
 
@@ -314,14 +327,16 @@ measured ink box (token mode). Seed content is `STEP_PANEL_SEED`
 
 #### TileSummary — three-tile summary (seg16, slide 9)
 
-Four clicks: three cyan tiles (EXTRACT → TRANSFORM → LOAD) over near-black
-backing plates, then the closing bracket — right vertical, full-width bar,
-left vertical 200 ms behind — with the dim-white summary line riding the bar
-onset +0.266 s (`summaryDelaySec`). The clip opens on title-only
-(f0001–f0003): the slide's pre-click empty state is the video's start state.
-Crop→stage mapping is identity (`tileSummary.ts` docblock). Tile sublabels
-and in-tile glyphs are integration-supplied (sub-resolution;
-`ICON_FALLBACK` precedent).
+Four clicks: three cyan tiles (EXTRACT → MOVE → LOAD) over near-black
+backing plates, then the settled bracket — right vertical plus the
+settled-extent bar (x 0.3152–0.8371) with the click-4 rail fill and left
+terminus — with the dim-white summary line riding the bar onset +0.266 s
+(`summaryDelaySec`). The clip STARTS MID-STATE (tile 1 already on-screen at
+f0001): the slide's beat-1 click is pinned from the earliest frames, and the
+settled frame's summary copy is an ~8% ghost. Crop→stage mapping is identity
+(`tileSummary.ts` docblock). Sublabels are measured (OUT OF THE SOURCE /
+ACROSS THE NETWORK / STRAIGHT INTO THE WAREHOUSE); in-tile glyphs are traced
+vessel/rules/banded-box paths with the measured `TILE_SUMMARY_GLYPH_STROKE`.
 
 | Prop      | Type                       | Purpose                                             |
 | --------- | -------------------------- | --------------------------------------------------- |
@@ -339,8 +354,8 @@ state reads.
 
 | Surface | Behavior |
 | ------- | -------- |
-| `?autoplay=N` URL param | Auto-starts the run on slide enter, evenly spaced across N seconds (`/2?autoplay=4` → the slide's ten clicks evenly over 4 s, first click one interval in). Bare `?autoplay` or an invalid value falls back to the slide's own beat — its `durationSec`/`stepScheduleSec` props (the measured cadences below); 7 s where a slide sets none. |
-| `a` key | Toggles a run over the slide's own beat — the per-slide `durationSec` (7 s demo default where a slide sets none; no modifier held; `A` works too). |
+| `?autoplay=N` URL param | Auto-starts the run on slide enter, evenly spaced across N seconds (`/2?autoplay=4` → the slide's seven clicks evenly over 4 s, first click one interval in). Bare `?autoplay` or an invalid value falls back to the slide's own beat — its `durationSec`/`stepScheduleSec` props (the measured cadences below); 7 s where a slide sets none. |
+| `a` key | Toggles a run over the slide's own beat — the per-slide `durationSec` (7 s demo default where a slide sets none; no modifier held; `A` works too). Only the active slide's instance listens: Slidev keeps every slide mounted, so the shared window keydown is gated on the instance's own slide being the deck's active one (the a-key run-compression fix; PRs #69/#70). |
 | Arrow keys / space / PageUp / PageDown | Cancel a running auto-advance — the native navigation still applies. |
 | Final click reached | The run stops cleanly; it never skips ahead to the next slide. |
 | Leaving the slide / unmount | All timers and key listeners are cleaned up; re-entering with `?autoplay` still in the URL replays the run. |
@@ -354,20 +369,20 @@ complete: one entry per click, in order (R-6).
 
 | Slide | Family | Clicks | Measured beats (s) |
 | ----- | ------ | ------ | ------------------ |
-| 2 | StairChain (seg01) | 10 | 0.27 · 0.53 · 0.67 · 0.80 · 0.93 · 1.07 · 1.27 · 2.07 · 2.67 · 3.07 |
-| 3 | PillarRow (seg05) | 6 | 0.067 · 0.267 · 0.600 · 0.733 · 1.000 · 1.467 |
-| 4 | StackPanels (seg08) | 4 | 0.07 · 0.20 · 0.33 · 0.87 |
-| 5 | ConvergeFlow (seg11) | 5 | 1.07 · 1.53 · 2.20 · 2.60 · 3.07 |
-| 6 | CompareBadge (seg12) | 5 | 0.60 · 1.00 · 1.73 · 3.00 · 4.40 |
-| 7 | SpecPanel (seg14) | 7 | 0.47 · 0.60 · 2.00 · 3.13 · 4.47 · 5.07 · 6.53 |
-| 8 | StepPanel (seg15) | 7 | 1.20 · 1.667 · 2.40 · 3.133 · 3.667 · 4.60 · 5.867 |
-| 9 | TileSummary (seg16) | 4 | 0.33 · 0.60 · 1.20 · 1.467 (summary line rides the bar +0.266 s) |
+| 2 | StairChain (seg01) | 7 | 0.2 · 0.533 · 0.8 · 1.067 · 2.067 · 2.733 · 3.133 |
+| 3 | PillarRow (seg05) | 6 | 0.067 · 0.267 · 0.6 · 0.733 · 1.0 · 1.467 |
+| 4 | StackPanels (seg08) | 4 | 0.067 · 0.267 · 0.867 · 1.2 |
+| 5 | ConvergeFlow (seg11) | 5 | 0.933 · 1.533 · 2.2 · 2.533 · 3.067 |
+| 6 | CompareBadge (seg12) | 5 | 0.6 · 1.0 · 1.733 · 3.0 · 4.4 |
+| 7 | SpecPanel (seg14) | 7 | 0.47 · 0.6 · 2.0 · 3.13 · 4.47 · 5.07 · 6.53 |
+| 8 | StepPanel (seg15) | 7 | 1.2 · 1.667 · 2.4 · 3.133 · 3.733 · 4.6 · 5.867 |
+| 9 | TileSummary (seg16) | 4 | 0.33 · 0.6 · 1.2 · 1.467 (summary line rides the bar +0.266 s) |
 
 ### Capture contracts (`?clicks=N` deep links)
 
 Each family settles at its final click; `?clicks=N` renders exactly that
 state for screenshots and SSIM/MAD diffs. N per family, in slide order:
-seg01 → 10, seg05 → 6, seg08 → 4, seg11 → 5, seg12 → 5, seg14 → 7,
+seg01 → 7, seg05 → 6, seg08 → 4, seg11 → 5, seg12 → 5, seg14 → 7,
 seg15 → 7, seg16 → 4. Mid-beat captures (`?clicks=k`, 1 ≤ k < N) document
 each family's choreography; the `a` key plays the pinned schedule
 end-to-end and stops at the final click (backward navigation snaps
@@ -519,18 +534,94 @@ cyan ones — reveals with its block at the block's own click.
 
 ### StackPanels (seg08) — dark source-truth mosaic
 
-The seg08 slide mounts the dark re-truth: four abutting panels directly on
-the black canvas — blue `#3799fb` top-left, cyan `#1fd0ea` top-right, amber
-`#f7ba20` bottom-left, green `#1cd798` bottom-right, seeded via
-`accent`/`accentAlt`/`accentTertiary`/`accentQuaternary`. Panels pop in
-~60 ms bursts; the shared stepped-label click lands at 0.87 s — four clicks
-total (`?clicks=4`), the correction that superseded the earlier six-click
-read.
+The seg08 slide mounts the settled re-truth: four abutting panels directly
+on the black canvas — blue `#3799fb` top-left, cyan `#1fd0ea` top-right,
+amber `#f9bb1f` bottom-left, green `#1ed798` bottom-right, seeded via
+`accent`/`accentAlt`/`accentTertiary`/`accentQuaternary`. Panels fade in
+full-size (~300 ms) at the measured onsets 0.067 / 0.267 / 0.867 / 1.2 s;
+the late annotation pass (white perimeter frame + in-panel labels, then
+the gray caption) rides the final panel click with measured delays — four
+clicks total (`?clicks=4`).
+
+### PillarRow (seg05) — backwards from the settled frame
+
+The seg05 slide mounts the settled-truth re-read: three near-black station
+plates (`#0e0d0f`-class fills, per-station tint), each carrying the settled
+glyph anatomy — a big ~93–98px circle outline with a SMALL (~25–28% of the
+box) station pictogram, station 1's rendered portrait via an optional
+`iconRotate` — plus the dual label rows, PIN-shaped accent badges straddling
+each plate's right edge (radii 47.5/47.5/46.5px from radial-peak fits), and
+the per-station caption clusters. Title runs render as measured per-token
+ink extents (white `MEASURED` + green `PIPELINE STAGES`, split at x0.4359).
+A sub-pixel Gaussian soften (`sf-video-soft`) reproduces the reference
+frame's LANCZOS-downscale edge softness. Six beats pin the f15 onsets:
+glyph+label 1 @0.067s, badge 1 @0.267s, glyph+label 2 @0.600s, badge 2
+@0.733s, glyph+label 3 @1.000s (badge 3 rides its card), caption clusters
+@1.467s. Settled state measured SSIM 0.8589 / MAD 5.09 — MAD clears the
+family bar; SSIM's named cause is the recordings' condensed display face
+versus the bundled JetBrains Mono (the deck-wide title residual; title ink
+colors and extents match, per-glyph stroke structure cannot).
+
+### StepPanel (seg15) — measured annotation re-truth
+
+The bottom annotation row renders what the settled frame actually shows:
+the right group's gold pair is the text `18` (frame column/row profiles
+decode a flag+stem+serif `1` and a two-loop `8` at cap ≈72px — the draft's
+two solid bars were an approximation artifact), and the date run
+`09·0526` is a dim gold (`#d8b24e`, settled median rgb(216,178,78)),
+distinct from the bright pair. Beat 5 is re-pinned to 3.733 s: f0056
+(t=3.700) shows zero annotation ink and f0057 (t=3.767) shows both
+annotations, so the draft's 3.667 fired measurably early. Settled state
+vs the seg15 reference: SSIM 0.8633 / MAD 5.14 (baseline 0.8527/7.46;
+MAD gate ≤6.0 passed; SSIM named cause = condensed display face vs
+bundled JetBrains Mono, deck-wide).
 
 ### Fidelity bar
 
 Per-family acceptance is SSIM/MAD against the segment's settled reference
-frame (2560×1440, LANCZOS-downscaled to the 1920×1080 capture): the gen-7
-family bar is SSIM 0.9093 / MAD 7.63. A family below the bar ships with a
-named cause (resolution-limited source text, sub-resolution glyph rows)
-and its measured numbers recorded in the PR evidence.
+frame (2560×1440, LANCZOS-downscaled to the 1920×1080 capture). The
+settled-truth program's gates supersede the retired gen-7 bar (SSIM 0.9093 /
+MAD 7.63): **settled luma SSIM ≥ 0.92 and grayscale MAD ≤ 6.0**, every
+region visually clean. A family that misses the SSIM gate while MAD passes
+ships only with a measured named cause (the recordings' condensed display
+face versus the bundled JetBrains Mono is the deck-wide one), regional MADs,
+and magnified crop pairs documenting that the residual is glyph-face width,
+not geometry — per-glyph reference-ink tracing (the seg11/seg12 precedent)
+is the remedy when a region is visibly unclean, not a default.
+
+
+### Integration sweep (settled-truth final, PR #74)
+
+The integration branch re-captures every family at the capture-contract deep
+links (1920×1080, `document.fonts.ready` + 2 s) against the release-tip
+references and re-measures the gates. Sweep numbers reproduce the per-family
+PR measurements to within capture-condition noise (≤0.006 SSIM):
+
+| Family | Settled SSIM (≥0.92) | MAD (≤6.0) | Verdict |
+|---|---|---|---|
+| seg01 StairChain | 0.9306 | 2.0701 | pass |
+| seg05 PillarRow | 0.8581 | 4.8003 | SSIM residual — documented |
+| seg08 StackPanels | 0.9546 | 2.7420 | pass |
+| seg11 ConvergeFlow | 0.9513 | 3.6750 | pass |
+| seg12 CompareBadge | 0.9257 | 1.6558 | pass |
+| seg14 SpecPanel | 0.9072 | 4.7329 | SSIM residual — documented |
+| seg15 StepPanel | 0.8635 | 5.1443 | SSIM residual — documented |
+| seg16 TileSummary | 0.8946 | 4.2074 | SSIM residual — documented |
+
+MAD clears the gate on all eight families. The four SSIM residuals were
+re-verified against fresh settled composites and magnified ref/capture crop
+pairs (title/header bands plus each family's noisiest regions): geometry,
+tones, and copy match; the residual tracks the condensed display face versus
+the bundled JetBrains Mono (glyph-face width and thin-AA features), so the
+per-glyph ink-tracing remedy was **not** applied — the composites are
+visually clean, matching the PR #67/#71/#72 documentation.
+
+Mid-beat choreography re-verified quantitatively: every `?clicks=k` capture
+best-matches a reference packet frame at MAD 0.62–5.04 (half-res luma) with
+strictly increasing frame indices per family — the intermediate states exist
+in the reference sequence in the same order. Paced playback re-verified with
+a runner-paced WebM per family (durations match the pinned schedules; the
+shared `useAutoAdvance` active-slide gate is the integration's only shared
+code change) plus a live a-key toggle capture on seg12 (before / mid-run /
+settled at 1920×1080): the pressed run advances state progressively instead
+of compressing to the final click.

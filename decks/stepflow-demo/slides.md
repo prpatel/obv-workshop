@@ -71,59 +71,54 @@ canvasWidth: 1920
 ---
 
 <!--
-  seg01 slide — StairChain split-ascent (user8 seg01, 14–18s @2560×1440).
-  Two-tone run: blocks 1–3 blue (accent), blocks 4–6 cyan (tertiary), with the
-  recording's interleaved build order — blue blocks land on clicks 2/4/6, cyan
-  on 3/5/7 — expressed via per-step `click` overrides. The steps array stays
-  POSITIONAL (stair.ts contract: geometry walks left → right; only `click`
-  remaps), so tones and punched numbers ride array position while the reveal
-  sequence interleave. Geometry is the explicit SEG01_PLACEMENT
-  (measured connected-component lefts/tops from report.json, imported verbatim;
-  the default uniform walk is bypassed):
+  seg01 slide — StairChain settled-truth exact-trace (seg01, 14–18s @2560×1440,
+  reference packet fl_uREjeQ0N). The user directive for this wave: reproduce
+  the settled END state EXACTLY, working backwards from the frame. So the
+  ink is TRACED, not typeset: the title (white "More like " + green "software
+  engineering"), the amber '01' marker, the top-right olive emblem, and the
+  six dark icon glyphs live in stair.ts's SEG01_INK as absolute-coordinate
+  SVG paths extracted from settled_full.png — StairChain renders them
+  directly. The former glow-trace connector is DROPPED (the reference has
+  no connector; the user directive supersedes the earlier standing choice),
+  and the late teal annotation waves are not rendered (the settled frame
+  carries no meaningful teal ink; the t≥2.07s onsets are small marks, not
+  blocks).
 
-    block  1      2       3       4       5       6
-    left  0.1391  0.2797  0.4172  0.5516  0.6855  0.7992
-    top   0.625   0.5757  0.6062  0.5153  0.4611  0.4056
+  Geometry is stair.ts's re-measured SEG01_PLACEMENT (settled_full.png
+  connected components, 2560×1440 → 1920×1080 fractions):
 
-  The amber '3×' callout reveals on click 1 at its measured seg01 box
-  (x 0.135–0.170, y 0.449–0.482 ink; yFrac is the baseline). Three late
-  annotation waves land on clicks 8/9/10 as teal marks — each box is the
-  settled-frame union of its wave's micro-components (tiny dim-teal glyphs at
-  2560×1440 are not resolvable to copy; the measured extents are pinned, the
-  specPanel precedent). Palette: the chainBlue family preset with the settled
-  medians pinned as slide-level props — blue #3799fb, cyan #1fd0ea, amber
-  #f9bb1f (per the seg01 PR). Glow-trace follows the locked user decision:
-  the reference's per-block glow is a capture artifact, so blocks render flat.
+    block  1        2        3        4        5        6
+    left  0.139063  0.280208  0.417708  0.551563  0.685938  0.799479
+    top   0.625000  0.576852  0.607407  0.515741  0.460185  0.405556
 
-  AutoAdvance pins the 10-beat measured schedule (callout 0.27, interleaved
-  blocks 0.53–1.27, annotation waves 2.07/2.67/3.07); `a` toggles a hands-free
-  run, `?autoplay=N` starts one on enter.
+  Blocks 1–3 blue #3799fb, 4–6 cyan #1fd0ea (colors.json modal hexes);
+  captions are the measured block-tinted cores (#4999f2 / #3dcadc), centered
+  under each block, baseline 34px below the bottom edge, mono at 22.33px with
+  the ink width pinned to the measured advance.
+
+  Choreography is the reference's own beat map from onsets.json: amber marker
+  t≈0.2 → click 1, then one block per click at t 0.533 / 0.800 / 1.067
+  (blue 1–3) and 2.067 / 2.733 / 3.133 (cyan 4–6); icons/wedges/captions ride
+  their block's beat. AutoAdvance pins those measured fire times cumulatively
+  (one entry per click, covering every click); `a` toggles a hands-free run,
+  `?autoplay=N` starts one on enter.
 -->
 
 <div class="sf-demo-stage">
 
 <StairChain
-  title="THE DATA"
-  title-accent="SYSTEMS LIFECYCLE"
-  :placement="{ blockFrac: 0.1085, leftsFrac: [0.1391, 0.2797, 0.4172, 0.5516, 0.6855, 0.7992], topsFrac: [0.625, 0.5757, 0.6062, 0.5153, 0.4611, 0.4056] }"
-  :palette="{ accent: '#3799fb', accentTertiary: '#1fd0ea', accentAlt: '#f9bb1f' }"
-  :callout="{ text: '3×', xFrac: 0.1352, yFrac: 0.4806, textLengthFrac: 0.0343 }"
-  :annotations="[
-    { id: 'wave-1', xFrac: 0.5516, yFrac: 0.5153, wFrac: 0.0324, hFrac: 0.1396, click: 8 },
-    { id: 'wave-2', xFrac: 0.6992, yFrac: 0.4944, wFrac: 0.0274, hFrac: 0.1049, click: 9 },
-    { id: 'wave-3', xFrac: 0.8234, yFrac: 0.5097, wFrac: 0.0227, hFrac: 0.0354, click: 10 },
-  ]"
+  :palette="{ accent: '#3799fb', accentTertiary: '#1fd0ea' }"
   :steps="[
-    { id: 'ingest', title: '01', caption: 'SOURCE SYSTEMS', click: 2 },
-    { id: 'transform', title: '02', caption: 'CLEAN + MODEL', click: 4 },
-    { id: 'retry', title: '03', caption: 'EXPECT FAILURE', click: 6 },
-    { id: 'quality', title: '04', tone: 'tertiary', caption: 'TESTS GATE DEPLOYS', click: 3 },
-    { id: 'serve', title: '05', tone: 'tertiary', caption: 'DASHBOARDS + APIS', click: 5 },
-    { id: 'govern', title: '06', tone: 'tertiary', caption: 'LINEAGE + ACCESS', click: 7 },
+    { id: 'ingest', caption: 'PIPELINES' },
+    { id: 'transform', caption: 'WAREHOUSE' },
+    { id: 'retry', caption: 'DATASETS' },
+    { id: 'quality', tone: 'tertiary', caption: 'GIT' },
+    { id: 'serve', tone: 'tertiary', caption: 'TESTS' },
+    { id: 'govern', tone: 'tertiary', caption: 'CI/CD' },
   ]"
 />
 
-<AutoAdvance :duration-sec="3.07" :step-schedule-sec="[0.27, 0.53, 0.67, 0.80, 0.93, 1.07, 1.27, 2.07, 2.67, 3.07]" />
+<AutoAdvance :duration-sec="3.133" :step-schedule-sec="[0.2, 0.533, 0.8, 1.067, 2.067, 2.733, 3.133]" />
 
 </div>
 
@@ -139,40 +134,44 @@ canvasWidth: 1920
 ---
 
 <!--
-  PillarRow demo — measured seg05 (user8 seg05, 61–63s @2560×1440).
-  Three near-black station plates (the V-3 correction: luma 6–40 plates on
-  the black canvas, never light gray) on the measured 0.2613 pitch, each
-  with a glyph cluster, a companion accent badge (ring + solid core), and a
-  hue-matched label row; two summary text rows sit below the card band
-  (salmon, then gray). Geometry is the pillars.ts measured table verbatim
-  (report.json seg05_61s-63s structure classes; the crop→stage fit rule —
-  content bbox → full stage, relative layout preserved — is documented in
-  the module docblock, R-2). Station hues are the settled medians, applied
-  by the component from its per-index measured table. Label and summary
-  copy is integration-supplied (the recording's text is sub-resolution):
-  legible-in-spirit strings pinned spacing-only to the measured ink extents
-  (the specPanel precedent).
+  PillarRow demo — measured seg05 (user8 seg05, 61–63s @2560×1440), rebuilt
+  backwards from the settled reference frame (settled-truth census).
+  Three near-black station plates at the dim-mask boxes (per-station tints,
+  no stroke), each with a ~4px-stroke glyph, a PIN-shaped accent badge
+  (circle outline + solid inner disc + downward tail), TWO label rows (the
+  hue-matched bold row and the deferred dim secondary row), and per-station
+  caption clusters below the band — badge-hued row 1 and gray row 2 (the
+  recording's "summary rows" are sparse clusters, not continuous lines).
+  Geometry is the pillars.ts settled census verbatim. Station hues are the
+  settled cores, applied by the component from its per-index measured
+  table. Text copy is integration-supplied (the recording's text is
+  sub-resolution): legible-in-spirit strings pinned spacing-only to the
+  measured ink extents, char counts matched to the column census (the
+  specPanel precedent).
+
+  Title: two-tone run split at x0.4359 — white head 0.2809–0.4359 (~8
+  chars), green tail 0.4359–0.7203 (~15 chars) — rendered as measured
+  per-token runs (cap band y 0.0938–0.1493, cap ≈60px).
 
   AutoAdvance pins the complete six-beat measured schedule (f15 progressive
   frames — glyph+label 1 @0.067, badge 1 @0.267, glyph+label 2 @0.600,
-  badge 2 @0.733, glyph+label 3 @1.000 (its badge rides the card), summary
-  rows @1.467; R-6: one entry per click, no repeated tail interval); `a`
-  toggles a hands-free run, `?autoplay=N` starts one on enter.
+  badge 2 @0.733, glyph+label 3 @1.000 (its badge rides the card), caption
+  clusters @1.467 completing ≈1.933; R-6: one entry per click, no repeated
+  tail interval); `a` toggles a hands-free run, `?autoplay=N` starts one on
+  enter.
 -->
 
 <div class="sf-demo-stage">
 
 <PillarRow
-  title="MEASURED"
-  title-accent="PIPELINE"
-  :cards="[
-    { id: 'fetch', label: 'FETCH', icon: 'cassette-tape' },
-    { id: 'query', label: 'QUERY', icon: 'table-2' },
-    { id: 'ship', label: 'SHIP', icon: 'navigation-2' },
+  :title-tokens="[
+    { text: 'MEASURED', x: 539.3, width: 297.6 },
+    { text: 'PIPELINE STAGES', x: 836.9, width: 546.1, accent: true },
   ]"
-  :summary-rows="[
-    'THREE STATIONS, SIX MEASURED BEATS, EVERY BOX CITED TO ITS FRAME',
-    'geometry, palette, and onsets pinned to the settled frame pixels',
+  :cards="[
+    { id: 'fetch', label: 'FETCH', sublabel: 'STATION 1', caption: 'FETCHING', captionMeta: 'STEP 1', icon: 'cassette-tape', iconRotate: 90 },
+    { id: 'query', label: 'TRANSFORM', sublabel: 'STATION 2', caption: 'PROCESSING', captionMeta: 'STATION 2', icon: 'table-2' },
+    { id: 'ship', label: 'DEPLOY', sublabel: 'STATION 3', caption: 'DELIVER', captionMeta: 'STATION 3', icon: 'flag' },
   ]"
 />
 
@@ -192,20 +191,26 @@ canvasWidth: 1920
 ---
 
 <!--
-  StackPanels demo — dark source-truth variant (user8 seg08, 91–94s @2560×1440).
-  The source mosaic is FOUR ABUTTING PANELS directly on the black canvas — no
-  white plate, no gutters, square corners:
-    blue  #3799fb  x0.209–0.510  y0.326–0.556   (top-left, probed)
-    cyan  #1fd0ea  x0.510–0.790  y0.326–0.556   (top-right, probed)
-    amber #f9bb1f  x0.209–0.431  y0.558–0.785   (bottom-left, probed)
-    teal  #1ed798  x0.431–0.790  y0.557–0.786   (bottom-right, probed)
-  Reveal order measured from the 15fps event trace: blue @0.07s, cyan @0.2s,
-  teal @0.33s, amber @0.87s — re-paced to four native clicks, one ~300ms
-  full-size opacity fade each. In-panel icon+title groups ride their panel's
-  click. `:plate="false"` opts out of the light backing plate (art_mkVNxsft
-  light-trace variant keeps the default). AutoAdvance pins the complete
-  four-beat measured schedule (0.07 / 0.2 / 0.33 / 0.87 — one onset per panel;
-  no caption beat); `a` toggles a hands-free run, `?autoplay=N` starts one on
+  StackPanels demo — seg08 settled-truth rebuild (91–94s @2560×1440, packet
+  fl_bRELEFpX; numbers mirror STACKPANELS_SEED in stepflow/panels.ts, px over
+  the 1920×1080 stage). The source settles as FOUR ABUTTING PANELS directly
+  on the black canvas — no white plate, no gutters, 45° outer chamfers:
+    blue  #3799fb  x0.209–0.527  y0.328–0.557   (top-left)
+    cyan  #1fd0ea  x0.528–0.790  y0.328–0.557   (top-right)
+    amber #f9bb1f  x0.209–0.424  y0.558–0.786   (bottom-left)
+    green #1ed798  x0.431–0.790  y0.557–0.786   (bottom-right)
+  A thin white perimeter frame (~6px) hugs the mosaic with open corners,
+  drawn clockwise top→right→bottom→left; near-black icon+title groups sit
+  centered per panel; a gray #616161 caption closes the frame.
+  Reveal order = the measured onsets: blue @0.067s, cyan @0.267s, amber
+  @0.867s, green @1.2s — four native clicks, one ~300ms full-size opacity
+  fade each. The late annotation pass (frame + labels + caption, drawn at
+  2.13–2.9s in the clip) rides the FINAL panel click with measured
+  transition delays (labels 933ms, frame 933–1200ms, caption 1400ms).
+  `:plate="false"` opts out of the light backing plate (art_mkVNxsft
+  light-trace variant keeps the default). AutoAdvance pins the four-beat
+  measured schedule and dwells to 2.8s so the annotation completes before
+  the advance; `a` toggles a hands-free run, `?autoplay=N` starts one on
   enter.
 -->
 
@@ -215,16 +220,20 @@ canvasWidth: 1920
   title="One"
   titleAccent="unified environment"
   :plate="false"
+  annotate-on-last-panel
+  caption="ONE ENVIRONMENT"
+  caption-color="#636363"
+  badge
   :palette="{ accent: '#3799fb', accentAlt: '#1fd0ea', accentTertiary: '#f9bb1f', accentQuaternary: '#1ed798' }"
   :panels="[
-    { id: 'blue', xFrac: 0.209, yFrac: 0.326, wFrac: 0.301, hFrac: 0.230, tone: 'accent', bandReveal: 'fade', icon: 'dash-grid', iconBox: { xFrac: 0.290, yFrac: 0.375, wFrac: 0.039, hFrac: 0.045 }, title: 'INGESTION', titleBox: { xFrac: 0.255, yFrac: 0.470, wFrac: 0.160, hFrac: 0.034 } },
-    { id: 'cyan', xFrac: 0.510, yFrac: 0.326, wFrac: 0.280, hFrac: 0.230, tone: 'alt', bandReveal: 'fade', icon: 'filter', iconBox: { xFrac: 0.600, yFrac: 0.375, wFrac: 0.038, hFrac: 0.067 }, title: 'TRANSFORM', titleBox: { xFrac: 0.565, yFrac: 0.470, wFrac: 0.160, hFrac: 0.034 } },
-    { id: 'teal', xFrac: 0.431, yFrac: 0.557, wFrac: 0.359, hFrac: 0.229, tone: 'quaternary', bandReveal: 'fade', icon: 'navigation-2', iconBox: { xFrac: 0.565, yFrac: 0.600, wFrac: 0.037, hFrac: 0.035 }, title: 'MONITORING', titleBox: { xFrac: 0.530, yFrac: 0.690, wFrac: 0.180, hFrac: 0.035 } },
-    { id: 'amber', xFrac: 0.209, yFrac: 0.558, wFrac: 0.222, hFrac: 0.227, tone: 'tertiary', bandReveal: 'fade', icon: 'database', iconBox: { xFrac: 0.276, yFrac: 0.600, wFrac: 0.033, hFrac: 0.069 }, title: 'STORAGE', titleBox: { xFrac: 0.240, yFrac: 0.690, wFrac: 0.120, hFrac: 0.035 } },
+    { id: 'blue', xFrac: 402 / 1920, yFrac: 354 / 1080, wFrac: 610.5 / 1920, hFrac: 247.5 / 1080, tone: 'accent', bandReveal: 'fade', icon: 'dash-grid', iconBox: { xFrac: 533.04 / 1920, yFrac: 445.4 / 1080, wFrac: 73.92 / 1920, hFrac: 61.2 / 1080 }, title: 'INGESTION', titleBox: { xFrac: 637.5 / 1920, yFrac: 462 / 1080, wFrac: 234.7 / 1920, hFrac: 30 / 1080 } },
+    { id: 'cyan', xFrac: 1013.25 / 1920, yFrac: 354 / 1080, wFrac: 504.75 / 1920, hFrac: 247.5 / 1080, tone: 'alt', bandReveal: 'fade', icon: 'filter', iconBox: { xFrac: 1098 / 1920, yFrac: 446.04 / 1080, wFrac: 66 / 1920, hFrac: 67.92 / 1080 }, title: 'TRANSFORM', titleBox: { xFrac: 1197 / 1920, yFrac: 462 / 1080, wFrac: 237 / 1920, hFrac: 30 / 1080 } },
+    { id: 'amber', xFrac: 402 / 1920, yFrac: 603 / 1080, wFrac: 426 / 1920, hFrac: 246 / 1080, tone: 'tertiary', bandReveal: 'fade', icon: 'database', iconBox: { xFrac: 473.08 / 1920, yFrac: 693.16 / 1080, wFrac: 63.84 / 1920, hFrac: 67.68 / 1080 }, title: 'STORAGE', titleBox: { xFrac: 571.5 / 1920, yFrac: 712.5 / 1080, wFrac: 181.5 / 1920, hFrac: 30 / 1080 } },
+    { id: 'green', xFrac: 828 / 1920, yFrac: 601.5 / 1080, wFrac: 690 / 1920, hFrac: 247.5 / 1080, tone: 'quaternary', bandReveal: 'fade', icon: 'navigation-2', iconBox: { xFrac: 981.58 / 1920, yFrac: 713.62 / 1080, wFrac: 87.84 / 1920, hFrac: 35.76 / 1080 }, title: 'MONITORING', titleBox: { xFrac: 1091 / 1920, yFrac: 712.5 / 1080, wFrac: 263.5 / 1920, hFrac: 30 / 1080 } },
   ]"
 />
 
-<AutoAdvance :duration-sec="0.87" :step-schedule-sec="[0.07, 0.2, 0.33, 0.87]" />
+<AutoAdvance :duration-sec="2.8" :step-schedule-sec="[0.067, 0.267, 0.867, 1.2]" />
 
 </div>
 
@@ -240,34 +249,32 @@ canvasWidth: 1920
 ---
 
 <!--
-  ConvergeFlow demo — measured seg11 (user8 seg11, 130–134s @2560×1440).
-  The funnel assembly (ring, cone, tick row, stem) is the clip's mid-state —
-  it renders from f0001 and never animates. The build: left cyan column,
-  right blue column with its six-box base row, the dim-orange bar bracket
-  drawing across, the white base labels, then the gray footer band. Tones
-  are the family's re-measured pair (V-4): bright funnel orange #f25726 vs
-  the dim bar orange #bf521c — settled-frame medians, locked in converge.ts.
-  Title chrome is the sheet's measured token runs (green 'ETL' lead first);
-  copy follows CONVERGE_SEED (the component defaults carry it), and the
-  in-box glyph rows stay sub-resolution props (left boxes empty). Crop→stage
-  mapping: content bbox → full stage, documented in the module docblock (R-2).
+  ConvergeFlow demo — measured seg11 (user8 seg11, 130–134s @2560×1440),
+  rebuilt backwards from the settled end state. The funnel assembly (ring,
+  cone, DATA ENGINEERS row, stem) is the clip's mid-state — it renders from
+  f0001 and never animates. The build: the left cyan table (outline, two
+  dividers, two cell-bar pairs), the cyan SQL run + gray left label, the
+  right blue plate with its two through-pins + blue PIPELINES run, the
+  dim-orange bar bracket drawing across, then the gray footer band. Tones
+  are the family's re-measured set: bright funnel orange #f25726, dim bar
+  orange #bf521c, label gray #a7a6ab — settled-frame medians, locked in
+  converge.ts. Title chrome is the sheet's measured token runs (green 'SQL'
+  lead first); copy follows CONVERGE_SEED (the component defaults carry it).
+  Crop→stage mapping: content bbox → full stage, documented in the module
+  docblock (R-2).
 
-  AutoAdvance pins the complete five-beat schedule (f15 onsets 1.07 / 1.53 /
-  2.2 / 2.6 / 3.07 — left column, right column, bar + labels, base + row
-  bits, footer band; R-6 complete list); `a` toggles a hands-free run,
-  `?autoplay=N` starts one on enter.
+  AutoAdvance pins the complete five-beat schedule (onsets.json 0.933 /
+  1.533 / 2.2 / 2.533 / 3.067 — left table, SQL + left label, right plate
+  (+ pins/PIPELINES staggers), bar draw + right label, footer band; R-6
+  complete list); `a` toggles a hands-free run, `?autoplay=N` starts one on
+  enter.
 -->
 
 <div class="sf-demo-stage">
 
-<ConvergeFlow
-  title-accent="ETL"
-  title="EVERYTHING CONVERGES"
-  left-box-text="CICD"
-  left-lower-text="RUN 412"
-/>
+<ConvergeFlow title-accent="SQL" title="and pipelines still matter" />
 
-<AutoAdvance :duration-sec="3.07" :step-schedule-sec="[1.07, 1.53, 2.2, 2.6, 3.07]" />
+<AutoAdvance :duration-sec="3.07" :step-schedule-sec="[0.933, 1.533, 2.2, 2.533, 3.067]" />
 
 </div>
 
@@ -284,39 +291,29 @@ canvasWidth: 1920
 
 <!--
   CompareBadge demo — measured seg12 (user8 seg12, 134–139s @2560×1440).
-  Two near-black plate columns (the V-3 correction) flank a center badge —
-  a dark red-brown halo ring around the settled #f85721 orange core —
-  joined by four dim leader lines. Choreography: the badge pops on click 1,
-  then the four plate rows fade in alternating left/right (clicks 2–5,
-  ROW_CLICK_BASE). Row copy is integration-supplied (the recording's plate
-  text is sub-resolution): legible-in-spirit strings over the measured
-  bright/dim bands, each row's icon riding its measured tone. Geometry is
-  the compareBadge.ts native-pixel constants (2560×1440 read frame-scaled
-  to the stage — the crop fits content-bbox → full stage, module docblock
-  R-2). CompareBadge renders its title band at natural mono width (no
-  measured ink extent on this sheet).
+  Two near-black bordered plate columns flank a center badge — the settled
+  #f85721 orange core on a dark red-brown radial glow — joined by three
+  dim leader lines (the settled frame has no lower-right stroke). The
+  component takes no props: settled truth renders the traced reference ink
+  (module SEG12_INK, the seg01 StairChain precedent) — title runs, the
+  top-right olive/pale mark, row text, icons, and the dark core glyph are
+  contours traced from the settled frame, so the recording face and glyph
+  shapes match exactly. Choreography: the badge pops on click 1 (rim trails
+  ~70ms), then the four plate rows fade in alternating left/right (clicks
+  2–5), each row's traced ink trailing its plate by ~70ms — one 15fps
+  reference frame (onsets: white/icon events at beat +0.067s).
 
-  AutoAdvance pins the complete five-beat schedule (f15 frame dumps: core
-  fade onset f0009 @0.6; waves first visible f0015/f0026/f0045/f0066 →
-  1.0 / 1.73 / 3.0 / 4.4; R-6 complete list); `a` toggles a hands-free run,
-  `?autoplay=N` starts one on enter.
+  AutoAdvance pins the complete five-beat schedule (onsets.json: core red
+  onset 0.600, orange full 0.667, rim trail 0.733; waves at 1.000 /
+  1.733 / 3.000 / 4.400); `a` toggles a hands-free run, `?autoplay=N`
+  starts one on enter.
 -->
 
 <div class="sf-demo-stage">
 
-<CompareBadge
-  title="TWO WAYS"
-  title-accent="TO SHIP"
-  badge-icon="square-terminal"
-  :rows="[
-    { id: 'leftTop', bright: 'VIBE CODING', dim: 'ad-hoc prompts', icon: 'user-round' },
-    { id: 'rightTop', bright: 'SPEC-DRIVEN', dim: 'spec, tasks, then build', icon: 'flask-conical' },
-    { id: 'leftBottom', bright: 'HAND-ROLLED', dim: 'every move rebuilt', icon: 'rotate-cw' },
-    { id: 'rightBottom', bright: 'MEASURED', dim: 'cites the frame', icon: 'table-2' },
-  ]"
-/>
+<CompareBadge />
 
-<AutoAdvance :duration-sec="4.4" :step-schedule-sec="[0.6, 1.0, 1.73, 3.0, 4.4]" />
+<AutoAdvance :duration-sec="4.4" :step-schedule-sec="[0.6, 1.0, 1.733, 3.0, 4.4]" />
 
 </div>
 
@@ -327,33 +324,37 @@ canvasWidth: 1920
   position: absolute;
   inset: 0;
 }
+
 </style>
 
 ---
 
 <!--
   SpecPanel demo — measured seg14 (user8 seg14, 153–160s @2560×1440).
-  One huge near-black plate (settled luma ≈14 — the V-3 near-black decision)
-  carries progressively fading text rows; window-chrome dots ride click 2; a
-  red edge accent and a teal accent cluster land on their own late beats.
+  One huge near-black plate (settled fill #0f0e11, luma ≈14 — the V-3
+  near-black decision) carries progressively fading text rows: window-chrome
+  status row + teal `AI ASSISTED` cluster + wide-tracked heading on click 2,
+  the white cursor-over-square icon + bright body line on click 3, the red
+  edge accent's dim line on click 4, the teal smile tile + strip on click 5,
+  the bright teal statement on click 6, and the dim closing line on click 7.
   The crop frames the full 16:9 slide (R-2, documented in specPanel.ts):
   crop fractions map identity-onto-stage, so the title band and plate
   margins read as full-frame fractions. Seed copy is the module's
-  SPEC_PANEL_SEED (resolution-limited read, integration-refined); the title
-  band pins its measured 634.56px ink extent (specPanel.ts layout.title).
+  SPEC_PANEL_SEED (OCR read of the settled frame at 2560); the title pins
+  its measured 634.9px ink extent (specPanel.ts layout.title).
 
   AutoAdvance pins the complete seven-beat schedule (STEP_SCHEDULE_SEC:
-  plate 0.47, status row 0.6, heading + body 2.0, red accent 3.13, teal
-  cluster 4.47, spec row 5.07, closing line 6.53; R-6 complete list); `a`
-  toggles a hands-free run, `?autoplay=N` starts one on enter.
+  plate dim 0.47, plate full + status row + heading sub-beat 0.6, body
+  group 2.0, red accent 3.13, teal accents 4.47, teal statement 5.07,
+  closing line 6.53; R-6 complete list); `a` toggles a hands-free run,
+  `?autoplay=N` starts one on enter.
 -->
-
 <div class="sf-demo-stage">
 
 <SpecPanel
-  title="SHIP"
-  title-accent="THE SPEC"
-  :palette="{ accentTertiary: '#1cd798' }"
+  title="Using it"
+  title-accent="properly"
+  :palette="{ accentTertiary: '#1ed798' }"
 />
 
 <AutoAdvance :duration-sec="6.53" :step-schedule-sec="[0.47, 0.6, 2.0, 3.13, 4.47, 5.07, 6.53]" />
@@ -383,7 +384,7 @@ canvasWidth: 1920
   crop→stage mapping is documented in stepPanel.ts (R-2).
 
   AutoAdvance pins the complete seven-beat schedule (STEP_BEATS: plate
-  1.2, rows 1.667 / 2.4 / 3.133, left annotation 3.667, amber group 4.6,
+  1.2, rows 1.667 / 2.4 / 3.133, left annotation 3.733, amber group 4.6,
   title burst 5.867; R-6 complete list); `a` toggles a hands-free run,
   `?autoplay=N` starts one on enter.
 -->
@@ -391,12 +392,12 @@ canvasWidth: 1920
 <div class="sf-demo-stage">
 
 <StepPanel
-  title="to spec-driven shipping"
-  title-accent="vibe coding"
+  title="trend, actual"
+  title-accent="TUI skin"
   chip-label="VIBE CODING"
 />
 
-<AutoAdvance :duration-sec="5.867" :step-schedule-sec="[1.2, 1.667, 2.4, 3.133, 3.667, 4.6, 5.867]" />
+<AutoAdvance :duration-sec="5.867" :step-schedule-sec="[1.2, 1.667, 2.4, 3.133, 3.733, 4.6, 5.867]" />
 
 </div>
 
@@ -412,16 +413,22 @@ canvasWidth: 1920
 ---
 
 <!--
-  TileSummary demo — measured seg16 (user8 seg16, 206–208s @2560×1440).
-  Three cyan tiles (EXTRACT → TRANSFORM → LOAD, the measured seed) over
-  near-black backing plates (plate fill #0c0d0c, the locked V-3 decision),
-  joined by a connector rail. The closing beat draws the bracket — right
-  vertical, full-width bar, left vertical 200ms behind — and the dim-white
-  summary line rides the bar onset +0.266s (the measured bar→text stagger,
-  summaryDelaySec). The clip OPENS on title-only (f0001–f0003): the slide's
-  pre-click empty state is the video's start state (R-5). Tile sublabels and
-  in-tile glyphs are integration-supplied (sub-resolution; the ICON_FALLBACK
-  precedent). Crop→stage mapping is IDENTITY (tileSummary.ts docblock, R-2).
+  TileSummary demo — measured seg16 (user8 seg16, 206–208s @2560×1440),
+  settled to the packet's end state (settled_full.png; the later f0030
+  bracket state is a choreography conflict documented in the ts docblock,
+  not the gate). Three cyan tiles (EXTRACT → MOVE → LOAD, the measured
+  seed; tile 2's line-1 ink is 4 glyphs — the MOVE read, not TRANSFORM)
+  over near-black backing plates (#040b0b, colors.json plate modal),
+  joined by a connector rail whose left terminus is a small thin '>'
+  hugging tile 1's edge and whose right stub meets the bracket. The
+  closing beat fills the rail gaps + stub and draws the bracket — right
+  vertical + settled-extent bar at the bar onset — and the dim summary
+  line rides the bar onset +0.266s (the measured bar→text stagger,
+  summaryDelaySec). The clip STARTS MID-STATE: tile 1 is already on-screen
+  at f0001, so beat 1 is pinned from the earliest frames (R-5). Sublabels
+  are template-classified from the frame crops; in-tile glyphs ship as
+  traced paths (TILE_SUMMARY_GLYPHS). Crop→stage mapping is IDENTITY
+  (tileSummary.ts docblock, R-2).
 
   AutoAdvance pins the complete four-beat schedule — tiles 1/2/3 at the f15
   onsets 0.33 / 0.6 / 1.2, bracket 4 at the bar onset 1.467 with the text
@@ -435,11 +442,11 @@ canvasWidth: 1920
   title="ETL IN"
   title-accent="THREE MOVES"
   summary="three tiles, one measured run"
-  :palette="{ accentAlt: '#3799fb' }"
+  :palette="{ accent: '#1fd0ea' }"
   :seed="[
-    { id: 'extract', label: 'EXTRACT', xFrac: 0.2277, wFrac: 0.077 },
-    { id: 'transform', label: 'TRANSFORM', xFrac: 0.4613, wFrac: 0.0774 },
-    { id: 'load', label: 'LOAD', xFrac: 0.6953, wFrac: 0.077 },
+    { id: 'extract', label: 'EXTRACT', sublabel: 'OUT OF THE SOURCE', xFrac: 0.225, wFrac: 0.082031 },
+    { id: 'move', label: 'MOVE', sublabel: 'ACROSS THE NETWORK', xFrac: 0.458594, wFrac: 0.082292 },
+    { id: 'load', label: 'LOAD', sublabel: 'STRAIGHT INTO THE WAREHOUSE', xFrac: 0.692448, wFrac: 0.081771 },
   ]"
 />
 

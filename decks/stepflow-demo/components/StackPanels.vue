@@ -5,7 +5,9 @@ import {
   panelPath,
   plateLayout,
   revealPlan,
+  STACKPANELS_BADGE,
   STACKPANELS_CAPTION,
+  STACKPANELS_FRAME,
   STACKPANELS_HEADER,
   SWEEP_FRAC,
   type PanelRect,
@@ -22,6 +24,9 @@ const props = withDefaults(defineProps<{
   palette?: StepFlowPaletteOverride
   /** White caption line under the composition; lands on the closing beat. */
   caption?: string
+  /** Caption ink color (seg08 settled frame: gray #616161; legacy trace keeps
+       the white #f5f5f5 default). */
+  captionColor?: string
   /** White lead of the two-tone header (sheet: 'One'). */
   title?: string
   /** Header tail rendered in chrome green (sheet: 'unified environment'). */
@@ -29,10 +34,33 @@ const props = withDefaults(defineProps<{
   /** Render the light backing plate (art_mkVNxsft light trace). The dark
        source-truth mosaic sits directly on the black canvas — pass false. */
   plate?: boolean
-}>(), { palette: () => ({}), plate: true })
+  /** Seg08 settled-truth mode: the white perimeter frame + chamfer patches,
+       the in-panel icon/title groups, and the caption all ride the FINAL
+       panel click with the recording's measured late-annotation delays
+       (labels ~933ms, frame 933–1200ms, caption 1400ms after click 4) —
+       the clip draws them at 2.13–2.9s, a full second after the last panel. */
+  annotateOnLastPanel?: boolean
+  /** Olive top-right source mark, raster-faithful over black (seg08). Static
+       from frame 1 — the reference mark never animates. */
+  badge?: boolean
+}>(), {
+  palette: () => ({}),
+  plate: true,
+  captionColor: '#f5f5f5',
+  annotateOnLastPanel: false,
+  badge: false,
+})
 
 const p = computed(() => resolvePalette(props.palette))
 const layout = computed(() => panelsLayout(props.panels))
+
+// Top-right source mark, resolved to absolute stage units (static raster).
+const badgeSpec = computed(() => ({
+  x: STACKPANELS_BADGE.box.xFrac * layout.value.viewBox.width,
+  y: STACKPANELS_BADGE.box.yFrac * layout.value.viewBox.height,
+  w: STACKPANELS_BADGE.box.wFrac * layout.value.viewBox.width,
+  h: STACKPANELS_BADGE.box.hFrac * layout.value.viewBox.height,
+}))
 const plateSpec = computed(() => plateLayout(layout.value.viewBox))
 const plan = computed(() => revealPlan(props.panels, !!props.caption))
 
@@ -82,6 +110,20 @@ const plateBorder = computed(() => {
 // fade, ~200ms behind its onset); the brighten lands with the caption.
 const plateFirstClick = computed(() => plan.value.panelClicks[0] ?? 1)
 const plateFullClick = computed(() => plan.value.labelClick || plan.value.panelClicks.length || 1)
+
+// Seg08 late annotation: the recording draws frame, labels, and caption a
+// full second after the last panel (2.13–2.9s vs click 4 at 1.2s), so in
+// annotate mode they all bind the FINAL panel click and stagger themselves
+// with the measured transition delays.
+const annotateClick = computed(() => plan.value.panelClicks[plan.value.panelClicks.length - 1] ?? 1)
+
+/** 45° chamfer leg for the panel's outer corner: the seg08 frame patch
+ * (17/1080) in annotate mode, the legacy plate cut otherwise. */
+const cutFor = (panel: PanelRect): number => {
+  if (!panel.cutCorner) return 0
+  if (props.annotateOnLastPanel) return STACKPANELS_FRAME.cutFrac * layout.value.viewBox.height
+  return plateSpec.value.cut
+}
 
 /** Sheet-measured icon → SVG transform mapping the 24-unit Lucide box onto the
  * measured ink bbox (art_mkVNxsft §1.2). */
@@ -143,6 +185,19 @@ const captionSpec = computed(() => {
     role="img"
     :aria-label="`${panels.length}-panel stack diagram`"
   >
+    <!-- Olive source mark, top-right: static from frame 1 (measured on the
+         earliest reference frames — it never fades). Shipped as the ink
+         raster so the render is pixel-faithful over the black canvas. -->
+    <image
+      v-if="badge"
+      class="sf-badge"
+      :x="badgeSpec.x"
+      :y="badgeSpec.y"
+      :width="badgeSpec.w"
+      :height="badgeSpec.h"
+      :href="STACKPANELS_BADGE.dataUri"
+      aria-hidden="true"
+    />
     <!-- White plate, two layers (art_mkVNxsft §1.3): the margin rides the
          first panel's click at ~33% white and brightens to full #f5f5f5 with
          the caption on the closing beat (the f351–360 window). -->
@@ -155,9 +210,40 @@ const captionSpec = computed(() => {
       <path :d="plateBorder" fill="none" :stroke="plateSpec.border" :stroke-width="plateSpec.borderWidth" />
     </g>
 
-    <!-- One sibling group per panel (never nested v-clicks): a ~300ms
-         full-size opacity fade on its click — no scale, no sweep
-         (art_mkVNxsft §1.3). The dark icon+title group rides the same click. -->
+    <!-- Seg08 settled-truth white frame (BEHIND the panels): four ~6px bars
+         hugging the mosaic with open corners plus one white square per outer
+         chamfer — the panel cuts reveal the patches as triangles. All land on
+         the final panel click; per-segment delays replay the recording's
+         clockwise perimeter draw (top→right→bottom→left, 2.13–2.53s). -->
+    <g v-if="annotateOnLastPanel" v-click="annotateClick" :data-sf-click="annotateClick" class="sf-frame">
+      <rect
+        v-for="seg in STACKPANELS_FRAME.segments"
+        :key="seg.id"
+        class="sf-frame-seg"
+        :class="`sf-frame-seg--${seg.id}`"
+        :x="seg.xFrac * layout.viewBox.width"
+        :y="seg.yFrac * layout.viewBox.height"
+        :width="seg.wFrac * layout.viewBox.width"
+        :height="seg.hFrac * layout.viewBox.height"
+        :fill="STACKPANELS_FRAME.color"
+      />
+      <rect
+        v-for="patch in STACKPANELS_FRAME.patches"
+        :key="`patch-${patch.id}`"
+        class="sf-frame-patch"
+        :class="`sf-frame-patch--${patch.id}`"
+        :x="patch.xFrac * layout.viewBox.width"
+        :y="patch.yFrac * layout.viewBox.height"
+        :width="STACKPANELS_FRAME.cutFrac * layout.viewBox.height"
+        :height="STACKPANELS_FRAME.cutFrac * layout.viewBox.height"
+        :fill="STACKPANELS_FRAME.color"
+      />
+    </g>
+
+    <!-- One sibling group per panel (never nested auto-numbered v-clicks): a
+         ~300ms full-size opacity fade on its click — no scale, no sweep. The
+         measured seed replays the recording's onsets: blue → cyan → amber →
+         green. -->
     <g
       v-for="(panel, i) in layout.panels"
       :key="panel.id"
@@ -169,7 +255,7 @@ const captionSpec = computed(() => {
       <path
         v-if="panel.bandReveal !== 'sweep'"
         class="sf-band"
-        :d="panelPath(panel, panel.cutCorner ? plateSpec.cut : 0, panel.cutCorner)"
+        :d="panelPath(panel, cutFor(panel), panel.cutCorner)"
         :fill="fill(panel.tone)"
       />
       <rect
@@ -184,7 +270,10 @@ const captionSpec = computed(() => {
 
       <g
         v-if="panel.icon && iconTransform(panel)"
+        v-click="annotateOnLastPanel ? annotateClick : plan.panelClicks[i]"
+        :data-sf-click="annotateOnLastPanel ? annotateClick : plan.panelClicks[i]"
         class="sf-icon"
+        :class="{ 'sf-late': annotateOnLastPanel }"
         :transform="iconTransform(panel)"
         :style="{ color: p.iconStroke }"
       >
@@ -200,7 +289,10 @@ const captionSpec = computed(() => {
 
       <text
         v-if="titles[panel.id]"
+        v-click="annotateOnLastPanel ? annotateClick : plan.panelClicks[i]"
+        :data-sf-click="annotateOnLastPanel ? annotateClick : plan.panelClicks[i]"
         class="sf-title"
+        :class="{ 'sf-late': annotateOnLastPanel }"
         :x="titles[panel.id]?.x"
         :y="titles[panel.id]?.y"
         :font-size="titles[panel.id]?.fontSize"
@@ -211,20 +303,21 @@ const captionSpec = computed(() => {
       >{{ titles[panel.id]?.text }}</text>
     </g>
 
-    <!-- Caption: one opacity fade on the closing beat, next to the plate
-         brighten. -->
+    <!-- Caption: one opacity fade — on the closing beat (legacy trace) or
+         the final panel click at the measured late delay (seg08). -->
     <text
       v-if="captionSpec"
-      v-click="plan.labelClick"
-      :data-sf-click="plan.labelClick"
+      v-click="annotateOnLastPanel ? annotateClick : plan.labelClick"
+      :data-sf-click="annotateOnLastPanel ? annotateClick : plan.labelClick"
       class="sf-caption"
+      :class="{ 'sf-caption--late': annotateOnLastPanel }"
       :x="captionSpec.x"
       :y="captionSpec.y"
       :font-size="captionSpec.fontSize"
       :textLength="captionSpec.textLength"
       lengthAdjust="spacing"
       text-anchor="middle"
-      fill="#f5f5f5"
+      :fill="captionColor"
     >{{ caption }}</text>
 
     <!-- Sheet §1.2 header: two ink spans pinned to their measured extents —
@@ -334,6 +427,59 @@ const captionSpec = computed(() => {
   transition: none;
 }
 
+/*
+ * Seg08 late annotation (measured): the recording draws the annotation pass
+ * a full second after the last panel lands — labels at 2.133s, frame drawn
+ * clockwise top→right→bottom→left 2.133–2.533s, caption at 2.6s — replayed
+ * here as transition delays after the final panel click (1.2s). The hidden
+ * states keep transition:none so backward nav still snaps instantly.
+ */
+.sf-icon.sf-late,
+.sf-title.sf-late {
+  transition-delay: 933ms;
+}
+
+.sf-icon.slidev-vclick-hidden,
+.sf-title.slidev-vclick-hidden {
+  opacity: 0;
+  transition: none;
+}
+
+.sf-frame-seg,
+.sf-frame-patch {
+  transition: opacity 300ms ease-out;
+}
+
+.sf-frame.slidev-vclick-hidden .sf-frame-seg,
+.sf-frame.slidev-vclick-hidden .sf-frame-patch {
+  opacity: 0;
+  transition: none;
+}
+
+.sf-frame-seg--top,
+.sf-frame-patch--tl {
+  transition-delay: 933ms;
+}
+
+.sf-frame-seg--right,
+.sf-frame-patch--tr {
+  transition-delay: 1000ms;
+}
+
+.sf-frame-seg--bottom,
+.sf-frame-patch--br {
+  transition-delay: 1067ms;
+}
+
+.sf-frame-seg--left,
+.sf-frame-patch--bl {
+  transition-delay: 1200ms;
+}
+
+.sf-caption--late {
+  transition-delay: 1400ms;
+}
+
 /* Legacy stylized sweep (unused by the demo slide): scaleX on the revealed
  * state sweeps the fill left→right; transform-box: fill-box pins the origin
  * to the band's own left edge. */
@@ -357,7 +503,9 @@ const captionSpec = computed(() => {
   .sf-title,
   .sf-plate--dim,
   .sf-plate--full,
-  .sf-caption {
+  .sf-caption,
+  .sf-frame-seg,
+  .sf-frame-patch {
     transition: none;
   }
 }

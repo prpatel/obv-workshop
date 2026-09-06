@@ -1,42 +1,46 @@
 /**
  * Pure layout for the PillarRow family — the seg05 (61–63s) three-card icon
- * row, exact-trace edition.
+ * row, settled-truth edition.
  *
- * Every constant is re-measured from the settled reference frame's
- * connected-component structure (user8-analysis/report.json, seg05_61s-63s
- * `structure` classes; 2560×1440 → mapped 1920×1080), and the numbers cite
- * those bboxes, not estimates:
+ * Every constant below is re-measured directly from the settled reference
+ * frame (settled_full.png, 2560×1440 → mapped 1920×1080) by connected-
+ * component / scanline census / ASCII structural maps (work/refmeasure*.py and
+ * this rebuild's badge+glyph census), and the docblock cites those
+ * measurements, not estimates:
  *
- * - Three stations on a uniform pitch: glyph-cluster lefts 0.1512 / 0.4125 /
- *   0.6738 of canvas width (pitch 0.2613), ink boxes 0.0508–0.0511 wide ×
- *   0.0909 tall — a ~98px square at 1920×1080, all sharing the y band
- *   0.4688–0.5597.
- * - Each glyph has a companion ACCENT BADGE lower-right: union boxes x
- *   0.282–0.3328 and 0.543–0.5941, y 0.5486–0.6389 (station 3's badge is too
- *   dim for the hue classes and is derived by extending station 2 with the
- *   0.261 badge pitch → left 0.804). The badge reads as a ring outline
- *   (0.0422×0.0847 at station 1) around a solid core (0.0258×0.0466).
- * - Labels are small hue-matched text rows under the glyphs — cap band y
- *   0.5771–0.591, first-char inks at x 0.1594 / 0.4133 / 0.6785, per-char
- *   advance 0.00708 of width (station 1's five-char pitch).
- * - Near-black organizing plates (the V-3 correction): the card boxes
- *   x≈0.13–0.29 / 0.38–0.54 / 0.64–0.80, y≈0.45–0.65 are DIM plates on the
- *   black canvas (luma 6–40), never light-gray fills. The plate boxes are the
- *   task-pinned composition; the dim-pixel masks show no strong inner
- *   structure, so the plates stay plain near-black rounded rects.
- * - Two summary text rows below the card band: y 0.6542–0.6743 (warm
- *   salmon median #d16157) and y 0.6813–0.6986 (neutral gray #686868), ink
- *   x-extents 0.2789–0.8469 and 0.2883–0.8508.
- * - Station hues (settled medians): glyph strokes #efeff0 / #37a9cd / #3bbe9e;
- *   badge fills #f96300 / #e34b26 / #8f0b5d (station 2 carries a red ring
- *   #e5342b around a red-orange core); label fills #eeeff0 / #51bdda /
- *   #44d0a8.
+ * - Three near-black organizing plates at the dim-mask boxes x 0.1445–0.3094
+ *   / 0.3598–0.5594 / 0.6199–0.8195, y ≈0.4576–0.6722 — solid near-black
+ *   fills (dim-mask means [15,13,15] / [12,14,20] / [13,14,17]), no visible
+ *   stroke, station 1 narrower than 2/3.
+ * - Glyph ink boxes x 0.1508–0.2066 / 0.4098–0.4648 / 0.6715–0.7277, shared
+ *   y band 0.4681–0.5604 (≈99px tall at 1920). Settled ASCII maps show every
+ *   station glyph is a BIG CIRCLE OUTLINE (~99px) with a small pictogram
+ *   (~45% of the box) centered inside it — the component composes that
+ *   anatomy from the registry icon at the measured ~3.5px canvas stroke.
+ * - Accent badges are THIN CIRCLE OUTLINES (settled ASCII maps; the earlier
+ *   pin reading — ring + core disc + tail — was wrong): circles centered
+ *   (590,641) / (1092,641) / (1580,640), radii 47.5 / 47.5 / 46.5px, ~3.5px
+ *   strokes, straddling each plate's right edge, each carrying a small bright
+ *   mini-icon at its center (station 1: two square reel outlines over a solid
+ *   bar — a cassette read; station 2: a solid diamond 45×50; station 3: a
+ *   pennant flag). Badge hues (settled cores): #f96200 / #fb3929 / #bb0278.
+ * - TWO label rows under each glyph (the second was deferred in the previous
+ *   edition and is now included): row A cap band y 0.5771–0.591 with ink
+ *   runs 0.1590–0.1941 (5 chars) / 0.4059–0.4695 (9) / 0.6781–0.7203 (6);
+ *   row B cap band y 0.6042–0.6153, nine small chars per station over
+ *   0.0574 of width starting 0.1477 / 0.4086 / 0.6699.
+ * - The "summary rows" are NOT continuous lines: luma-40 column census finds
+ *   sparse per-station caption clusters — row 1 (badge-hued) 8 / 10 / 7
+ *   chars at x 0.2789 / 0.5328 / 0.7984, y ≈0.6542–0.6736, cores
+ *   [208,123,66] / [212,96,88] / [183,69,136] (orange / salmon / magenta —
+ *   each matching its station's badge hue); row 2 (gray) 6 / 9 / 8 chars at
+ *   x 0.2883 / 0.5398 / 0.7937, y ≈0.6812–0.6979, cores ≈[108,108,109].
+ * - Title: two-tone run splits at x 0.4359 (white head 0.2809–0.4359, green
+ *   tail 0.4359–0.7203 — the tail is ~1.8× the head's ink, a ~15-char run,
+ *   not the previous 8-char pin), cap band y 0.0938–0.1493 (cap ≈60px).
  * - Reveal onsets (f15 progressive frames): glyph+label 1 @0.067s, badge 1
  *   @0.267s, glyph+label 2 @0.600s, badge 2 @0.733s, glyph+label 3 @1.000s
- *   (badge 3 rides its card — too dim for its own beat), summary rows
- *   @1.467s completing ≈1.933s. The draft [0.07, 0.40, 0.73, 1.07, 1.47,
- *   1.87] schedule is superseded by these measured onsets; the final
- *   schedule lands with the slide in the integration PR.
+ *   (badge 3 rides its card), caption clusters @1.467s completing ≈1.933s.
  *
  * All functions here are pure and deterministic: same inputs produce
  * byte-identical output, and nothing touches the DOM (SSR-safe build).
@@ -46,10 +50,19 @@
 export interface PillarCard {
   /** Stable key — used for a11y labels, test selectors, and :key. */
   id: string
-  /** Small label row under the glyph (hue-matched per station). */
+  /** Label row A under the glyph (hue-matched per station). */
   label: string
+  /** Label row B — the small dim secondary row (deferred element, now rendered). */
+  sublabel: string
+  /** Badge-hued caption cluster under the badge (summary row 1, per station). */
+  caption: string
+  /** Gray meta caption cluster (summary row 2, per station). */
+  captionMeta: string
   /** Lucide registry key resolved through `iconPath ?? ICON_FALLBACK`. */
   icon: string
+  /** Optional clockwise rotation (degrees) for the pictogram inside its
+   * circle — station 1's settled pictogram reads as a portrait envelope. */
+  iconRotate?: number
 }
 
 /** Layout knobs. Every field is optional; omitted fields fall back to the measured defaults. */
@@ -60,7 +73,7 @@ export interface PillarOptions {
   height?: number
 }
 
-/** Near-black organizing plate behind one station (V-3: dim, never light gray). */
+/** Near-black organizing plate behind one station. */
 export interface PillarPlate {
   x: number
   y: number
@@ -68,40 +81,35 @@ export interface PillarPlate {
   h: number
 }
 
-/** The station's icon ink box — a ~98px square centered on the cluster. */
+/** The station's icon ink box. */
 export interface PillarGlyph {
   cx: number
   cy: number
   size: number
 }
 
-/** Companion accent badge lower-right of the glyph: ring + solid core ellipses. */
+/**
+ * Companion accent badge: a thin circle outline straddling the plate's right
+ * edge, carrying a small bright mini-icon at its center (settled-frame ASCII
+ * maps: badge 1 = cassette reels + solid bar, badge 2 = solid diamond,
+ * badge 3 = pennant flag). No fill, no core disc, no tail — the earlier pin
+ * reading was wrong; the reference circles are open rings.
+ */
 export interface PillarBadge {
   cx: number
   cy: number
-  /** Ring ellipse radii (stroke only). */
-  rx: number
-  ry: number
-  /** Solid core ellipse radii (filled). */
-  coreRx: number
-  coreRy: number
+  /** Circle radius (outline). */
+  r: number
+  /** Raw SVG markup for the mini icon, in a 48-box centered on (0,0). */
+  icon: string
 }
 
-/** Hue-matched label row under the glyph. */
-export interface PillarLabel {
+/** One measured text run (label row or caption cluster). */
+export interface PillarText {
   x: number
   baselineY: number
   capHeight: number
-  /** Pinned ink width: label length × the measured per-char advance. */
-  textLength: number
-}
-
-/** Summary text row below the card band. */
-export interface PillarTextRow {
-  x: number
-  baselineY: number
-  capHeight: number
-  /** Pinned ink width — the measured row extent (the recording's condensed mono). */
+  /** Pinned ink width — the measured run extent (spacing-only pin). */
   textLength: number
 }
 
@@ -110,54 +118,72 @@ export interface PillarCardLayout {
   plate: PillarPlate
   glyph: PillarGlyph
   badge: PillarBadge
-  label: PillarLabel
+  label: PillarText
+  sublabel: PillarText
+  caption: PillarText
+  captionMeta: PillarText
 }
 
 export interface PillarLayout {
   cards: PillarCardLayout[]
-  textRows: PillarTextRow[]
   viewBox: { width: number; height: number }
 }
 
 /**
  * Measured reveal onsets in seconds (f15 progressive frames — see module
  * docblock). Beat k maps to the component's v-click k: card 1, badge 1,
- * card 2, badge 2, card 3 (+ its badge), summary rows.
+ * card 2, badge 2, card 3 (+ its badge), caption clusters.
  */
 export const REVEAL_BEATS_SEC = [0.067, 0.267, 0.6, 0.733, 1.0, 1.467] as const
 
-/** Measured constants — fractions of the 1920×1080 canvas (see module docblock). */
+/**
+ * Measured constants — fractions of the 1920×1080 canvas unless noted
+ * (see module docblock for provenance).
+ */
 const MEASURED = {
   width: 1920,
   height: 1080,
-  // Glyph clusters: connected-component unions of the station's icon ink.
-  glyphLefts: [0.1512, 0.4125, 0.6738],
-  glyphWidths: [0.0511, 0.0508, 0.0508],
-  glyphTop: 0.4688,
-  glyphHeight: 0.0909,
-  // Accent badges: union boxes; station 3 extends station 2 by the 0.261 pitch.
-  badgeLefts: [0.282, 0.543, 0.804],
-  badgeWidths: [0.0508, 0.0511, 0.0508],
-  badgeTop: 0.5486,
-  badgeHeight: 0.0903,
-  // Badge ring + core, measured on station 1 and shared by every station.
-  badgeRing: { x: 0.2906, y: 0.5542, w: 0.0422, h: 0.0847 },
-  badgeCore: { x: 0.2945, y: 0.5708, w: 0.0258, h: 0.0466 },
-  // Labels: first-char ink lefts + cap band + per-char advance.
-  labelLefts: [0.1594, 0.4133, 0.6785],
+  // Plates: dim-mask boxes per station (station 1 is narrower than 2/3).
+  plates: [
+    { x: 0.1445, y: 0.4576, w: 0.1649, h: 0.2146 },
+    { x: 0.3598, y: 0.4583, w: 0.1996, h: 0.2139 },
+    { x: 0.6199, y: 0.4576, w: 0.1996, h: 0.2125 },
+  ],
+  // Glyph ink boxes.
+  glyphLefts: [0.1508, 0.4098, 0.6715],
+  glyphWidths: [0.0558, 0.055, 0.0562],
+  glyphTop: 0.4681,
+  glyphHeight: 0.0923,
+  // Glyph strokes are applied in canvas px via non-scaling stroke (the
+  // reference scanline stroke is ~3.5px at 1920).
+  glyphStrokePx: 3.5,
+  // Badges: thin circle outlines straddling each plate's right edge (settled
+  // ASCII maps + chord fits): centers (590,641)/(1092,641)/(1580,640),
+  // radii 47.5/47.5/46.5px (radial-peak fit −2px), ~3.5px strokes; bright
+  // mini-icon at each center.
+  badgeCx: [0.307292, 0.56875, 0.822917],
+  badgeCy: [0.593519, 0.593519, 0.592593],
+  badgeR: [0.043983, 0.043983, 0.043057],
+  // Label row A: ink-run lefts and extents (cap band 0.5771–0.591).
+  labelLefts: [0.159, 0.4059, 0.6781],
+  labelTextLengths: [0.0351, 0.0636, 0.0422],
   labelCapTop: 0.5771,
   labelCapHeight: 0.0139,
-  labelAdvance: 0.00708,
-  // Near-black organizing plates (task-pinned composition, V-3).
-  plateLefts: [0.13, 0.385, 0.64],
-  plateTop: 0.45,
-  plateWidth: 0.16,
-  plateHeight: 0.2,
-  // Summary text rows below the card band.
-  rows: [
-    { x: 0.2789, capTop: 0.6542, capHeight: 0.0201, textLength: 0.568 },
-    { x: 0.2883, capTop: 0.6813, capHeight: 0.0173, textLength: 0.5625 },
-  ],
+  // Label row B: nine small chars per station (cap band 0.6042–0.6153).
+  sublabelLefts: [0.1477, 0.4086, 0.6699],
+  sublabelTextLength: 0.0574,
+  sublabelCapTop: 0.6042,
+  sublabelCapHeight: 0.0111,
+  // Badge-hued caption clusters (summary row 1, per station).
+  captionLefts: [0.2789, 0.5328, 0.7984],
+  captionTextLengths: [0.0566, 0.0711, 0.0489],
+  captionCapTops: [0.6562, 0.6562, 0.6542],
+  captionCapHeights: [0.0174, 0.0139, 0.0173],
+  // Gray meta caption clusters (summary row 2, per station).
+  metaLefts: [0.2883, 0.5398, 0.7937],
+  metaTextLengths: [0.0375, 0.0571, 0.0575],
+  metaCapTops: [0.684, 0.684, 0.6812],
+  metaCapHeights: [0.0139, 0.0111, 0.0112],
 } as const
 
 /**
@@ -167,6 +193,41 @@ const MEASURED = {
  * and well inside the 1e-6 test tolerance.
  */
 const r6 = (n: number): number => Math.round(n * 1e6) / 1e6
+
+function textRun(
+  left: number,
+  capTop: number,
+  capHeight: number,
+  textLength: number,
+  width: number,
+  height: number,
+): PillarText {
+  return {
+    x: r6(left * width),
+    baselineY: r6((capTop + capHeight) * height),
+    capHeight: r6(capHeight * height),
+    textLength: r6(textLength * width),
+  }
+}
+
+/**
+ * Badge mini-icons, drawn in a 48-box centered on the badge circle's center
+ * (settled-frame ASCII maps; 1 unit = 1 canvas px at 1920×1080):
+ *
+ * - station 1: two square reel outlines (20×19) over a solid bar (44×28)
+ *   — a cassette/film-cartridge read of the reference mark;
+ * - station 2: a solid diamond 45×50 (the reference's filled rotated square);
+ * - station 3: a pennant flag — 3px pole + stroked pennant, matching the
+ *   station's banner glyph.
+ */
+const BADGE_ICONS = [
+  `<rect x="-22" y="-24" width="20" height="19" fill="none" stroke="currentColor" stroke-width="3"/>` +
+    `<rect x="2" y="-24" width="20" height="19" fill="none" stroke="currentColor" stroke-width="3"/>` +
+    `<rect x="-22" y="-4" width="44" height="28" fill="currentColor"/>`,
+  `<polygon points="0,-25 22.5,0 0,25 -22.5,0" fill="currentColor"/>`,
+  `<line x1="-21" y1="-25" x2="-21" y2="24" stroke="currentColor" stroke-width="3"/>` +
+    `<polygon points="-21,-25 23,-13 -21,-1" fill="none" stroke="currentColor" stroke-width="3"/>`,
+] as const
 
 export function pillarRowLayout(cards: PillarCard[], opts?: PillarOptions): PillarLayout {
   if (!Array.isArray(cards) || cards.length < 1 || cards.length > 3) {
@@ -183,23 +244,16 @@ export function pillarRowLayout(cards: PillarCard[], opts?: PillarOptions): Pill
   const height = opts?.height ?? MEASURED.height
 
   const cardsOut: PillarCardLayout[] = cards.map((card, i) => {
-    const glyphLeft = MEASURED.glyphLefts[i] * width
-    const glyphW = MEASURED.glyphWidths[i] * width
-    const badgeLeft = MEASURED.badgeLefts[i] * width
-    const badgeBoxW = MEASURED.badgeWidths[i] * width
-    // Ring/core geometry is measured on station 1 and shared; anchor both
-    // ellipses at the badge union box's center.
-    const ringW = MEASURED.badgeRing.w * width
-    const ringH = MEASURED.badgeRing.h * height
-    const coreW = MEASURED.badgeCore.w * width
-    const coreH = MEASURED.badgeCore.h * height
+    const glyphLeft = MEASURED.glyphLefts[i]! * width
+    const glyphW = MEASURED.glyphWidths[i]! * width
+    const plate = MEASURED.plates[i]!
     return {
       index: i,
       plate: {
-        x: r6(MEASURED.plateLefts[i] * width),
-        y: r6(MEASURED.plateTop * height),
-        w: r6(MEASURED.plateWidth * width),
-        h: r6(MEASURED.plateHeight * height),
+        x: r6(plate.x * width),
+        y: r6(plate.y * height),
+        w: r6(plate.w * width),
+        h: r6(plate.h * height),
       },
       glyph: {
         cx: r6(glyphLeft + glyphW / 2),
@@ -207,28 +261,29 @@ export function pillarRowLayout(cards: PillarCard[], opts?: PillarOptions): Pill
         size: r6(glyphW),
       },
       badge: {
-        cx: r6(badgeLeft + badgeBoxW / 2),
-        cy: r6((MEASURED.badgeTop + MEASURED.badgeHeight / 2) * height),
-        rx: r6(ringW / 2),
-        ry: r6(ringH / 2),
-        coreRx: r6(coreW / 2),
-        coreRy: r6(coreH / 2),
+        cx: r6(MEASURED.badgeCx[i]! * width),
+        cy: r6(MEASURED.badgeCy[i]! * height),
+        r: r6(MEASURED.badgeR[i]! * height),
+        icon: BADGE_ICONS[i]!,
       },
-      label: {
-        x: r6(MEASURED.labelLefts[i] * width),
-        baselineY: r6((MEASURED.labelCapTop + MEASURED.labelCapHeight) * height),
-        capHeight: r6(MEASURED.labelCapHeight * height),
-        textLength: r6(card.label.length * MEASURED.labelAdvance * width),
-      },
+      label: textRun(
+        MEASURED.labelLefts[i]!, MEASURED.labelCapTop, MEASURED.labelCapHeight,
+        MEASURED.labelTextLengths[i]!, width, height,
+      ),
+      sublabel: textRun(
+        MEASURED.sublabelLefts[i]!, MEASURED.sublabelCapTop, MEASURED.sublabelCapHeight,
+        MEASURED.sublabelTextLength, width, height,
+      ),
+      caption: textRun(
+        MEASURED.captionLefts[i]!, MEASURED.captionCapTops[i]!, MEASURED.captionCapHeights[i]!,
+        MEASURED.captionTextLengths[i]!, width, height,
+      ),
+      captionMeta: textRun(
+        MEASURED.metaLefts[i]!, MEASURED.metaCapTops[i]!, MEASURED.metaCapHeights[i]!,
+        MEASURED.metaTextLengths[i]!, width, height,
+      ),
     }
   })
 
-  const textRows: PillarTextRow[] = MEASURED.rows.map((row) => ({
-    x: r6(row.x * width),
-    baselineY: r6((row.capTop + row.capHeight) * height),
-    capHeight: r6(row.capHeight * height),
-    textLength: r6(row.textLength * width),
-  }))
-
-  return { cards: cardsOut, textRows, viewBox: { width, height } }
+  return { cards: cardsOut, viewBox: { width, height } }
 }

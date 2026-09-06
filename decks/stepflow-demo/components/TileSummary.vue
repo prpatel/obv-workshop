@@ -3,9 +3,15 @@ import { computed } from 'vue'
 import {
   revealPlan,
   tileSummaryLayout,
+  TILE_SUMMARY_BADGES,
+  TILE_SUMMARY_BADGE_FILL,
+  TILE_SUMMARY_GLYPHS,
   TILE_SUMMARY_PLATE_FILL,
+  TILE_SUMMARY_TITLE_STROKE,
   TILE_SUMMARY_RX,
   TILE_SUMMARY_SEED,
+  TILE_SUMMARY_GLYPH_STROKE,
+  TILE_SUMMARY_SUMMARY_OPACITY,
   type TileSummaryRect,
   type TileSummaryTile,
 } from './stepflow/tileSummary'
@@ -14,7 +20,7 @@ import { iconPath, ICON_FALLBACK } from './stepflow/icons'
 import { CAP_HEIGHT_RATIO, CHROME_GREEN, TITLE_WHITE, pinAttrs } from './stepflow/chrome'
 
 const props = withDefaults(defineProps<{
-  /** The tile row, in reveal order (measured seg16 seed: EXTRACT → TRANSFORM → LOAD). */
+  /** The tile row, in reveal order (measured seg16 seed: EXTRACT → MOVE → LOAD). */
   seed?: TileSummaryTile[]
   /** Partial palette merged over the measured `cyanOnBlack` preset. */
   palette?: StepFlowPaletteOverride
@@ -23,9 +29,9 @@ const props = withDefaults(defineProps<{
   /** Header tail rendered in chrome green. */
   titleAccent?: string
   /**
-   * Dim-white summary line under the bar — the measured text box pins the
-   * extent; the copy itself was unreadable at capture resolution and lands
-   * with the integration slide. Empty (default) renders nothing.
+   * Dim summary line under the bar — the measured text box pins the extent;
+   * the copy is resolved from the f0030 ghost (integration slide supplies it).
+   * Empty (default) renders nothing.
    */
   summary?: string
 }>(), { palette: () => ({}), summary: '' })
@@ -54,8 +60,8 @@ const summarySpec = computed(() => {
   return layout.value.summaryBox
 })
 
-/** Dark punch-through glyph mapped onto the measured ink band (fallback icon
- * until the seg16 marks are identified — the TileGrid/seg05 precedent). */
+/** Dark punch-through glyph mapped onto its measured per-tile ink band
+ * (traced seg16 marks; a tile's `icon` registry key overrides the trace). */
 function iconTransform(tile: TileSummaryRect): string {
   const box = tile.iconBox
   return `translate(${box.x} ${box.y}) scale(${box.w / 24} ${box.h / 24})`
@@ -81,6 +87,8 @@ function iconTransform(tile: TileSummaryRect): string {
         text-anchor="start"
         font-weight="700"
         :fill="TITLE_WHITE"
+        :stroke="TITLE_WHITE"
+        :stroke-width="TILE_SUMMARY_TITLE_STROKE"
       >{{ title }}</text>
       <text
         v-if="titleAccent"
@@ -92,7 +100,29 @@ function iconTransform(tile: TileSummaryRect): string {
         text-anchor="start"
         font-weight="700"
         :fill="CHROME_GREEN"
+        :stroke="CHROME_GREEN"
+        :stroke-width="TILE_SUMMARY_TITLE_STROKE"
       >{{ titleAccent }}</text>
+    </g>
+
+    <!-- Left terminus chevron: a small thin '>' hugging tile 1's left
+         edge — measured apex (0.2255, 0.4704), arm tips x 0.2135 at
+         y 0.4593/0.4833, stroke ≈0.0029 (an earlier "bold '<'" read
+         conflated the tile fill edge with the mark). Rides tile 1's wave
+         (the t≈0.2 plate event covers its zone). -->
+    <g
+      v-click="layout.leftMark.click"
+      :data-sf-click="layout.leftMark.click"
+      class="ts-leftmark"
+    >
+      <polyline
+        :points="layout.leftMark.points"
+        fill="none"
+        :stroke="p.accent"
+        :stroke-width="layout.leftMark.strokeW"
+        stroke-linecap="butt"
+        stroke-linejoin="miter"
+      />
     </g>
 
     <!-- One wave per tile (click i+1): the near-black plate leads, the cyan
@@ -113,6 +143,13 @@ function iconTransform(tile: TileSummaryRect): string {
         :height="tile.plate.h"
         :fill="TILE_SUMMARY_PLATE_FILL"
       />
+      <!-- Amber traced badge above the plate — fades in with the tile's wave. -->
+      <path
+        v-if="TILE_SUMMARY_BADGES[i]"
+        class="ts-badge"
+        :d="TILE_SUMMARY_BADGES[i]"
+        :fill="TILE_SUMMARY_BADGE_FILL"
+      />
       <rect
         class="ts-fill"
         :x="tile.x"
@@ -128,10 +165,10 @@ function iconTransform(tile: TileSummaryRect): string {
         :style="{ color: p.iconStroke }"
       >
         <g
-          v-html="iconPath(tile.icon ?? '') ?? ICON_FALLBACK"
+          v-html="iconPath(tile.icon ?? '') ?? TILE_SUMMARY_GLYPHS[tile.id] ?? ICON_FALLBACK"
           fill="none"
           stroke="currentColor"
-          stroke-width="2"
+          :stroke-width="TILE_SUMMARY_GLYPH_STROKE"
           stroke-linecap="round"
           stroke-linejoin="round"
         />
@@ -144,7 +181,8 @@ function iconTransform(tile: TileSummaryRect): string {
         :textLength="tile.labelBox.inkW"
         lengthAdjust="spacing"
         text-anchor="middle"
-        fill="#f3f3f3"
+        fill="#e7e7e7"
+        font-weight="700"
       >{{ tile.label }}</text>
       <text
         v-if="tile.sublabelBox && tile.sublabel"
@@ -156,13 +194,16 @@ function iconTransform(tile: TileSummaryRect): string {
         lengthAdjust="spacing"
         text-anchor="middle"
         :fill="p.subtext"
+        font-weight="500"
       >{{ tile.sublabel }}</text>
     </g>
 
-    <!-- Rail segments join their tile's wave: segment 1 rides tile 2, segment
-         2 rides tile 3 (measured arrivals t≈0.533–0.6 and t≈1.133). -->
+    <!-- Rail segments join their tile's wave: segment 1 rides tile 2,
+         segment 2 rides tile 3, and the right stub (tile 3 → right vertical)
+         rides the bracket beat (measured arrivals t≈0.533–0.6, t≈1.133,
+         t≈1.467). -->
     <g
-      v-for="seg in layout.rail.filter(s => s.click !== plan.bracketClick)"
+      v-for="seg in layout.rail"
       :key="`rail-${seg.x}`"
       v-click="seg.click"
       :data-sf-click="seg.click"
@@ -171,13 +212,14 @@ function iconTransform(tile: TileSummaryRect): string {
       <rect :x="seg.x" :y="seg.y" :width="seg.w" :height="seg.h" :fill="p.accent" />
     </g>
 
-    <!-- Bracket beat (click 4): right vertical + bar first, left vertical
-         ~200ms behind (t≈1.667), summary text ~266ms behind (t≈1.733) —
-         white text last, inside the locked 4-click contract. -->
+    <!-- Bracket beat (click 4): the settled frame's single right vertical +
+         the settled-extent bar; the rail gap-fill + stub ride the same beat
+         from the rail loop above. Summary text follows ~266ms behind
+         (t≈1.733), settling to the measured ~8% ghost opacity — white
+         text last, inside the locked 4-click contract. -->
     <g v-click="plan.bracketClick" :data-sf-click="plan.bracketClick" class="ts-bracket">
-      <rect class="ts-vert ts-vert--right" :x="layout.verticals.right.x" :y="layout.verticals.right.y" :width="layout.verticals.right.w" :height="layout.verticals.right.h" :fill="p.accentAlt ?? p.accent" />
+      <rect class="ts-vert" :x="layout.vertical.x" :y="layout.vertical.y" :width="layout.vertical.w" :height="layout.vertical.h" :fill="p.accent" />
       <rect class="ts-bar" :x="layout.bar.x" :y="layout.bar.y" :width="layout.bar.w" :height="layout.bar.h" :fill="p.accent" />
-      <rect class="ts-vert ts-vert--left" :x="layout.verticals.left.x" :y="layout.verticals.left.y" :width="layout.verticals.left.w" :height="layout.verticals.left.h" :fill="p.accentAlt ?? p.accent" />
       <text
         v-if="summarySpec"
         class="ts-summary"
@@ -188,6 +230,7 @@ function iconTransform(tile: TileSummaryRect): string {
         lengthAdjust="spacing"
         text-anchor="middle"
         :fill="p.subtext"
+        :opacity="TILE_SUMMARY_SUMMARY_OPACITY"
       >{{ summary }}</text>
     </g>
   </svg>
@@ -219,7 +262,8 @@ function iconTransform(tile: TileSummaryRect): string {
   transition: opacity 300ms ease-out;
 }
 
-.ts-tile.slidev-vclick-hidden .ts-plate {
+.ts-tile.slidev-vclick-hidden .ts-plate,
+.ts-tile.slidev-vclick-hidden .ts-badge {
   opacity: 0;
   transition: none;
 }
@@ -256,6 +300,15 @@ function iconTransform(tile: TileSummaryRect): string {
   transition: none;
 }
 
+.ts-leftmark polyline {
+  transition: opacity 300ms ease-out;
+}
+
+.ts-leftmark.slidev-vclick-hidden polyline {
+  opacity: 0;
+  transition: none;
+}
+
 .ts-rail rect {
   transition: opacity 300ms ease-out;
 }
@@ -265,16 +318,11 @@ function iconTransform(tile: TileSummaryRect): string {
   transition: none;
 }
 
-/* Bracket: right vertical + bar with the click; left vertical ~200ms behind
-   (t≈1.667); summary text ~266ms behind (t≈1.733) — white text last. */
-.ts-vert--right,
+/* Bracket: right vertical + bar with the click; summary text ~266ms behind
+   (t≈1.733), settling at the measured ~8% ghost — white text last. */
+.ts-vert,
 .ts-bar {
   transition: opacity 300ms ease-out;
-}
-
-.ts-vert--left {
-  transition: opacity 300ms ease-out;
-  transition-delay: 200ms;
 }
 
 .ts-summary {
@@ -282,9 +330,8 @@ function iconTransform(tile: TileSummaryRect): string {
   transition-delay: 266ms;
 }
 
-.ts-bracket.slidev-vclick-hidden .ts-vert--right,
+.ts-bracket.slidev-vclick-hidden .ts-vert,
 .ts-bracket.slidev-vclick-hidden .ts-bar,
-.ts-bracket.slidev-vclick-hidden .ts-vert--left,
 .ts-bracket.slidev-vclick-hidden .ts-summary {
   opacity: 0;
   transition: none;
@@ -296,9 +343,9 @@ function iconTransform(tile: TileSummaryRect): string {
   .ts-label1,
   .ts-icon,
   .ts-label2,
+  .ts-leftmark polyline,
   .ts-rail rect,
-  .ts-vert--right,
-  .ts-vert--left,
+  .ts-vert,
   .ts-bar,
   .ts-summary {
     transition: none;

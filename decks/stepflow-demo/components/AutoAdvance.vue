@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onSlideEnter, onSlideLeave, useNav } from '@slidev/client'
+import { onSlideEnter, onSlideLeave, useNav, useSlideContext } from '@slidev/client'
 import { watch } from 'vue'
 import { parseAutoplayParam, useAutoAdvance, type AutoAdvanceNav } from './stepflow/useAutoAdvance'
 
@@ -28,10 +28,20 @@ const nav: AutoAdvanceNav = (() => {
   }
 })()
 
+const { currentSlideNo } = useNav()
+const { $page } = useSlideContext()
+
+// Slidev keeps every slide mounted, so every instance shares one window
+// keydown listener. Key the a-toggle to this slide being the active one
+// ($page is provided per-slide by SlideWrapper as this slide's route number;
+// currentSlideNo is the deck's active route) — otherwise one `a` press would
+// start concurrent runs on every mounted slide and fire the active slide's
+// clicks at the union of all schedules (the compression reported on #69/#70).
 const advance = useAutoAdvance({
   nav,
   durationMs: (props.durationSec ?? 7) * 1000,
   stepScheduleMs: props.stepScheduleSec?.map((s) => s * 1000),
+  isActive: () => $page.value === currentSlideNo.value,
 })
 
 // ?autoplay=N (or bare ?autoplay) hands-free-starts the run on slide enter —
