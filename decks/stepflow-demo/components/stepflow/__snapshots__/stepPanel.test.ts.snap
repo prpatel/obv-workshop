@@ -3,29 +3,21 @@
 exports[`stepPanelLayout — determinism > the seed layout snapshot is stable across runs 1`] = `
 {
   "annotation": {
-    "amberBars": [
-      {
-        "h": 70.524,
-        "w": 46.464,
-        "x": 1218.048,
-        "y": 821.232,
-      },
-      {
-        "h": 72.792,
-        "w": 47.232,
-        "x": 1275.0720000000001,
-        "y": 820.476,
-      },
-    ],
     "digits": {
-      "h": 18.684,
-      "w": 144.768,
-      "x": 1348.4160000000002,
-      "y": 829.548,
+      "h": 21.708,
+      "w": 150.144,
+      "x": 1347.84,
+      "y": 828.144,
+    },
+    "goldPair": {
+      "h": 72.036,
+      "w": 105.984,
+      "x": 1217.088,
+      "y": 821.016,
     },
     "leftBar": {
       "h": 71.28,
-      "w": 5.184,
+      "w": 8.064,
       "x": 234.048,
       "y": 820.476,
     },
@@ -36,16 +28,38 @@ exports[`stepPanelLayout — determinism > the seed layout snapshot is stable ac
       "y": 840.024,
     },
     "leftText": {
-      "h": 23.976000000000003,
+      "h": 24.84,
       "w": 583.488,
       "x": 330.048,
-      "y": 843.048,
+      "y": 843.48,
     },
     "rightText": {
-      "h": 16.416,
-      "w": 334.464,
+      "h": 15.552,
+      "w": 336.96,
       "x": 1347.0720000000001,
-      "y": 870.048,
+      "y": 869.832,
+    },
+  },
+  "badge": {
+    "bars": [
+      {
+        "h": 28.08,
+        "w": 9.6,
+        "x": 1857.6000000000001,
+        "y": 32.4,
+      },
+      {
+        "h": 28.08,
+        "w": 9.6,
+        "x": 1870.08,
+        "y": 32.4,
+      },
+    ],
+    "mark": {
+      "h": 38.879999999999995,
+      "w": 16.896,
+      "x": 1883.52,
+      "y": 19.439999999999998,
     },
   },
   "chip": {
@@ -77,18 +91,19 @@ exports[`stepPanelLayout — determinism > the seed layout snapshot is stable ac
         "y": 427.464,
       },
       "id": "draft",
-      "label": {
+      "label": "RELIABLE",
+      "labelBox": {
         "h": 26.244,
         "w": 197.184,
         "x": 275.328,
-        "y": 466.452,
+        "y": 466.128,
       },
-      "sub": "Describe the outcome in one paragraph",
-      "title": {
-        "h": 18.035999999999998,
+      "title": "what does done look like for you",
+      "titleBox": {
+        "h": 16.308,
         "w": 446.976,
         "x": 594.048,
-        "y": 474.012,
+        "y": 471.63599999999997,
       },
       "tone": "accent",
     },
@@ -100,18 +115,19 @@ exports[`stepPanelLayout — determinism > the seed layout snapshot is stable ac
         "y": 560.952,
       },
       "id": "spec",
-      "label": {
+      "label": "FRESH",
+      "labelBox": {
         "h": 26.244,
         "w": 119.232,
         "x": 275.328,
-        "y": 598.5360000000001,
+        "y": 598.32,
       },
-      "sub": "Requirements, design, and task list",
-      "title": {
-        "h": 15.011999999999999,
+      "title": "the spec writes your task list",
+      "titleBox": {
+        "h": 16.308,
         "w": 355.392,
         "x": 594.048,
-        "y": 605.988,
+        "y": 603.8280000000001,
       },
       "tone": "alt",
     },
@@ -123,34 +139,53 @@ exports[`stepPanelLayout — determinism > the seed layout snapshot is stable ac
         "y": 690.0120000000001,
       },
       "id": "build",
-      "label": {
+      "label": "USEFUL",
+      "labelBox": {
         "h": 26.244,
         "w": 146.112,
         "x": 274.56,
-        "y": 730.5120000000001,
+        "y": 730.836,
       },
-      "sub": "Kiro codes the task list with you",
-      "title": {
-        "h": 13.5,
+      "title": "agent implements the task list with you",
+      "titleBox": {
+        "h": 16.308,
         "w": 508.41599999999994,
         "x": 594.048,
-        "y": 737.964,
+        "y": 736.3439999999999,
       },
       "tone": "tertiary",
     },
   ],
   "title": {
-    "accentInk": {
-      "h": 52.488,
-      "w": 302.4,
-      "x": 556.416,
-      "y": 108,
+    "accentComma": {
+      "h": 30.749760000000002,
+      "w": 19.49952,
+      "x": 859.49952,
+      "y": 142.49952000000002,
     },
-    "whiteInk": {
-      "h": 52.488,
-      "w": 506.88,
-      "x": 859.584,
-      "y": 108,
+    "accentWord1": {
+      "h": 57.00024,
+      "w": 116.25023999999999,
+      "x": 556.49856,
+      "y": 104.25024,
+    },
+    "accentWord2": {
+      "h": 57.00024,
+      "w": 164.25024,
+      "x": 696,
+      "y": 104.25024,
+    },
+    "whiteWord1": {
+      "h": 57.00024,
+      "w": 236.00064,
+      "x": 896.2502400000001,
+      "y": 104.25024,
+    },
+    "whiteWord2": {
+      "h": 57.00024,
+      "w": 231.74976,
+      "x": 1135.49952,
+      "y": 104.25024,
     },
   },
   "viewBox": {
