@@ -3,12 +3,21 @@ import { computed } from 'vue'
 import {
   revealPlan,
   stepPanelLayout,
+  STEP_PANEL_BADGE,
+  STEP_PANEL_TITLE_WHITE,
+  STEP_PANEL_BADGE_GRAY,
+  STEP_PANEL_BADGE_LIME,
+  STEP_PANEL_DIGIT_DIM,
+  STEP_PANEL_DIGIT_GOLD,
+  STEP_PANEL_DIM_TEXT,
   STEP_PANEL_ORANGE,
   STEP_PANEL_PALETTE,
   STEP_PANEL_PLATE_STROKE,
   STEP_PANEL_ROW_FILL,
+  STEP_PANEL_ROW_TEXT,
   STEP_PANEL_SEED,
   type Box,
+  type MeasuredBox,
   type StepPanelData,
   type StepRowRect,
   type StepTone,
@@ -32,23 +41,44 @@ const props = withDefaults(defineProps<{
   data?: StepPanelData
   /** Partial palette merged over the deck preset. */
   palette?: StepFlowPaletteOverride
-  /** White title run (sheet: 'to spec-driven shipping'). */
+  /** White title run (sheet: 'trend, actual'). */
   title?: string
-  /** Chrome-green title run, rendered FIRST (sheet: 'vibe coding'). */
+  /** Chrome-green title run, rendered FIRST (sheet: 'TUI skin'). */
   titleAccent?: string
   /** White chip label (sheet: 'VIBE CODING'). */
   chipLabel?: string
 }>(), {
   data: () => STEP_PANEL_SEED,
   palette: () => ({}),
-  title: 'to spec-driven shipping',
-  titleAccent: 'vibe coding',
+  title: 'trend, actual',
+  titleAccent: 'TUI skin',
   chipLabel: 'VIBE CODING',
 })
 
 const p = computed(() => resolvePalette({ ...STEP_PANEL_PALETTE, ...props.palette }))
 const l = computed(() => stepPanelLayout(props.data))
 const plan = computed(() => revealPlan(props.data.rows.length))
+
+/** Per-token title splits: 'TUI skin' → ['TUI','skin']; 'trend, actual' → ['trend,','actual']. Each token pins its own measured box. */
+const accentWords = computed<[string, string]>(() => {
+  const parts = props.titleAccent.trim().split(/\s+/)
+  return [parts[0] ?? '', parts.slice(1).join(' ')]
+})
+const whiteWords = computed<[string, string]>(() => {
+  const idx = props.title.indexOf(',')
+  if (idx < 0) return [props.title, '']
+  return [props.title.slice(0, idx + 1), props.title.slice(idx + 1).trim()]
+})
+
+// The settled frame's top-right badge is static corner ink (no pill): two
+// lime glyph bars + a pale gray mark, measured in STEP_PANEL_BADGE.
+function badgeBox(b: MeasuredBox): Box {
+  return { x: b.xFrac * 1920, y: b.yFrac * 1080, w: b.wFrac * 1920, h: b.hFrac * 1080 }
+}
+const badge = {
+  bars: [badgeBox(STEP_PANEL_BADGE.bars[0]), badgeBox(STEP_PANEL_BADGE.bars[1])],
+  mark: badgeBox(STEP_PANEL_BADGE.mark),
+}
 
 // Tone → token: measured family hues are the defaults (STEP_PANEL_PALETTE),
 // and an explicit palette prop overrides any slot (override wins). Optional
@@ -65,15 +95,29 @@ function toneFill(tone: StepTone): string {
 function fontSizeOf(box: Box): number {
   return titleFontSize(box.h)
 }
-
 function baselineOf(box: Box): number {
   return box.y + box.h
 }
 
-// Sublines are seed-level (not trace-measured): ~72% of the line's size,
-// riding just below its baseline inside the band.
-function subBaseline(box: Box, bandH: number): number {
-  return baselineOf(box) + bandH * 0.18
+/**
+ * Measured gold digit pair left of the date run: frame column/row profiles
+ * decode a flag+stem+serif '1' and a two-loop '8' at cap ≈72px — glyph
+ * digits, not the solid bars the draft rendered.
+ */
+const GOLD_PAIR = '18'
+
+// Settled ink runs ~20% denser than default mono bold renders; a hairline
+// same-color stroke under paint-order fattens each run to measured weight.
+// (spacingAndGlyphs condensation was measured and rejected: it starves ink
+// and drops band SSIM — the G7 wave's no-glyph-squeezing decision holds.)
+function fatten<T extends Record<string, unknown>>(attrs: T, fill: string, width: number, strokeOpacity?: number) {
+  return {
+    ...attrs,
+    stroke: fill,
+    'stroke-width': width,
+    ...(strokeOpacity === undefined ? {} : { 'stroke-opacity': strokeOpacity }),
+    'paint-order': 'stroke fill',
+  }
 }
 
 // Sheet-measured terminal glyph → SVG transform mapping the 24-unit Lucide
@@ -85,19 +129,21 @@ const glyphTransform = computed(() => {
 
 // Closing-burst glow box: the full title band plus a soft margin.
 const burstBox = computed(() => {
-  const { accentInk, whiteInk } = l.value.title
+  const { accentWord1, whiteWord2 } = l.value.title
   const margin = 32
   return {
-    x: accentInk.x - margin,
-    y: accentInk.y - margin,
-    w: whiteInk.x + whiteInk.w - accentInk.x + margin * 2,
-    h: accentInk.h + margin * 2,
+    x: accentWord1.x - margin,
+    y: accentWord1.y - margin,
+    w: whiteWord2.x + whiteWord2.w - accentWord1.x + margin * 2,
+    h: accentWord1.h + margin * 2,
   }
 })
 
 function rowPin(row: StepRowRect, key: 'label' | 'title') {
-  const box = key === 'label' ? row.label : row.title
-  return pinAttrs(row[key], fontSizeOf(box), box.w)
+  const box = key === 'label' ? row.labelBox : row.titleBox
+  const text = key === 'label' ? row.label : row.title
+  const fill = key === 'label' ? toneFill(row.tone) : STEP_PANEL_ROW_TEXT
+  return fatten(pinAttrs(text, fontSizeOf(box), box.w), fill, 0.45)
 }
 </script>
 
@@ -114,9 +160,26 @@ function rowPin(row: StepRowRect, key: 'label' | 'title') {
       </filter>
     </defs>
 
+    <!-- Top-right badge: settled static corner ink (lime bars + gray mark). -->
+    <g class="sf-badge">
+      <rect :x="badge.bars[0].x" :y="badge.bars[0].y" :width="badge.bars[0].w" :height="badge.bars[0].h" :fill="STEP_PANEL_BADGE_LIME" />
+      <rect :x="badge.bars[1].x" :y="badge.bars[1].y" :width="badge.bars[1].w" :height="badge.bars[1].h" :fill="STEP_PANEL_BADGE_LIME" />
+      <rect
+        :x="badge.mark.x"
+        :y="badge.mark.y"
+        :width="badge.mark.w"
+        :height="badge.mark.h"
+        rx="6"
+        fill="none"
+        :stroke="STEP_PANEL_BADGE_GRAY"
+        stroke-width="2.5"
+      />
+    </g>
+
     <!-- Header chip: settled pre-clip state (f0001) — it pops on slide entry
          via CSS animation, consuming no click (the recording never shows it
-         from empty; beat 1 is the plate). -->
+         from empty; beat 1 is the plate). The mark is dark with blue
+         terminal-grid strokes in the settled frame, not a solid blue fill. -->
     <g class="sf-chip">
       <rect
         class="sf-chip-mark"
@@ -125,7 +188,19 @@ function rowPin(row: StepRowRect, key: 'label' | 'title') {
         :width="l.chip.mark.w"
         :height="l.chip.mark.h"
         rx="8"
-        :fill="p.accent"
+        fill="#0e0e12"
+        :stroke="p.accent"
+        stroke-width="2.5"
+      />
+      <line
+        :x1="l.chip.mark.x + l.chip.mark.w * 0.18" :y1="l.chip.mark.y + l.chip.mark.h * 0.38"
+        :x2="l.chip.mark.x + l.chip.mark.w * 0.82" :y2="l.chip.mark.y + l.chip.mark.h * 0.38"
+        :stroke="p.accent" stroke-width="2" opacity="0.55"
+      />
+      <line
+        :x1="l.chip.mark.x + l.chip.mark.w * 0.18" :y1="l.chip.mark.y + l.chip.mark.h * 0.62"
+        :x2="l.chip.mark.x + l.chip.mark.w * 0.82" :y2="l.chip.mark.y + l.chip.mark.h * 0.62"
+        :stroke="p.accent" stroke-width="2" opacity="0.55"
       />
       <text
         class="sf-chip-label"
@@ -134,8 +209,7 @@ function rowPin(row: StepRowRect, key: 'label' | 'title') {
         :font-size="fontSizeOf(l.chip.label)"
         v-bind="pinAttrs(chipLabel, fontSizeOf(l.chip.label), l.chip.label.w)"
         text-anchor="start"
-        font-weight="700"
-        :fill="TITLE_WHITE"
+        :fill="STEP_PANEL_TITLE_WHITE"
       >{{ chipLabel }}</text>
     </g>
 
@@ -175,31 +249,22 @@ function rowPin(row: StepRowRect, key: 'label' | 'title') {
       />
       <text
         class="sf-rowtext"
-        :x="row.label.x"
-        :y="baselineOf(row.label)"
-        :font-size="fontSizeOf(row.label)"
+        :x="row.labelBox.x"
+        :y="baselineOf(row.labelBox)"
+        :font-size="fontSizeOf(row.labelBox)"
         v-bind="rowPin(row, 'label')"
         text-anchor="start"
         :fill="toneFill(row.tone)"
       >{{ row.label }}</text>
       <text
         class="sf-rowtext"
-        :x="row.title.x"
-        :y="baselineOf(row.title)"
-        :font-size="fontSizeOf(row.title)"
+        :x="row.titleBox.x"
+        :y="baselineOf(row.titleBox)"
+        :font-size="fontSizeOf(row.titleBox)"
         v-bind="rowPin(row, 'title')"
         text-anchor="start"
-        :fill="TITLE_WHITE"
+        :fill="STEP_PANEL_ROW_TEXT"
       >{{ row.title }}</text>
-      <text
-        v-if="row.sub"
-        class="sf-rowtext sf-sub"
-        :x="row.title.x"
-        :y="subBaseline(row.title, row.band.h)"
-        :font-size="fontSizeOf(row.title) * 0.72"
-        text-anchor="start"
-        :fill="p.subtext"
-      >{{ row.sub }}</text>
     </g>
 
     <!-- Bottom-left orange annotation group: edge bar, terminal glyph, white
@@ -222,7 +287,7 @@ function rowPin(row: StepRowRect, key: 'label' | 'title') {
           v-html="iconPath('square-terminal') ?? ICON_FALLBACK"
           fill="none"
           stroke="currentColor"
-          stroke-width="2"
+          stroke-width="2.2"
           stroke-linecap="round"
           stroke-linejoin="round"
         />
@@ -232,85 +297,46 @@ function rowPin(row: StepRowRect, key: 'label' | 'title') {
         :x="l.annotation.leftText.x"
         :y="baselineOf(l.annotation.leftText)"
         :font-size="fontSizeOf(l.annotation.leftText)"
-        v-bind="pinAttrs(data.annotationLeft.line, fontSizeOf(l.annotation.leftText), l.annotation.leftText.w)"
+        v-bind="fatten(pinAttrs(data.annotationLeft.line, fontSizeOf(l.annotation.leftText), l.annotation.leftText.w), TITLE_WHITE, 0.6)"
         text-anchor="start"
         :fill="TITLE_WHITE"
       >{{ data.annotationLeft.line }}</text>
-      <text
-        v-if="data.annotationLeft.sub"
-        class="sf-annotation-part sf-sub"
-        :x="l.annotation.leftText.x"
-        :y="subBaseline(l.annotation.leftText, l.annotation.leftBar.h)"
-        :font-size="fontSizeOf(l.annotation.leftText) * 0.72"
-        text-anchor="start"
-        :fill="p.subtext"
-      >{{ data.annotationLeft.sub }}</text>
     </g>
 
-    <!-- Bottom-right amber annotation group: the '11' bar pair, the amber
-         digit run, and the white line — one pop on its click. -->
+    <!-- Bottom-right amber annotation group: the gold '18' digit pair, the
+         dim-gold date run, and the white line — one pop on its click. -->
     <g v-click="plan.amberClick" :data-sf-click="plan.amberClick" class="sf-annotation">
-      <rect
+      <text
         class="sf-annotation-part"
-        :x="l.annotation.amberBars[0].x"
-        :y="l.annotation.amberBars[0].y"
-        :width="l.annotation.amberBars[0].w"
-        :height="l.annotation.amberBars[0].h"
-        :fill="toneFill('quaternary')"
-      />
-      <rect
-        class="sf-annotation-part"
-        :x="l.annotation.amberBars[1].x"
-        :y="l.annotation.amberBars[1].y"
-        :width="l.annotation.amberBars[1].w"
-        :height="l.annotation.amberBars[1].h"
-        :fill="toneFill('quaternary')"
-      />
+        :x="l.annotation.goldPair.x"
+        :y="baselineOf(l.annotation.goldPair)"
+        :font-size="fontSizeOf(l.annotation.goldPair)"
+        v-bind="fatten(pinAttrs(GOLD_PAIR, fontSizeOf(l.annotation.goldPair), l.annotation.goldPair.w), STEP_PANEL_DIGIT_GOLD, 2)"
+        text-anchor="start"
+        :fill="STEP_PANEL_DIGIT_GOLD"
+      >{{ GOLD_PAIR }}</text>
       <text
         class="sf-annotation-part"
         :x="l.annotation.digits.x"
         :y="baselineOf(l.annotation.digits)"
         :font-size="fontSizeOf(l.annotation.digits)"
-        v-bind="pinAttrs(data.dateDigits, fontSizeOf(l.annotation.digits), l.annotation.digits.w)"
+        v-bind="fatten(pinAttrs(data.dateDigits, fontSizeOf(l.annotation.digits), l.annotation.digits.w), STEP_PANEL_DIGIT_DIM, 0.45)"
         text-anchor="start"
-        :fill="toneFill('quaternary')"
+        :fill="STEP_PANEL_DIGIT_DIM"
       >{{ data.dateDigits }}</text>
       <text
         class="sf-annotation-part"
         :x="l.annotation.rightText.x"
         :y="baselineOf(l.annotation.rightText)"
         :font-size="fontSizeOf(l.annotation.rightText)"
-        v-bind="pinAttrs(data.annotationRight.line, fontSizeOf(l.annotation.rightText), l.annotation.rightText.w)"
+        v-bind="fatten(pinAttrs(data.annotationRight.line, fontSizeOf(l.annotation.rightText), l.annotation.rightText.w), STEP_PANEL_DIM_TEXT, 0.45)"
         text-anchor="start"
-        :fill="TITLE_WHITE"
+        :fill="STEP_PANEL_DIM_TEXT"
       >{{ data.annotationRight.line }}</text>
     </g>
-
-    <!-- Two-tone title: chrome-green run FIRST, white tail, both pinned to
-         their measured inks. Static (present from f0001). -->
-    <g class="sf-title">
-      <text
-        class="sf-title-run"
-        :x="l.title.accentInk.x"
-        :y="baselineOf(l.title.accentInk)"
-        :font-size="fontSizeOf(l.title.accentInk)"
-        v-bind="pinAttrs(titleAccent, fontSizeOf(l.title.accentInk), l.title.accentInk.w)"
-        text-anchor="start"
-        :fill="CHROME_GREEN"
-      >{{ titleAccent }}</text>
-      <text
-        class="sf-title-run"
-        :x="l.title.whiteInk.x"
-        :y="baselineOf(l.title.whiteInk)"
-        :font-size="fontSizeOf(l.title.whiteInk)"
-        v-bind="pinAttrs(title, fontSizeOf(l.title.whiteInk), l.title.whiteInk.w)"
-        text-anchor="start"
-        :fill="TITLE_WHITE"
-      >{{ title }}</text>
-    </g>
-
-    <!-- Chrome-green closing burst: a blurred glow over the title band that
-         flashes and decays on the final click (the 5.867s re-brighten). -->
+    <!-- Chrome-green closing burst: a blurred glow painted BEHIND the title
+         band (the settled frame keeps a faint halo while the white tail stays
+         white). It flashes and decays on the final click (5.867s rebrighten). -->
     <g v-click="plan.burstClick" :data-sf-click="plan.burstClick" class="sf-burst">
       <rect
         class="sf-burst-glow"
@@ -321,6 +347,84 @@ function rowPin(row: StepRowRect, key: 'label' | 'title') {
         :fill="CHROME_GREEN"
         filter="url(#sf-step-burst-blur)"
       />
+    </g>
+
+    <!-- Two-tone title: chrome-green words FIRST (with their trailing
+         comma), then white words — every token pinned to its own measured
+         ink box so cell pitch never drifts. The green words carry a soft
+         halo copy behind them (wide faint stroke + blur): the reference
+         compression bleed sits around the green glyphs only. Static
+         (from f0001). -->
+    <g class="sf-title">
+      <text
+        class="sf-title-halo"
+        :x="l.title.accentWord1.x"
+        :y="baselineOf(l.title.accentWord1)"
+        :font-size="fontSizeOf(l.title.accentWord1)"
+        v-bind="pinAttrs(accentWords[0], fontSizeOf(l.title.accentWord1), l.title.accentWord1.w)"
+        text-anchor="start"
+        fill="none"
+        :stroke="CHROME_GREEN"
+        stroke-width="8"
+        stroke-opacity="0.22"
+        filter="url(#sf-step-burst-blur)"
+      >{{ accentWords[0] }}</text>
+      <text
+        class="sf-title-halo"
+        :x="l.title.accentWord2.x"
+        :y="baselineOf(l.title.accentWord2)"
+        :font-size="fontSizeOf(l.title.accentWord2)"
+        v-bind="pinAttrs(accentWords[1], fontSizeOf(l.title.accentWord2), l.title.accentWord2.w)"
+        text-anchor="start"
+        fill="none"
+        :stroke="CHROME_GREEN"
+        stroke-width="8"
+        stroke-opacity="0.22"
+        filter="url(#sf-step-burst-blur)"
+      >{{ accentWords[1] }}</text>
+      <text
+        class="sf-title-run"
+        :x="l.title.accentWord1.x"
+        :y="baselineOf(l.title.accentWord1)"
+        :font-size="fontSizeOf(l.title.accentWord1)"
+        v-bind="fatten(pinAttrs(accentWords[0], fontSizeOf(l.title.accentWord1), l.title.accentWord1.w), CHROME_GREEN, 3.6)"
+        text-anchor="start"
+        :fill="CHROME_GREEN"
+      >{{ accentWords[0] }}</text>
+      <text
+        class="sf-title-run"
+        :x="l.title.accentWord2.x"
+        :y="baselineOf(l.title.accentWord2)"
+        :font-size="fontSizeOf(l.title.accentWord2)"
+        v-bind="fatten(pinAttrs(accentWords[1], fontSizeOf(l.title.accentWord2), l.title.accentWord2.w), CHROME_GREEN, 3.6)"
+        text-anchor="start"
+        :fill="CHROME_GREEN"
+      >{{ accentWords[1] }}</text>
+      <text
+        class="sf-title-run"
+        :x="l.title.accentComma.x"
+        :y="baselineOf(l.title.accentWord1)"
+        :font-size="fontSizeOf(l.title.accentWord1)"
+        :fill="CHROME_GREEN"
+      >,</text>
+      <text
+        class="sf-title-run"
+        :x="l.title.whiteWord1.x"
+        :y="baselineOf(l.title.whiteWord1)"
+        :font-size="fontSizeOf(l.title.whiteWord1)"
+        v-bind="fatten(pinAttrs(whiteWords[0], fontSizeOf(l.title.whiteWord1), l.title.whiteWord1.w), STEP_PANEL_TITLE_WHITE, 0.8)"
+        text-anchor="start"
+        :fill="STEP_PANEL_TITLE_WHITE"
+      >{{ whiteWords[0] }}</text>
+      <text
+        class="sf-title-run"
+        :x="l.title.whiteWord2.x"
+        :y="baselineOf(l.title.whiteWord2)"
+        :font-size="fontSizeOf(l.title.whiteWord2)"
+        v-bind="fatten(pinAttrs(whiteWords[1], fontSizeOf(l.title.whiteWord2), l.title.whiteWord2.w), STEP_PANEL_TITLE_WHITE, 0.8)"
+        text-anchor="start"
+        :fill="STEP_PANEL_TITLE_WHITE"
+      >{{ whiteWords[1] }}</text>
     </g>
   </svg>
 </template>
@@ -333,8 +437,10 @@ function rowPin(row: StepRowRect, key: 'label' | 'title') {
 }
 
 .steppanel text {
-  /* Mono stack until the face is confirmed (StepFlow's open question #1). */
+  /* Mono stack until the face is confirmed (StepFlow's open question #1).
+   * Every settled seg15 run measures bold at equal cap height. */
   font-family: var(--sf-font-mono, 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace);
+  font-weight: 700;
 }
 
 /*
@@ -440,8 +546,11 @@ function rowPin(row: StepRowRect, key: 'label' | 'title') {
   25% {
     opacity: 0.32;
   }
+  /* The settled frame keeps a faint green rim hugging the glyph cores
+   * (~2.3k faint pixels in the title band) — carried by the per-glyph
+   * stroke rims, not a rect wash. The rect only adds ambience. */
   100% {
-    opacity: 0;
+    opacity: 0.06;
   }
 }
 

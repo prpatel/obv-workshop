@@ -384,7 +384,7 @@ canvasWidth: 1920
   crop→stage mapping is documented in stepPanel.ts (R-2).
 
   AutoAdvance pins the complete seven-beat schedule (STEP_BEATS: plate
-  1.2, rows 1.667 / 2.4 / 3.133, left annotation 3.667, amber group 4.6,
+  1.2, rows 1.667 / 2.4 / 3.133, left annotation 3.733, amber group 4.6,
   title burst 5.867; R-6 complete list); `a` toggles a hands-free run,
   `?autoplay=N` starts one on enter.
 -->
@@ -392,12 +392,12 @@ canvasWidth: 1920
 <div class="sf-demo-stage">
 
 <StepPanel
-  title="to spec-driven shipping"
-  title-accent="vibe coding"
+  title="trend, actual"
+  title-accent="TUI skin"
   chip-label="VIBE CODING"
 />
 
-<AutoAdvance :duration-sec="5.867" :step-schedule-sec="[1.2, 1.667, 2.4, 3.133, 3.667, 4.6, 5.867]" />
+<AutoAdvance :duration-sec="5.867" :step-schedule-sec="[1.2, 1.667, 2.4, 3.133, 3.733, 4.6, 5.867]" />
 
 </div>
 

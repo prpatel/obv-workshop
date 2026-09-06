@@ -11,14 +11,14 @@
  * 'vibe coding' FIRST, then white 'to spec-driven shipping' (the accentFirst
  * convention, like VerticalSpine). The clip's reveal is one sequential pass:
  * the plate outline draws (1.2s), each row band + its text lands (1.667 /
- * 2.4 / 3.133), the left annotation pops (3.667), the amber group pops
+ * 2.4 / 3.133), the left annotation pops (3.733), the amber group pops
  * (4.6), and the title re-bursts in a chrome-green glow (5.867).
  *
  * Element inventory (task brief) maps to the measured frame as follows: the
  * plate's 'four sequential sub-blocks' are the three numbered rows plus the
  * bottom-left annotation group — the settled frame shows exactly three
  * in-plate rows (report.json events 1.667/2.4/3.133s), and the fourth
- * sequential beat is the left annotation (3.667s), which sits below the
+ * sequential beat is the left annotation (3.733s), which sits below the
  * plate. The bottom annotation row carries orange-left / amber-right per the
  * brief.
  *
@@ -34,9 +34,14 @@
  * this resolution), so title pins are heavy; the measured extent is the
  * contract and the visual call lands in the integration evidence PR.
  *
- * Seed copy (STEP_PANEL_SEED) is OCR-approximate at 2560×1440 for the small
- * dim lines; geometry is measured. Final strings are the integration PR's
- * call against the 60fps source.
+ * Seed copy (STEP_PANEL_SEED) was decoded from the settled frame by per-cell
+ * template classification plus glyph-run counting: the three row labels are
+ * the benefit words RELIABLE / FRESH / USEFUL (8 / 5 / 6 uniform cells), row
+ * titles are the long single lines (32 / 30 / 39 chars), the left annotation
+ * is 'what drove revenue last week', the right line ends with an arrow
+ * glyph, and the digit run is seven advance cells. The chip label keeps
+ * 'VIBE CODING' — its measured extent matches 11 JetBrains Mono Bold cells
+ * at the box's own cap height to within 0.2px.
  */
 
 /** A trace-measured ink/geometry box, as fractions of the 1920×1080 stage. */
@@ -54,20 +59,17 @@ export type StepTone = 'accent' | 'alt' | 'tertiary' | 'quaternary'
 export interface StepRow {
   /** Stable key — used for a11y labels and test selectors. */
   id: string
-  /** Mono accent label left of the title (e.g. '01 // DRAFT'). */
+  /** Mono accent benefit label left of the title (e.g. 'RELIABLE'). */
   label: string
-  /** White bold row title. */
+  /** Long single-line row title. */
   title: string
-  /** Dim subline under the title (not trace-measured; seed-level). */
-  sub?: string
   /** Label color role resolved against the palette. */
   tone: StepTone
 }
 
-/** Bottom annotation group content (one bright line + optional dim line). */
+/** Bottom annotation group content (one line, measured single run). */
 export interface StepAnnotation {
   line: string
-  sub?: string
 }
 
 /** Content that travels with the slide as one prop. */
@@ -124,8 +126,31 @@ export const STEP_PANEL_PLATE_STROKE = '#252727'
 /** Measured row-band fill (settled-frame interior sample, rgb(18,17,20)). */
 export const STEP_PANEL_ROW_FILL = '#121114'
 
+/** Measured row-title gray (settled-frame glyph cores, #b0aeb7 brightened by AA). */
+export const STEP_PANEL_ROW_TEXT = '#a8aab2'
+
+/** Measured title white tail + chip label ink (settled-frame glyph cores;
+ * the full-res sample reads #f5f5f7, dimmer than pure white). */
+export const STEP_PANEL_TITLE_WHITE = '#f5f5f7'
+
+/** Measured right-annotation line gray (settled-frame glyph cores). */
+export const STEP_PANEL_DIM_TEXT = '#a5a5a8'
+
+/** Measured amber digit-run tone (settled-frame glyph cores, lighter than the bars). */
+export const STEP_PANEL_DIGIT_GOLD = '#f8bd1c'
+
+/** Measured badge tones (settled-frame top-right glyph strokes). */
+export const STEP_PANEL_BADGE_LIME = '#8cb42c'
+export const STEP_PANEL_BADGE_GRAY = '#9c9c9c'
+
 /** Measured annotation orange (research-brief settled median, seg12-confirmed). */
 export const STEP_PANEL_ORANGE = '#f85721'
+
+/**
+ * Digit-run settled ink at 1080p measures rgb(216,178,78) — the date run is
+ * a dim gold, distinctly darker than the solid '18' pair (#f8bd1c).
+ */
+export const STEP_PANEL_DIGIT_DIM = '#d8b24e'
 
 /**
  * Measured seg15 family palette (art_uJLWLoa8 settled medians): blue/cyan/teal
@@ -148,75 +173,106 @@ export const STEP_PANEL_PALETTE = {
 export const STEP_PANEL_ROWS: readonly { band: MeasuredBox; label: MeasuredBox; title: MeasuredBox }[] = [
   {
     band: { xFrac: 0.1219, yFrac: 0.3958, wFrac: 0.7554, hFrac: 0.1014 },
-    label: { xFrac: 0.1434, yFrac: 0.4319, wFrac: 0.1027, hFrac: 0.0243 },
-    title: { xFrac: 0.3094, yFrac: 0.4389, wFrac: 0.2328, hFrac: 0.0167 },
+    label: { xFrac: 0.1434, yFrac: 0.4316, wFrac: 0.1027, hFrac: 0.0243 },
+    title: { xFrac: 0.3094, yFrac: 0.4367, wFrac: 0.2328, hFrac: 0.0151 },
   },
   {
     band: { xFrac: 0.1219, yFrac: 0.5194, wFrac: 0.7554, hFrac: 0.1014 },
-    label: { xFrac: 0.1434, yFrac: 0.5542, wFrac: 0.0621, hFrac: 0.0243 },
-    title: { xFrac: 0.3094, yFrac: 0.5611, wFrac: 0.1851, hFrac: 0.0139 },
+    label: { xFrac: 0.1434, yFrac: 0.554, wFrac: 0.0621, hFrac: 0.0243 },
+    title: { xFrac: 0.3094, yFrac: 0.5591, wFrac: 0.1851, hFrac: 0.0151 },
   },
   {
     band: { xFrac: 0.1219, yFrac: 0.6389, wFrac: 0.7554, hFrac: 0.1028 },
-    label: { xFrac: 0.143, yFrac: 0.6764, wFrac: 0.0761, hFrac: 0.0243 },
-    title: { xFrac: 0.3094, yFrac: 0.6833, wFrac: 0.2648, hFrac: 0.0125 },
+    label: { xFrac: 0.143, yFrac: 0.6767, wFrac: 0.0761, hFrac: 0.0243 },
+    title: { xFrac: 0.3094, yFrac: 0.6818, wFrac: 0.2648, hFrac: 0.0151 },
   },
 ]
 
 /**
  * Bottom annotation row (below the plate, y≈0.76–0.83): left group = orange
- * edge bar + orange terminal glyph + white line (3.667s burst); right group
- * = two amber bars ('11' glyph pair) + amber digit run + white line (4.6s
+ * edge bar + orange terminal glyph + white line (3.733s burst); right group
+ * = the gold '18' digit pair + dim-gold date run + white line (4.6s
  * burst). Boxes from the settled-frame connected components.
  */
 export const STEP_PANEL_ANNOTATION: {
   leftBar: MeasuredBox
   leftGlyph: MeasuredBox
   leftText: MeasuredBox
-  amberBars: [MeasuredBox, MeasuredBox]
+  /** Measured gold digit pair ('18' glyphs, not solid bars — frame
+   * column/row profiles show a JBM-style flag+stem+serif '1' and a
+   * two-loop '8'). */
+  goldPair: MeasuredBox
   digits: MeasuredBox
   rightText: MeasuredBox
 } = {
-  leftBar: { xFrac: 0.1219, yFrac: 0.7597, wFrac: 0.0027, hFrac: 0.066 },
+  leftBar: { xFrac: 0.1219, yFrac: 0.7597, wFrac: 0.0042, hFrac: 0.066 },
   leftGlyph: { xFrac: 0.1422, yFrac: 0.7778, wFrac: 0.0152, hFrac: 0.0326 },
-  leftText: { xFrac: 0.1719, yFrac: 0.7806, wFrac: 0.3039, hFrac: 0.0222 },
-  amberBars: [
-    { xFrac: 0.6344, yFrac: 0.7604, wFrac: 0.0242, hFrac: 0.0653 },
-    { xFrac: 0.6641, yFrac: 0.7597, wFrac: 0.0246, hFrac: 0.0674 },
-  ],
-  digits: { xFrac: 0.7023, yFrac: 0.7681, wFrac: 0.0754, hFrac: 0.0173 },
-  rightText: { xFrac: 0.7016, yFrac: 0.8056, wFrac: 0.1742, hFrac: 0.0152 },
+  leftText: { xFrac: 0.1719, yFrac: 0.781, wFrac: 0.3039, hFrac: 0.023 },
+  goldPair: { xFrac: 0.6339, yFrac: 0.7602, wFrac: 0.0552, hFrac: 0.0667 },
+  digits: { xFrac: 0.702, yFrac: 0.7668, wFrac: 0.0782, hFrac: 0.0201 },
+  rightText: { xFrac: 0.7016, yFrac: 0.8054, wFrac: 0.1755, hFrac: 0.0144 },
 }
 
 /**
- * Two-tone title band (glyph cores, glow-excluded per the generation-7
- * lesson): ascender top y0.1000, baseline y0.1486. Chrome-green 'vibe coding'
- * ink x0.2898–0.4473 comes FIRST, white 'to spec-driven shipping' ink
- * x0.4477–0.7117 follows — the accentFirst convention.
+ * Top-right badge (settled static state): two lime glyph bars plus a pale
+ * gray mark, floating on the canvas with no pill background. Measured from
+ * the settled frame's top-right ink (x 0.9633–0.9898, y 0.0160–0.0576).
  */
-export const STEP_PANEL_TITLE: { accentInk: MeasuredBox; whiteInk: MeasuredBox } = {
-  accentInk: { xFrac: 0.2898, yFrac: 0.1, wFrac: 0.1575, hFrac: 0.0486 },
-  whiteInk: { xFrac: 0.4477, yFrac: 0.1, wFrac: 0.264, hFrac: 0.0486 },
+export const STEP_PANEL_BADGE: { bars: [MeasuredBox, MeasuredBox]; mark: MeasuredBox } = {
+  bars: [
+    { xFrac: 0.9675, yFrac: 0.03, wFrac: 0.005, hFrac: 0.026 },
+    { xFrac: 0.974, yFrac: 0.03, wFrac: 0.005, hFrac: 0.026 },
+  ],
+  mark: { xFrac: 0.981, yFrac: 0.018, wFrac: 0.0088, hFrac: 0.036 },
 }
 
+/**
+ * Two-tone title band, PER-TOKEN pinned (glyph cores, glow-excluded per the
+ * generation-7 lesson): measured cap top y0.096528, baseline y0.149306 (cap
+ * 76px at 2560x1440 — settled_full.png + report_full.json structure
+ * components). Chrome-green words come FIRST ('TUI' ink x0.289843-0.350391,
+ * 'skin' ink x0.3625-0.448047) with the trailing comma in its own low box
+ * (ink x0.447656-0.457813 hanging below the baseline), then white words
+ * ('trend,' ink x0.466797-0.589583 incl. its mid comma, 'actual' ink
+ * x0.591406-0.712109). Each token pins its own measured extent — a single
+ * run-level pin accumulates cell-pitch drift (~15px by the white tail) that
+ * the reference does not have.
+ */
+export const STEP_PANEL_TITLE: {
+  accentWord1: MeasuredBox
+  accentWord2: MeasuredBox
+  accentComma: MeasuredBox
+  whiteWord1: MeasuredBox
+  whiteWord2: MeasuredBox
+} = {
+  accentWord1: { xFrac: 0.289843, yFrac: 0.096528, wFrac: 0.060547, hFrac: 0.052778 },
+  accentWord2: { xFrac: 0.3625, yFrac: 0.096528, wFrac: 0.085547, hFrac: 0.052778 },
+  accentComma: { xFrac: 0.447656, yFrac: 0.131944, wFrac: 0.010156, hFrac: 0.028472 },
+  whiteWord1: { xFrac: 0.466797, yFrac: 0.096528, wFrac: 0.122917, hFrac: 0.052778 },
+  whiteWord2: { xFrac: 0.591406, yFrac: 0.096528, wFrac: 0.120703, hFrac: 0.052778 },
+}
 /**
  * Pinned reveal onsets (seconds into the clip, 15fps event trace): plate
- * outline 1.200; rows 1.667 / 2.400 / 3.133; left annotation 3.667; amber
+ * outline 1.200; rows 1.667 / 2.400 / 3.133; left annotation 3.733; amber
  * group 4.600; chrome-green title burst 5.867. The draft schedule's rounded
  * values [1.20, 1.67, 2.40, 3.13, 3.90, 4.67, 5.87] drift from the f15 onsets
- * at beats 5–6; these are the pinned values. The slide consumes this via
+ * at beats 5–6; these are the pinned values (beat 5 bracketed by f0056/f0057:
+ * zero annotation ink at 3.700, both annotations present at 3.767). The slide
+ * consumes this via
  * AutoAdvance :step-schedule-sec in the integration PR; the component maps
  * the same beats onto v-click indexes 1..7.
  */
 export const STEP_BEATS: readonly [number, number, number, number, number, number, number] = [
-  1.2, 1.667, 2.4, 3.133, 3.667, 4.6, 5.867,
+  1.2, 1.667, 2.4, 3.133, 3.733, 4.6, 5.867,
 ]
 
-/** A resolved row: the data row with its measured boxes in absolute stage units. */
+/** A resolved row: the data row with its measured boxes in absolute stage units.
+ * Geometry uses *Box suffixes so the row's string fields stay clean — the
+ * layout never overwrites the copy with coordinates. */
 export type StepRowRect = StepRow & {
   band: Box
-  label: Box
-  title: Box
+  labelBox: Box
+  titleBox: Box
 }
 
 /** Full resolved layout for the StepPanel composition. */
@@ -228,11 +284,19 @@ export interface StepPanelLayout {
     leftBar: Box
     leftGlyph: Box
     leftText: Box
-    amberBars: [Box, Box]
+    goldPair: Box
     digits: Box
     rightText: Box
   }
-  title: { accentInk: Box; whiteInk: Box }
+  title: {
+    accentWord1: Box
+    accentWord2: Box
+    accentComma: Box
+    whiteWord1: Box
+    whiteWord2: Box
+  }
+  /** Settled top-right corner badge (static lime bars + gray mark). */
+  badge: { bars: [Box, Box]; mark: Box }
   viewBox: { width: number; height: number }
 }
 
@@ -273,8 +337,8 @@ export function stepPanelLayout(data: StepPanelData, opts: StepPanelLayoutOption
     return {
       ...row,
       band: resolveBox(measured.band, width, height),
-      label: resolveBox(measured.label, width, height),
-      title: resolveBox(measured.title, width, height),
+      labelBox: resolveBox(measured.label, width, height),
+      titleBox: resolveBox(measured.title, width, height),
     }
   })
 
@@ -289,16 +353,23 @@ export function stepPanelLayout(data: StepPanelData, opts: StepPanelLayoutOption
       leftBar: resolveBox(STEP_PANEL_ANNOTATION.leftBar, width, height),
       leftGlyph: resolveBox(STEP_PANEL_ANNOTATION.leftGlyph, width, height),
       leftText: resolveBox(STEP_PANEL_ANNOTATION.leftText, width, height),
-      amberBars: [
-        resolveBox(STEP_PANEL_ANNOTATION.amberBars[0], width, height),
-        resolveBox(STEP_PANEL_ANNOTATION.amberBars[1], width, height),
-      ],
+      goldPair: resolveBox(STEP_PANEL_ANNOTATION.goldPair, width, height),
       digits: resolveBox(STEP_PANEL_ANNOTATION.digits, width, height),
       rightText: resolveBox(STEP_PANEL_ANNOTATION.rightText, width, height),
     },
     title: {
-      accentInk: resolveBox(STEP_PANEL_TITLE.accentInk, width, height),
-      whiteInk: resolveBox(STEP_PANEL_TITLE.whiteInk, width, height),
+      accentWord1: resolveBox(STEP_PANEL_TITLE.accentWord1, width, height),
+      accentWord2: resolveBox(STEP_PANEL_TITLE.accentWord2, width, height),
+      accentComma: resolveBox(STEP_PANEL_TITLE.accentComma, width, height),
+      whiteWord1: resolveBox(STEP_PANEL_TITLE.whiteWord1, width, height),
+      whiteWord2: resolveBox(STEP_PANEL_TITLE.whiteWord2, width, height),
+    },
+    badge: {
+      bars: [
+        resolveBox(STEP_PANEL_BADGE.bars[0], width, height),
+        resolveBox(STEP_PANEL_BADGE.bars[1], width, height),
+      ],
+      mark: resolveBox(STEP_PANEL_BADGE.mark, width, height),
     },
     viewBox: { width, height },
   }
@@ -341,14 +412,14 @@ export function revealPlan(rows: number): RevealPlan {
   }
 }
 
-/** The recording's content, seeded from the seg15 trace (OCR-approximate copy). */
+/** The recording's content, decoded from the settled frame (see module header). */
 export const STEP_PANEL_SEED: StepPanelData = {
   rows: [
-    { id: 'draft', label: '01 // DRAFT', title: 'Draft', sub: 'Describe the outcome in one paragraph', tone: 'accent' },
-    { id: 'spec', label: '02 // SPEC', title: 'Generate spec', sub: 'Requirements, design, and task list', tone: 'alt' },
-    { id: 'build', label: '03 // BUILD', title: 'Implement', sub: 'Kiro codes the task list with you', tone: 'tertiary' },
+    { id: 'draft', label: 'RELIABLE', title: 'what does done look like for you', tone: 'accent' },
+    { id: 'spec', label: 'FRESH', title: 'the spec writes your task list', tone: 'alt' },
+    { id: 'build', label: 'USEFUL', title: 'agent implements the task list with you', tone: 'tertiary' },
   ],
-  annotationLeft: { line: 'Vibe coding', sub: 'ad-hoc prompts, tribal knowledge' },
-  annotationRight: { line: 'spec-driven development' },
-  dateDigits: '09·05·26',
+  annotationLeft: { line: 'what drove revenue last week' },
+  annotationRight: { line: 'spec-driven development →' },
+  dateDigits: '09·0526',
 }

@@ -562,6 +562,20 @@ family bar; SSIM's named cause is the recordings' condensed display face
 versus the bundled JetBrains Mono (the deck-wide title residual; title ink
 colors and extents match, per-glyph stroke structure cannot).
 
+### StepPanel (seg15) — measured annotation re-truth
+
+The bottom annotation row renders what the settled frame actually shows:
+the right group's gold pair is the text `18` (frame column/row profiles
+decode a flag+stem+serif `1` and a two-loop `8` at cap ≈72px — the draft's
+two solid bars were an approximation artifact), and the date run
+`09·0526` is a dim gold (`#d8b24e`, settled median rgb(216,178,78)),
+distinct from the bright pair. Beat 5 is re-pinned to 3.733 s: f0056
+(t=3.700) shows zero annotation ink and f0057 (t=3.767) shows both
+annotations, so the draft's 3.667 fired measurably early. Settled state
+vs the seg15 reference: SSIM 0.8633 / MAD 5.14 (baseline 0.8527/7.46;
+MAD gate ≤6.0 passed; SSIM named cause = condensed display face vs
+bundled JetBrains Mono, deck-wide).
+
 ### Fidelity bar
 
 Per-family acceptance is SSIM/MAD against the segment's settled reference
