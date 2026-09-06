@@ -108,7 +108,7 @@ const GOLD_PAIR = '18'
 
 // Settled ink runs ~20% denser than default mono bold renders; a hairline
 // same-color stroke under paint-order fattens each run to measured weight.
-// (spacingAndGlyphs condensation was measured and rejected: it starves ink
+// (glyph-condensing textLength squeeze was measured and rejected: it starves ink
 // and drops band SSIM — the G7 wave's no-glyph-squeezing decision holds.)
 function fatten<T extends Record<string, unknown>>(attrs: T, fill: string, width: number, strokeOpacity?: number) {
   return {
