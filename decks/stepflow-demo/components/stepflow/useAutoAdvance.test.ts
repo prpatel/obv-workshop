@@ -298,3 +298,69 @@ describe('useAutoAdvance — measured step schedule (TileGrid growing stagger)',
     expect(state.nextCalls).toBe(3)
   })
 })
+
+
+describe('useAutoAdvance — active-slide gating (a-key run compression fix)', () => {
+  // Slidev keeps every slide mounted, so every instance shares one window
+  // keydown listener. Un-gated instances all hear one `a` press and start
+  // concurrent runs on the shared nav — the active slide's clicks then fire
+  // at the union of all schedules (PRs #69/#70).
+  it('ignores the toggle and cancel keys while its slide is inactive', () => {
+    const { nav, state } = mockNav(6)
+    const { ctrl } = mountAdvance({ nav, durationMs: 6000, isActive: () => false })
+
+    press('a')
+    vi.advanceTimersByTime(60000)
+    expect(state.nextCalls).toBe(0) // no run started: inactive instances never toggle
+    expect(ctrl.isRunning()).toBe(false)
+
+    press('ArrowRight')
+    expect(state.nextCalls).toBe(0) // Slidev's own handler navigates; ours stays inert
+  })
+
+  it('responds to keys only while its slide is active', () => {
+    let active = false
+    const { nav, state } = mockNav(6)
+    const { ctrl } = mountAdvance({ nav, durationMs: 6000, isActive: () => active })
+
+    press('a')
+    vi.advanceTimersByTime(10000)
+    expect(state.nextCalls).toBe(0)
+
+    active = true
+    press('a')
+    vi.advanceTimersByTime(2000)
+    expect(state.nextCalls).toBe(2) // 1000ms spacing, one cadence
+    expect(ctrl.isRunning()).toBe(true)
+  })
+
+  it('stops a running run at its next tick when the slide goes inactive', () => {
+    let active = true
+    const { nav, state } = mockNav(6)
+    const { ctrl } = mountAdvance({ nav, durationMs: 6000, isActive: () => active })
+
+    press('a')
+    vi.advanceTimersByTime(2000)
+    expect(state.nextCalls).toBe(2)
+
+    active = false // the user navigated away between ticks
+    vi.advanceTimersByTime(10000)
+    expect(state.nextCalls).toBe(2) // stopped: never drives another slide's clicks
+    expect(ctrl.isRunning()).toBe(false)
+  })
+
+  it('keeps a measured schedule intact when the gate flips active mid-run', () => {
+    let active = true
+    const { nav, state } = mockNav(6)
+    const { ctrl } = mountAdvance({ nav, durationMs: 8700, stepScheduleMs: [550, 950, 2333, 3767, 4817, 6617], isActive: () => active })
+
+    press('a')
+    vi.advanceTimersByTime(950) // 550 + 400: two scheduled advances
+    expect(state.nextCalls).toBe(2)
+
+    active = false
+    vi.advanceTimersByTime(1383) // the 2333ms tick lands after the flip
+    expect(state.nextCalls).toBe(2)
+    expect(ctrl.isRunning()).toBe(false)
+  })
+})

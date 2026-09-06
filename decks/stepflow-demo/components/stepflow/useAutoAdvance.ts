@@ -41,6 +41,17 @@ export interface UseAutoAdvanceOptions {
   cancelKeys?: string[]
   /** Key that toggles start/stop, compared case-insensitively (default `a`). */
   toggleKey?: string
+  /**
+   * Gate the keyboard bindings on whether this instance's slide is the deck's
+   * active one. Slidev keeps every slide mounted, so every instance hears the
+   * same window keydown — without the gate one `a` press starts concurrent
+   * runs on all of them, each driving the shared nav, and the active slide's
+   * clicks fire at the union of all schedules (the a-key run compression
+   * reported on PRs #69/#70). When provided, keydown events are ignored while
+   * inactive, and a running run stops at its next tick instead of driving
+   * another slide's clicks.
+   */
+  isActive?: () => boolean
 }
 
 export interface AutoAdvanceController {
@@ -68,7 +79,7 @@ export function parseAutoplayParam(search: string, fallbackMs: number): number |
 }
 
 export function useAutoAdvance(options: UseAutoAdvanceOptions): AutoAdvanceController {
-  const { nav } = options
+  const { nav, isActive } = options
   const cancelKeys = new Set<string>(options.cancelKeys ?? DEFAULT_CANCEL_KEYS)
   const toggleKey = (options.toggleKey ?? 'a').toLowerCase()
 
@@ -80,10 +91,12 @@ export function useAutoAdvance(options: UseAutoAdvanceOptions): AutoAdvanceContr
   let delays: number[] = [] // per-step schedule for the current run (ms between consecutive advances)
 
   function tick(): void {
-    // Drift guard: if anything else (presenter sync, another surface) brought
-    // the deck to the final click, stop here — never overshoot into the next
-    // slide via nav.next().
-    if (nav.clicks() >= nav.clicksTotal()) {
+    // Drift guards: if anything else made this run stale — presenter sync or
+    // another surface brought the deck to the final click, or this instance's
+    // slide stopped being the active one (its wrapper's onSlideLeave should
+    // already have stopped the run; this is the belt to that suspenders) —
+    // stop here. Never drive a click that is not this slide's own.
+    if (nav.clicks() >= nav.clicksTotal() || (isActive && !isActive())) {
       stop()
       return
     }
@@ -143,6 +156,10 @@ export function useAutoAdvance(options: UseAutoAdvanceOptions): AutoAdvanceContr
   }
 
   function onKeyDown(ev: KeyboardEvent): void {
+    // Every mounted slide's instance shares this window listener; only the
+    // active slide's instance may respond (see isActive on the gate).
+    if (isActive && !isActive())
+      return
     // Ignore modifier chords (Ctrl+A select-all is not a toggle).
     if (ev.ctrlKey || ev.metaKey || ev.altKey)
       return
