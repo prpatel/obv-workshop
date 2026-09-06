@@ -588,3 +588,40 @@ face versus the bundled JetBrains Mono is the deck-wide one), regional MADs,
 and magnified crop pairs documenting that the residual is glyph-face width,
 not geometry — per-glyph reference-ink tracing (the seg11/seg12 precedent)
 is the remedy when a region is visibly unclean, not a default.
+
+
+### Integration sweep (settled-truth final, PR #74)
+
+The integration branch re-captures every family at the capture-contract deep
+links (1920×1080, `document.fonts.ready` + 2 s) against the release-tip
+references and re-measures the gates. Sweep numbers reproduce the per-family
+PR measurements to within capture-condition noise (≤0.006 SSIM):
+
+| Family | Settled SSIM (≥0.92) | MAD (≤6.0) | Verdict |
+|---|---|---|---|
+| seg01 StairChain | 0.9306 | 2.0701 | pass |
+| seg05 PillarRow | 0.8581 | 4.8003 | SSIM residual — documented |
+| seg08 StackPanels | 0.9546 | 2.7420 | pass |
+| seg11 ConvergeFlow | 0.9513 | 3.6750 | pass |
+| seg12 CompareBadge | 0.9257 | 1.6558 | pass |
+| seg14 SpecPanel | 0.9072 | 4.7329 | SSIM residual — documented |
+| seg15 StepPanel | 0.8635 | 5.1443 | SSIM residual — documented |
+| seg16 TileSummary | 0.8946 | 4.2074 | SSIM residual — documented |
+
+MAD clears the gate on all eight families. The four SSIM residuals were
+re-verified against fresh settled composites and magnified ref/capture crop
+pairs (title/header bands plus each family's noisiest regions): geometry,
+tones, and copy match; the residual tracks the condensed display face versus
+the bundled JetBrains Mono (glyph-face width and thin-AA features), so the
+per-glyph ink-tracing remedy was **not** applied — the composites are
+visually clean, matching the PR #67/#71/#72 documentation.
+
+Mid-beat choreography re-verified quantitatively: every `?clicks=k` capture
+best-matches a reference packet frame at MAD 0.62–5.04 (half-res luma) with
+strictly increasing frame indices per family — the intermediate states exist
+in the reference sequence in the same order. Paced playback re-verified with
+a runner-paced WebM per family (durations match the pinned schedules; the
+shared `useAutoAdvance` active-slide gate is the integration's only shared
+code change) plus a live a-key toggle capture on seg12 (before / mid-run /
+settled at 1920×1080): the pressed run advances state progressively instead
+of compressing to the final click.
