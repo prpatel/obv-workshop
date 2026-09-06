@@ -52,7 +52,7 @@ decks/stepflow-demo/
 │  ├─ SpecPanel.vue               # family: measured seg14 progressive spec panel
 │  ├─ StepPanel.vue               # family: measured seg15 four-step panel
 │  ├─ TileSummary.vue             # family: measured seg16 three-tile summary
-│  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance + per-slide measured beats
+│  ├─ AutoAdvance.vue             # renderless deck wiring: ?autoplay=N / a-key auto-advance (active-slide gated) + per-slide measured beats
 │  └─ stepflow/
 │     ├─ stair.ts                 # pure staircase layout math + settled-truth traces (SEG01_PLACEMENT, SEG01_INK, wedges, captions + default gap/delta walk)
 │     ├─ panels.ts                # StackPanels contract + pure mosaic layout (dark re-truth)
@@ -354,8 +354,8 @@ state reads.
 
 | Surface | Behavior |
 | ------- | -------- |
-| `?autoplay=N` URL param | Auto-starts the run on slide enter, evenly spaced across N seconds (`/2?autoplay=4` → the slide's ten clicks evenly over 4 s, first click one interval in). Bare `?autoplay` or an invalid value falls back to the slide's own beat — its `durationSec`/`stepScheduleSec` props (the measured cadences below); 7 s where a slide sets none. |
-| `a` key | Toggles a run over the slide's own beat — the per-slide `durationSec` (7 s demo default where a slide sets none; no modifier held; `A` works too). |
+| `?autoplay=N` URL param | Auto-starts the run on slide enter, evenly spaced across N seconds (`/2?autoplay=4` → the slide's seven clicks evenly over 4 s, first click one interval in). Bare `?autoplay` or an invalid value falls back to the slide's own beat — its `durationSec`/`stepScheduleSec` props (the measured cadences below); 7 s where a slide sets none. |
+| `a` key | Toggles a run over the slide's own beat — the per-slide `durationSec` (7 s demo default where a slide sets none; no modifier held; `A` works too). Only the active slide's instance listens: Slidev keeps every slide mounted, so the shared window keydown is gated on the instance's own slide being the deck's active one (the a-key run-compression fix; PRs #69/#70). |
 | Arrow keys / space / PageUp / PageDown | Cancel a running auto-advance — the native navigation still applies. |
 | Final click reached | The run stops cleanly; it never skips ahead to the next slide. |
 | Leaving the slide / unmount | All timers and key listeners are cleaned up; re-entering with `?autoplay` still in the URL replays the run. |
@@ -369,20 +369,20 @@ complete: one entry per click, in order (R-6).
 
 | Slide | Family | Clicks | Measured beats (s) |
 | ----- | ------ | ------ | ------------------ |
-| 2 | StairChain (seg01) | 10 | 0.27 · 0.53 · 0.67 · 0.80 · 0.93 · 1.07 · 1.27 · 2.07 · 2.67 · 3.07 |
-| 3 | PillarRow (seg05) | 6 | 0.067 · 0.267 · 0.600 · 0.733 · 1.000 · 1.467 |
+| 2 | StairChain (seg01) | 7 | 0.2 · 0.533 · 0.8 · 1.067 · 2.067 · 2.733 · 3.133 |
+| 3 | PillarRow (seg05) | 6 | 0.067 · 0.267 · 0.6 · 0.733 · 1.0 · 1.467 |
 | 4 | StackPanels (seg08) | 4 | 0.067 · 0.267 · 0.867 · 1.2 |
-| 5 | ConvergeFlow (seg11) | 5 | 1.07 · 1.53 · 2.20 · 2.60 · 3.07 |
-| 6 | CompareBadge (seg12) | 5 | 0.60 · 1.00 · 1.73 · 3.00 · 4.40 |
-| 7 | SpecPanel (seg14) | 7 | 0.47 · 0.60 · 2.00 · 3.13 · 4.47 · 5.07 · 6.53 |
-| 8 | StepPanel (seg15) | 7 | 1.20 · 1.667 · 2.40 · 3.133 · 3.667 · 4.60 · 5.867 |
-| 9 | TileSummary (seg16) | 4 | 0.33 · 0.60 · 1.20 · 1.467 (summary line rides the bar +0.266 s) |
+| 5 | ConvergeFlow (seg11) | 5 | 0.933 · 1.533 · 2.2 · 2.533 · 3.067 |
+| 6 | CompareBadge (seg12) | 5 | 0.6 · 1.0 · 1.733 · 3.0 · 4.4 |
+| 7 | SpecPanel (seg14) | 7 | 0.47 · 0.6 · 2.0 · 3.13 · 4.47 · 5.07 · 6.53 |
+| 8 | StepPanel (seg15) | 7 | 1.2 · 1.667 · 2.4 · 3.133 · 3.733 · 4.6 · 5.867 |
+| 9 | TileSummary (seg16) | 4 | 0.33 · 0.6 · 1.2 · 1.467 (summary line rides the bar +0.266 s) |
 
 ### Capture contracts (`?clicks=N` deep links)
 
 Each family settles at its final click; `?clicks=N` renders exactly that
 state for screenshots and SSIM/MAD diffs. N per family, in slide order:
-seg01 → 10, seg05 → 6, seg08 → 4, seg11 → 5, seg12 → 5, seg14 → 7,
+seg01 → 7, seg05 → 6, seg08 → 4, seg11 → 5, seg12 → 5, seg14 → 7,
 seg15 → 7, seg16 → 4. Mid-beat captures (`?clicks=k`, 1 ≤ k < N) document
 each family's choreography; the `a` key plays the pinned schedule
 end-to-end and stops at the final click (backward navigation snaps
@@ -579,7 +579,49 @@ bundled JetBrains Mono, deck-wide).
 ### Fidelity bar
 
 Per-family acceptance is SSIM/MAD against the segment's settled reference
-frame (2560×1440, LANCZOS-downscaled to the 1920×1080 capture): the gen-7
-family bar is SSIM 0.9093 / MAD 7.63. A family below the bar ships with a
-named cause (resolution-limited source text, sub-resolution glyph rows)
-and its measured numbers recorded in the PR evidence.
+frame (2560×1440, LANCZOS-downscaled to the 1920×1080 capture). The
+settled-truth program's gates supersede the retired gen-7 bar (SSIM 0.9093 /
+MAD 7.63): **settled luma SSIM ≥ 0.92 and grayscale MAD ≤ 6.0**, every
+region visually clean. A family that misses the SSIM gate while MAD passes
+ships only with a measured named cause (the recordings' condensed display
+face versus the bundled JetBrains Mono is the deck-wide one), regional MADs,
+and magnified crop pairs documenting that the residual is glyph-face width,
+not geometry — per-glyph reference-ink tracing (the seg11/seg12 precedent)
+is the remedy when a region is visibly unclean, not a default.
+
+
+### Integration sweep (settled-truth final, PR #74)
+
+The integration branch re-captures every family at the capture-contract deep
+links (1920×1080, `document.fonts.ready` + 2 s) against the release-tip
+references and re-measures the gates. Sweep numbers reproduce the per-family
+PR measurements to within capture-condition noise (≤0.006 SSIM):
+
+| Family | Settled SSIM (≥0.92) | MAD (≤6.0) | Verdict |
+|---|---|---|---|
+| seg01 StairChain | 0.9306 | 2.0701 | pass |
+| seg05 PillarRow | 0.8581 | 4.8003 | SSIM residual — documented |
+| seg08 StackPanels | 0.9546 | 2.7420 | pass |
+| seg11 ConvergeFlow | 0.9513 | 3.6750 | pass |
+| seg12 CompareBadge | 0.9257 | 1.6558 | pass |
+| seg14 SpecPanel | 0.9072 | 4.7329 | SSIM residual — documented |
+| seg15 StepPanel | 0.8635 | 5.1443 | SSIM residual — documented |
+| seg16 TileSummary | 0.8946 | 4.2074 | SSIM residual — documented |
+
+MAD clears the gate on all eight families. The four SSIM residuals were
+re-verified against fresh settled composites and magnified ref/capture crop
+pairs (title/header bands plus each family's noisiest regions): geometry,
+tones, and copy match; the residual tracks the condensed display face versus
+the bundled JetBrains Mono (glyph-face width and thin-AA features), so the
+per-glyph ink-tracing remedy was **not** applied — the composites are
+visually clean, matching the PR #67/#71/#72 documentation.
+
+Mid-beat choreography re-verified quantitatively: every `?clicks=k` capture
+best-matches a reference packet frame at MAD 0.62–5.04 (half-res luma) with
+strictly increasing frame indices per family — the intermediate states exist
+in the reference sequence in the same order. Paced playback re-verified with
+a runner-paced WebM per family (durations match the pinned schedules; the
+shared `useAutoAdvance` active-slide gate is the integration's only shared
+code change) plus a live a-key toggle capture on seg12 (before / mid-run /
+settled at 1920×1080): the pressed run advances state progressively instead
+of compressing to the final click.
